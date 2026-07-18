@@ -31,6 +31,22 @@ export default function RegisterPage() {
         password,
       });
 
+      // Handle "already registered" — try to sign in instead
+      if (authError?.message?.includes('already') || authError?.status === 422) {
+        const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
+        if (signInErr) throw new Error('Email sudah terdaftar tapi login gagal. Coba reset password.');
+        // Signed in — check if profile exists
+        const { data: existingProfile } = await supabase.from('profiles').select('id').eq('id', signInData.user.id).maybeSingle();
+        if (existingProfile) {
+          router.refresh();
+          router.push('/overview');
+          return;
+        }
+        // No profile yet — go to onboarding
+        router.push('/onboarding');
+        return;
+      }
+
       if (authError) throw new Error(authError.message);
       if (!authData.user) throw new Error('Gagal membuat akun');
 

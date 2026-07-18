@@ -1,21 +1,41 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createSupabaseClient } from '@/shared/services/supabase/client';
-import Link from 'next/link';
 import { APP_NAME } from '@/shared/constants';
 
 export default function OnboardingPage() {
   const [schoolName, setSchoolName] = useState('');
   const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [step, setStep] = useState<'form' | 'creating' | 'done'>('form');
+  const [step, setStep] = useState<'checking' | 'form' | 'creating' | 'done'>('checking');
   const router = useRouter();
+
+  // Check existing session on mount
+  useEffect(() => {
+    const supabase = createSupabaseClient();
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.replace('/register');
+        return;
+      }
+
+      // Check if profile already exists
+      const { data: profile } = await supabase
+        .from('profiles').select('id, school_id').eq('id', session.user.id).maybeSingle();
+
+      if (profile?.school_id) {
+        router.replace('/overview');
+        return;
+      }
+
+      setStep('form');
+    })();
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,29 +45,17 @@ export default function OnboardingPage() {
 
     try {
       const supabase = createSupabaseClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Session tidak ditemukan. Silakan login ulang.');
+      const userId = session.user.id;
+      const userEmail = session.user.email || '';
 
-      // 1. Sign up
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-      if (authError) throw new Error(authError.message);
-      if (!authData.user) throw new Error('Gagal membuat akun');
-
-      // 2. If no session (email confirmation ON), try sign in
-      if (!authData.session) {
-        const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-        if (signInError) {
-          throw new Error('Akun dibuat! Silakan cek email untuk verifikasi, lalu login.');
-        }
-      }
-
-      // 3. Create school
+      // 1. Create school
       const { data: school, error: schoolError } = await supabase
         .from('schools')
         .insert({
           name: schoolName || `Sekolah ${fullName}`,
-          owner_id: authData.user.id,
+          owner_id: userId,
           plan: 'free',
           status: 'pending',
         })
@@ -55,18 +63,18 @@ export default function OnboardingPage() {
         .single();
       if (schoolError) throw new Error('Gagal membuat sekolah: ' + schoolError.message);
 
-      // 4. Create profile
+      // 2. Create profile
       const { error: profileError } = await supabase.from('profiles').insert({
-        id: authData.user.id,
+        id: userId,
         school_id: school.id,
         name: fullName,
         phone: phone || null,
-        email: email,
+        email: userEmail,
         role: 'owner',
       });
       if (profileError) throw new Error('Gagal membuat profil: ' + profileError.message);
 
-      // 5. Create default categories
+      // 3. Create default categories
       const defaultCategories = [
         { name: 'SPP', type: 'income', school_id: school.id },
         { name: 'Sumbangan', type: 'income', school_id: school.id },
@@ -77,7 +85,7 @@ export default function OnboardingPage() {
       ];
       await supabase.from('categories').insert(defaultCategories);
 
-      // 6. Done → redirect
+      // 4. Done
       setStep('done');
       setTimeout(() => {
         router.refresh();
@@ -89,6 +97,16 @@ export default function OnboardingPage() {
       setLoading(false);
     }
   };
+
+  if (step === 'checking') {
+    return (
+      <div className="min-h-screen bg-[#0f0f1a] flex items-center justify-center p-4">
+        <div className="relative z-10 text-center">
+          <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin mx-auto" />
+        </div>
+      </div>
+    );
+  }
 
   if (step === 'creating') {
     return (
@@ -112,7 +130,7 @@ export default function OnboardingPage() {
         <div className="fixed inset-0 bg-grid pointer-events-none" />
         <div className="fixed inset-0 bg-glow-lg pointer-events-none" />
         <div className="relative z-10 text-center animate-fade-in">
-          <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-green-500/25">
+          <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-green-500/20 flex items-center justify-center">
             <span className="text-3xl">✓</span>
           </div>
           <h2 className="text-xl font-bold text-white mb-2">Berhasil!</h2>
@@ -126,15 +144,14 @@ export default function OnboardingPage() {
     <div className="min-h-screen bg-[#0f0f1a] flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-grid pointer-events-none" />
       <div className="fixed inset-0 bg-glow-lg pointer-events-none" />
-
       <div className="relative z-10 w-full max-w-md animate-slide-up">
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2.5">
+          <div className="inline-flex items-center gap-2.5">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-500/25">
               SR
             </div>
             <span className="text-xl font-bold text-white">{APP_NAME}</span>
-          </Link>
+          </div>
         </div>
 
         <div className="glass rounded-2xl p-8">
@@ -159,19 +176,9 @@ export default function OnboardingPage() {
                 className="input-modern" placeholder="Nama Kepala Sekolah" required />
             </div>
             <div>
-              <label className="block text-sm font-medium text-white/60 mb-1.5">Email *</label>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                className="input-modern" placeholder="nama@sekolah.sch.id" required />
-            </div>
-            <div>
               <label className="block text-sm font-medium text-white/60 mb-1.5">No. WhatsApp</label>
               <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)}
                 className="input-modern" placeholder="0812-xxxx-xxxx" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-white/60 mb-1.5">Password *</label>
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-                className="input-modern" placeholder="Min. 8 karakter" required minLength={8} />
             </div>
 
             <button type="submit" disabled={loading}
@@ -186,15 +193,6 @@ export default function OnboardingPage() {
               )}
             </button>
           </form>
-
-          <div className="mt-6 pt-6 border-t border-white/5 text-center">
-            <p className="text-sm text-white/40">
-              Sudah punya akun?{' '}
-              <Link href="/login" className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
-                Login
-              </Link>
-            </p>
-          </div>
         </div>
       </div>
     </div>
