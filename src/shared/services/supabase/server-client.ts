@@ -1,14 +1,36 @@
 /**
- * Server-side Supabase client.
+ * Server-side Supabase client using @supabase/ssr.
  *
- * Currently re-exports the browser client because the project
- * uses client-side auth via AuthProvider (localStorage session).
+ * Reads session from cookies (not localStorage) via next/headers.
+ * Use in: Server Components, Server Actions, Route Handlers.
  *
- * @supabase/auth-helpers-nextjs v0.8.7 has type conflicts with
- * @supabase/supabase-js v2.110.2 — so server auth stays client-side.
- * Middleware.ts handles server-side auth guard separately.
- *
- * If migrating later, install @supabase/ssr package:
- * https://supabase.com/docs/guides/auth/server-side/nextjs
+ * @see https://supabase.com/docs/guides/auth/server-side/nextjs
  */
-export { createSupabaseClient } from '@/shared/services/supabase/client';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+
+export const createSupabaseServerClient = async () => {
+  const cookieStore = await cookies();
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // Called from a Server Component — cookies are read-only.
+            // This is fine; the middleware/client will handle cookie updates.
+          }
+        },
+      },
+    }
+  );
+};

@@ -1,3 +1,4 @@
+import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 // Public paths — no auth required
@@ -15,42 +16,60 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // In dev mode, let client-side AuthProvider handle auth.
-  // Supabase JS v2 stores session in localStorage, NOT cookies.
-  // Middleware (Edge Runtime) can't read localStorage.
-  // Only do server-side redirect if we detect an actual sb- cookie.
-  // Dev mode: skip cookie check (session in localStorage, not cookies).
-  // NODE_ENV is auto-controlled by Next.js (dev=development, prod=production).
-  // Vercel always forces NODE_ENV=production, so this can't leak to prod.
-  if (process.env.NODE_ENV !== 'production') {
-    return NextResponse.next();
-  }
+  let supabaseResponse = NextResponse.next({ request });
 
-  // PRODUCTION: check for Supabase auth cookie
-  // If using @supabase/ssr later, cookie name will be sb-<project-ref>-auth-token
-  const hasSession = request.cookies.getAll().some(
-    (c) => c.name.startsWith('sb-') && c.value.length > 0
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          // Set cookies on the request (for downstream handlers)
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          );
+          supabaseResponse = NextResponse.next({ request });
+          // Set cookies on the response (sent to browser)
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          );
+        },
+      },
+    }
   );
+
+  // IMPORTANT: Do NOT run any logic between createServerClient and
+  // supabase.auth.getUser(). A simple mistake could make it very hard
+  // to debug issues with users being randomly logged out.
+
+  // Refresh session if expired — required for Server Components
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const isPublicPath = publicPaths.some(
     (p) => pathname === p || pathname.startsWith(p + '?')
   );
 
   // Not logged in + not on public page → redirect to login
-  if (!hasSession && !isPublicPath) {
+  if (!user && !isPublicPath) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = '/login';
     return NextResponse.redirect(loginUrl);
   }
 
   // Logged in + on login/register → redirect to overview
-  if (hasSession && (pathname === '/login' || pathname === '/register')) {
+  if (user && (pathname === '/login' || pathname === '/register')) {
     const overviewUrl = request.nextUrl.clone();
     overviewUrl.pathname = '/overview';
     return NextResponse.redirect(overviewUrl);
   }
 
-  return NextResponse.next();
+  // IMPORTANT: Return supabaseResponse (with updated cookies), not NextResponse.next()
+  return supabaseResponse;
 }
 
 export const config = {
