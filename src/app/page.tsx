@@ -1,0 +1,5 @@
+import LandingPage from './(auth)/page';
+
+export default function HomePage() {
+  return <LandingPage />;
+}
