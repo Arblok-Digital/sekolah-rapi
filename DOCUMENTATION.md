@@ -9,13 +9,15 @@
 
 | Layer | Tech |
 |-------|------|
-| Frontend | Next.js 14 (App Router), TypeScript, Tailwind CSS 3.4 |
+| Frontend | Next.js 14.2.35 (App Router), TypeScript, Tailwind CSS 3.4 |
 | State | TanStack Query (server), Zustand (client), Dexie.js (offline) |
 | Backend | Supabase (PostgreSQL + REST API + Auth + Realtime) |
+| Auth | @supabase/ssr 0.12.3 (cookie-based session) |
 | PWA | next-pwa (service worker, manifest, installable) |
 | Chart | Recharts |
 | Icons | Lucide React |
 | Build | Vercel |
+| Runtime | Turbopack (dev), Webpack (prod) |
 
 ---
 
@@ -23,17 +25,17 @@
 
 | Role | Who | Access |
 |------|-----|--------|
-| `dev` | Arblok (super admin) | All schools, approve schools, seed data, nuclear delete |
+| `dev` | Arblok (super admin) | All schools, approve schools, seed data, nuclear delete, user management |
 | `owner` | School owner/admin | Full CRUD on own school only |
 
 No "admin" or "staff" role. Owner IS the admin.
+Dev role is set manually via DB (`UPDATE profiles SET role = 'dev' WHERE id = '<uid>'`).
 
 ---
 
 ## 3. Database Schema (Supabase PostgreSQL)
 
 ### Core Tables
-
 ```
 schools
 ├── id (uuid PK)
@@ -138,39 +140,96 @@ payroll_records
 ├── created_at, updated_at
 ```
 
+### Dev Management Functions (SECURITY DEFINER)
+
+```
+is_dev()                  → BOOLEAN: cek apakah current user role = 'dev'
+get_user_role()           → TEXT: return role user
+dev_delete_school_data()  → Hapus semua data sekolah (school tetap ada)
+dev_nuclear_delete()      → HAPUS SEMUA data (profiles, schools, semua tabel)
+dev_set_school_status()   → Set status sekolah (active/pending/suspended)
+dev_seed_test_data()      → Seed 3 siswa + SPP + transaksi
+dev_delete_user()         → Hapus 1 user: school data + profile + auth user
+```
+
 ---
 
-## 4. Pipeline — Register to Dashboard
+## 4. Auth Architecture (Updated July 2026)
 
-### 4.1 Register Owner
+### Cookie-Based Session (@supabase/ssr)
+```
+Login Flow:
+1. signInWithPassword → Supabase returns JWT + refresh token
+2. @supabase/ssr sets sb-*-auth-token cookies
+3. Middleware reads cookies → refreshes session on every request
+4. AuthProvider loads session + profile + school on client
+
+Middleware Logic:
+├── /login, /register, /enrollment, /register-student, /pending-approval → PUBLIC
+├── /api/*, /_next/*, static files → PASS THROUGH (no auth check)
+├── /dev/admin → BLOCKED in production (only localhost works)
+├── Session exists + on /login or /register → redirect /overview
+├── No session + on protected route → redirect /login
+└── Session exists + on /overview → check profile → check school status
+```
+
+### Dev Panel Production Block
+```typescript
+// middleware.ts
+if (pathname.startsWith('/dev') && !isDevMode) {
+  return NextResponse.redirect(new URL('/', url));
+}
+```
+Dev panel (`/dev/admin`) only accessible on localhost. Blocked in production.
+
+---
+
+## 5. Pipeline — Register to Dashboard (Updated)
+
+### 5.1 Register Owner
 ```
 /register
 ├── Input: name, email, password
 ├── Supabase Auth: signUp (creates auth.users)
-├── profiles: INSERT (role=owner, school_id=new_school)
-├── schools: INSERT (status=pending, owner_id=user)
+│   ├── Email confirmation ON → signUp returns no session
+│   ├── Email confirmation OFF → signUp returns session
+│   └── Error 422 "already registered" → auto signIn with same password
 ├── signIn (establish session)
+├── Redirect → /onboarding (create profile + school)
+└── OR → /pending-approval (if profile exists)
+```
+
+### 5.2 Onboarding
+```
+/onboarding
+├── Session MUST exist (checked client-side)
+├── Input: school name, school plan
+├── SQL: INSERT INTO schools (status=pending, owner_id=user)
+├── SQL: UPDATE profiles SET school_id=new_school, role=owner
 └── Redirect → /pending-approval
 ```
 
-### 4.2 Dev Approves School (Manual)
-```sql
-UPDATE schools SET status = 'active' WHERE id = '<school_id>';
+### 5.3 Dev Approves School
 ```
-Only dev can approve. This is intentional for monetization control.
+/dev/admin (localhost only)
+├── Tab Schools: list semua schools dengan status
+├── Click school → expand → "Activate" button
+├── RPC: dev_set_school_status(school_id, 'active')
+└── Owner bisa login ke dashboard
+```
 
-### 4.3 Owner Login
+### 5.4 Owner Login
 ```
 /login
 ├── Input: email, password
 ├── Supabase Auth: signInWithPassword
-├── Session stored in localStorage (Supabase auto-persist)
+├── Session stored in cookies (@supabase/ssr)
 ├── AuthProvider: fetchProfile → loads role, school_id
 ├── Dashboard layout: checks session → if no session → redirect /login
 └── Owner sees full dashboard
 ```
 
-### 4.4 Dashboard (Realtime)
+### 5.5 Dashboard (Realtime)
 ```
 /overview
 ├── Fetch: transactions, students, spp_payments
@@ -186,9 +245,56 @@ Only dev can approve. This is intentional for monetization control.
 
 ---
 
-## 5. Pipeline — Pendaftaran Online
+## 6. Dev Panel — User Management (New July 2026)
 
-### 5.1 Owner Shares Link
+### 6.1 Access
+```
+URL: /dev/admin
+Access: localhost ONLY (blocked in production via middleware)
+Auth: must be logged in as dev role
+Tabs: [Schools] [Users]
+```
+
+### 6.2 Users Tab
+```
+Tab Users
+├── Fetch: profiles (dev bypasses RLS) + schools
+├── Display: email, name, role, school, school_status, created_at
+├── Role badge: dev=purple, owner=blue, no_profile=red
+├── Delete button: per user (excludes dev role)
+└── RPC: dev_delete_user(target_user_id)
+    ├── Deletes: spp_payments, transactions, students, categories
+    ├── Deletes: enrollment_requests, sync_queue, inventory_items
+    ├── Deletes: employees, payroll_records, schools, profiles
+    └── Does NOT delete auth.users (Supabase limitation)
+```
+
+### 6.3 Delete User Flow
+```
+1. Click delete button on user row
+2. Confirm dialog: "Yakin mau HAPUS akun email? Semua data akan hilang."
+3. RPC: dev_delete_user(user_id)
+4. All related data deleted (cascade)
+5. User list refreshes
+6. For full removal: also delete auth user via Supabase Dashboard → Authentication → Users
+```
+
+### 6.4 Nuclear Delete
+```
+Button: "Nuclear Delete" (red, top-right)
+├── Confirmation required
+├── RPC: dev_nuclear_delete()
+├── Deletes: ALL data in ALL tables
+├── Does NOT delete auth.users
+├── Preserves dev role profiles
+└── Use for: fresh start, test data cleanup
+```
+
+---
+
+## 7. Pipeline — Pendaftaran Online
+
+### 7.1 Owner Shares Link
 ```
 /enrollment
 ├── Shows: list of enrollment requests (all statuses)
@@ -197,7 +303,7 @@ Only dev can approve. This is intentional for monetization control.
 └── Stats: Menunggu, Disetujui, Ditolak counts
 ```
 
-### 5.2 Parent Submits Form
+### 7.2 Parent Submits Form
 ```
 /register-student?school=<uuid>
 ├── Fetches school name from DB → displays "MI Borlong" (not UUID)
@@ -208,7 +314,7 @@ Only dev can approve. This is intentional for monetization control.
 └── Shows success page
 ```
 
-### 4.3 Owner Reviews & Approves
+### 7.3 Owner Reviews & Approves
 ```
 /enrollment
 ├── Click "Approve" on pending request
@@ -221,9 +327,9 @@ Only dev can approve. This is intentional for monetization control.
 
 ---
 
-## 6. Pipeline — Keuangan (Transactions)
+## 8. Pipeline — Keuangan (Transactions)
 
-### 6.1 Manual Transaction
+### 8.1 Manual Transaction
 ```
 /transactions → "Tambah Transaksi"
 ├── Input: type (income/expense), category, amount, description, date
@@ -232,7 +338,7 @@ Only dev can approve. This is intentional for monetization control.
 └── Categories seeded per school (SPP, Donasi, Gaji Guru, ATK, etc.)
 ```
 
-### 6.2 Auto-Transaction from SPP
+### 8.2 Auto-Transaction from SPP
 ```
 /spp → "Catat Pembayaran"
 ├── Dropdown: select student (fetched from DB)
@@ -243,7 +349,7 @@ Only dev can approve. This is intentional for monetization control.
 └── Auto-update dashboard
 ```
 
-### 6.3 Auto-Transaction from Inventory
+### 8.3 Auto-Transaction from Inventory
 ```
 /inventory → "Tambah Barang"
 ├── Input: name, category, quantity, condition, price
@@ -253,7 +359,7 @@ Only dev can approve. This is intentional for monetization control.
 └── Auto-update dashboard
 ```
 
-### 6.4 Auto-Transaction from Payroll
+### 8.4 Auto-Transaction from Payroll
 ```
 /payroll → "Generate Gaji" → "Bayar"
 ├── Generate: batch create payroll_records for all active employees
@@ -265,7 +371,7 @@ Only dev can approve. This is intentional for monetization control.
 
 ---
 
-## 7. Pipeline — SPP (Sumbangan Pendidikan)
+## 9. Pipeline — SPP (Sumbangan Pendidikan)
 
 ```
 /spp
@@ -283,7 +389,7 @@ Only dev can approve. This is intentional for monetization control.
 
 ---
 
-## 8. Pipeline — Inventaris
+## 10. Pipeline — Inventaris
 
 ```
 /inventory
@@ -299,7 +405,7 @@ Only dev can approve. This is intentional for monetization control.
 
 ---
 
-## 9. Pipeline — Payroll (Penggajian)
+## 11. Pipeline — Payroll (Penggajian)
 
 ```
 /payroll
@@ -316,7 +422,7 @@ Only dev can approve. This is intentional for monetization control.
 
 ---
 
-## 10. Pipeline — Laporan
+## 12. Pipeline — Laporan
 
 ```
 /reports
@@ -333,25 +439,29 @@ Only dev can approve. This is intentional for monetization control.
 
 ---
 
-## 11. RLS (Row Level Security)
+## 13. RLS (Row Level Security)
 
-All tables have RLS enabled with permissive policies:
-
+### Policy Pattern
 ```sql
--- Pattern for all tables:
-CREATE POLICY "allow_all" ON table_name FOR ALL
-  USING (auth.uid() IS NOT NULL)
-  WITH CHECK (true);  -- or (auth.uid() IS NOT NULL)
+-- Dev: full access to all tables
+CREATE POLICY "Dev: full access to <table>" ON <table>
+  FOR ALL USING (is_dev());
+
+-- Owner: access own school data only
+CREATE POLICY "Users can view own school <table>" ON <table>
+  FOR SELECT USING (school_id = ANY(get_user_school_ids()));
 ```
 
-- Authenticated users can CRUD their own school's data
-- `school_id` filter in every query ensures data isolation
-- Dev role bypasses all RLS via SECURITY DEFINER functions
-- Public enrollment form uses anon INSERT policy
+### Key Points
+- All tables have RLS enabled
+- `is_dev()` function: checks `profiles.role = 'dev'` → bypasses all RLS
+- Owner access filtered by `school_id` ownership
+- Public enrollment: anon INSERT policy on `enrollment_requests`
+- Dev management functions: `SECURITY DEFINER` → runs with function owner's privileges
 
 ---
 
-## 12. Realtime
+## 14. Realtime
 
 Tables with Supabase Realtime enabled:
 ```sql
@@ -365,7 +475,7 @@ Dashboard subscribes via `supabase.channel()` → auto-refetch on any change.
 
 ---
 
-## 13. PWA (Progressive Web App)
+## 15. PWA (Progressive Web App)
 
 - Manifest: `/manifest.json` → app name, icons, display: standalone
 - Icons: 192x192 + 512x512 (SR logo, indigo)
@@ -376,7 +486,7 @@ Dashboard subscribes via `supabase.channel()` → auto-refetch on any change.
 
 ---
 
-## 14. File Structure
+## 16. File Structure
 
 ```
 src/
@@ -385,7 +495,7 @@ src/
 │   ├── globals.css             # Global styles + input-modern + dark theme
 │   ├── (auth)/
 │   │   ├── login/page.tsx
-│   │   ├── register/page.tsx
+│   │   ├── register/page.tsx   # 422 "already registered" handler
 │   │   └── page.tsx            # Landing page
 │   ├── (dashboard)/
 │   │   ├── layout.tsx          # Auth gate + sidebar
@@ -397,9 +507,14 @@ src/
 │   │   ├── inventory/page.tsx  # Inventory management
 │   │   ├── payroll/page.tsx    # Employees + payroll
 │   │   ├── reports/page.tsx    # Financial reports
-│   │   └── dev/admin/page.tsx  # Dev panel
+│   │   └── dev/admin/page.tsx  # Dev panel (schools + users)
+│   ├── onboarding/page.tsx     # Create school + profile after register
+│   ├── pending-approval/page.tsx  # School pending status
 │   ├── register-student/page.tsx  # Public enrollment form
-│   └── pending-approval/page.tsx  # School pending status
+│   ├── api/admin/
+│   │   ├── users/route.ts      # (deprecated — now uses RPC)
+│   │   └── delete-user/route.ts # (deprecated — now uses RPC)
+│   └── middleware.ts           # Auth + dev panel production block
 ├── modules/
 │   ├── enrollment/             # Types, service, hooks
 │   ├── inventory/
@@ -416,38 +531,65 @@ src/
 ├── shared/
 │   ├── components/Layout/Sidebar.tsx
 │   ├── providers/AuthProvider.tsx  # Session + profile + school context
-│   ├── services/supabase/client.ts # Singleton Supabase client
+│   ├── services/supabase/
+│   │   ├── client.ts           # Browser client (@supabase/ssr)
+│   │   └── server-client.ts    # Server client (@supabase/ssr)
 │   └── types/index.ts
+├── middleware.ts                # Route protection + dev panel block
+supabase/
+└── migrations/
+    └── 20260113012_dev_mode_enrollment.sql  # RLS + dev functions
+    └── 20260718001_dev_delete_user.sql      # dev_delete_user() function
 ```
 
 ---
 
-## 15. Environment Variables
+## 17. Environment Variables
 
 ```env
+# Client (exposed to browser)
 NEXT_PUBLIC_SUPABASE_URL=https://bbymrmysmerazdkubptc.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon_key>
+
+# Server only (API routes, middleware)
+SUPABASE_SERVICE_ROLE_KEY=sb_secret_<key>  # Used by admin API routes
 ```
+
+### Local (.env.local)
+```bash
+NEXT_PUBLIC_SUPABASE_URL=https://bbymrmysmerazdkubptc.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon_key>
+SUPABASE_SERVICE_ROLE_KEY=sb_secret_<key>
+```
+
+### Vercel
+Same variables set in Vercel Dashboard → Settings → Environment Variables.
 
 ---
 
-## 16. Deploy
+## 18. Deploy
 
 ```bash
 # Local dev
-npm run dev          # Port 3000
+.\node_modules\.bin\next.cmd dev --port 3001    # Windows
+npx next@14 dev --port 3001                       # Cross-platform
 
-# Production
-npm run build        # Compile
-npm run start        # Start production server
+# Production build (Vercel auto-builds on push)
+npx next build
 
-# Vercel
-vercel deploy        # Auto-detect Next.js
+# Git push → Vercel auto-deploy
+git push origin main
 ```
+
+### Dev Server Notes
+- Port 3001 (avoid Chrome cache issues on localhost:3000)
+- Turbopack enabled (faster HMR, lower memory)
+- Windows: use `node_modules\.bin\next.cmd` not `npx next` (avoids global v16)
+- Clear `.next` cache if assets 404: `rmdir /s /q .next`
 
 ---
 
-## 17. Known Limitations & Future
+## 19. Known Limitations & Future
 
 | Item | Status |
 |------|--------|
@@ -459,8 +601,10 @@ vercel deploy        # Auto-detect Next.js
 | Audit log | Not yet |
 | Offline mode | Dexie.js installed, partially wired |
 | File upload (proof) | Schema exists, UI not yet |
+| Dev panel production access | Not yet (will add email whitelist later) |
+| Auth user deletion | Must be done via Supabase Dashboard (auth.users is separate schema) |
 
 ---
 
-*Last updated: July 2026*
+*Last updated: July 18, 2026*
 *Built with ❤️ by Arblok Digital — Tasikmalaya*
