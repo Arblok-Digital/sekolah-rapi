@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js';
-import { createServerClient } from '@supabase/ssr';
 import { NextRequest, NextResponse } from 'next/server';
 
 const supabaseAdmin = createClient(
@@ -8,31 +7,12 @@ const supabaseAdmin = createClient(
 );
 
 async function requireDev(request: NextRequest) {
-  let supabaseResponse = NextResponse.next();
+  const token = request.headers.get('authorization')?.replace('Bearer ', '');
+  if (!token) return false;
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
-          supabaseResponse = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          );
-        },
-      },
-    }
-  );
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { allowed: false, response: supabaseResponse };
+  // Verify token with Supabase
+  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+  if (error || !user) return false;
 
   const { data: profile } = await supabaseAdmin
     .from('profiles')
@@ -40,13 +20,12 @@ async function requireDev(request: NextRequest) {
     .eq('id', user.id)
     .single();
 
-  return { allowed: profile?.role === 'dev', response: supabaseResponse };
+  return profile?.role === 'dev';
 }
 
 // GET /api/admin/users
 export async function GET(request: NextRequest) {
-  const { allowed, response } = await requireDev(request);
-  if (!allowed) {
+  if (!(await requireDev(request))) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 

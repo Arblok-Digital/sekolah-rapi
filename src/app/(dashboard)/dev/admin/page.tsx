@@ -32,7 +32,7 @@ interface UserData {
 }
 
 export default function DevAdminPage() {
-  const { isDev, profile } = useAuth();
+  const { isDev, profile, session } = useAuth();
   const router = useRouter();
   const [tab, setTab] = useState<'schools' | 'users'>('schools');
   const [schools, setSchools] = useState<SchoolData[]>([]);
@@ -83,7 +83,8 @@ export default function DevAdminPage() {
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/admin/users');
+      const token = session?.access_token || '';
+      const res = await fetch('/api/admin/users', { headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
       setUsers(data.users || []);
     } catch {
@@ -140,7 +141,8 @@ export default function DevAdminPage() {
     setActionLoading(userId);
     setMessage(null);
     try {
-      const res = await fetch(`/api/admin/delete-user?id=${userId}`, { method: 'DELETE' });
+      const token = session?.access_token || '';
+      const res = await fetch(`/api/admin/delete-user?id=${userId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setMessage({ type: 'success', text: `Akun ${email} berhasil dihapus` });

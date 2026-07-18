@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js';
-import { createServerClient } from '@supabase/ssr';
 import { NextRequest, NextResponse } from 'next/server';
 
 const supabaseAdmin = createClient(
@@ -8,21 +7,11 @@ const supabaseAdmin = createClient(
 );
 
 async function requireDev(request: NextRequest) {
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll() {},
-      },
-    }
-  );
+  const token = request.headers.get('authorization')?.replace('Bearer ', '');
+  if (!token) return false;
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return false;
+  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+  if (error || !user) return false;
 
   const { data: profile } = await supabaseAdmin
     .from('profiles')
@@ -47,8 +36,9 @@ export async function DELETE(request: NextRequest) {
   }
 
   try {
-    const caller = await supabaseAdmin.auth.getUser();
-    if (caller.data.user?.id === userId) {
+    const token = request.headers.get('authorization')?.replace('Bearer ', '')!;
+    const { data: { user: caller } } = await supabaseAdmin.auth.getUser(token);
+    if (caller?.id === userId) {
       return NextResponse.json({ error: 'Cannot delete yourself' }, { status: 400 });
     }
 
