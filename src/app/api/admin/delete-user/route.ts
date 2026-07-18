@@ -7,16 +7,29 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// Verify caller is dev via cookie session
 async function requireDev(request: NextRequest) {
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { getAll: () => request.cookies.getAll(), setAll: () => {} } }
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll() {},
+      },
+    }
   );
+
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return false;
-  const { data: profile } = await supabaseAdmin.from('profiles').select('role').eq('id', user.id).single();
+
+  const { data: profile } = await supabaseAdmin
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
   return profile?.role === 'dev';
 }
 
@@ -34,16 +47,13 @@ export async function DELETE(request: NextRequest) {
   }
 
   try {
-    // Don't allow deleting yourself
     const caller = await supabaseAdmin.auth.getUser();
     if (caller.data.user?.id === userId) {
       return NextResponse.json({ error: 'Cannot delete yourself' }, { status: 400 });
     }
 
-    // 1. Delete profile
     await supabaseAdmin.from('profiles').delete().eq('id', userId);
 
-    // 2. Delete auth user
     const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
     if (error) throw error;
 

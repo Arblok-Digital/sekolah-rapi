@@ -8,20 +8,45 @@ const supabaseAdmin = createClient(
 );
 
 async function requireDev(request: NextRequest) {
+  let supabaseResponse = NextResponse.next();
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { getAll: () => request.cookies.getAll(), setAll: () => {} } }
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          );
+          supabaseResponse = NextResponse.next({ request });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          );
+        },
+      },
+    }
   );
+
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return false;
-  const { data: profile } = await supabaseAdmin.from('profiles').select('role').eq('id', user.id).single();
-  return profile?.role === 'dev';
+  if (!user) return { allowed: false, response: supabaseResponse };
+
+  const { data: profile } = await supabaseAdmin
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  return { allowed: profile?.role === 'dev', response: supabaseResponse };
 }
 
 // GET /api/admin/users
 export async function GET(request: NextRequest) {
-  if (!(await requireDev(request))) {
+  const { allowed, response } = await requireDev(request);
+  if (!allowed) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
