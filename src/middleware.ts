@@ -16,6 +16,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Production: block dev panel entirely
+  if (pathname.startsWith('/dev')) {
+    if (process.env.NODE_ENV === 'production') {
+      return NextResponse.redirect(new URL('/', request.url));
+    }
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
