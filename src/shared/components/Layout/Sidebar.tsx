@@ -77,14 +77,14 @@ export function Sidebar() {
           </div>
           <div>
             <h1 className="text-sm font-bold text-white">{APP_NAME}</h1>
-            <p className="text-[10px] text-white/30">Powered by {POWERED_BY}</p>
+            <p className="text-[10px] text-white/50">Powered by {POWERED_BY}</p>
           </div>
         </div>
 
         {/* School info */}
         {school && (
           <div className="px-5 py-3 border-b border-white/5">
-            <p className="text-xs text-white/30">Sekolah</p>
+            <p className="text-xs text-white/50">Sekolah</p>
             <p className="text-sm text-white/70 font-medium truncate">{school.name}</p>
             {isDev && (
               <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-[10px] font-medium">
@@ -108,7 +108,7 @@ export function Sidebar() {
                   'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
                   isActive
                     ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/20'
-                    : 'text-white/40 hover:text-white/70 hover:bg-white/5'
+                    : 'text-white/60 hover:text-white/70 hover:bg-white/5'
                 )}
               >
                 <Icon className="w-4 h-4 shrink-0" />
@@ -122,13 +122,13 @@ export function Sidebar() {
         {/* User info + logout */}
         <div className="border-t border-white/5 p-3 space-y-2">
           <div className="px-3 py-2">
-            <p className="text-xs text-white/30">Login sebagai</p>
+            <p className="text-xs text-white/50">Login sebagai</p>
             <p className="text-sm text-white/70 font-medium">{profile?.name || 'User'}</p>
-            <p className="text-[10px] text-white/30">{profile?.role}</p>
+            <p className="text-[10px] text-white/50">{profile?.role}</p>
           </div>
           <button
             onClick={signOut}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white/60 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200"
           >
             <LogOut className="w-4 h-4" />
             <span>Keluar</span>

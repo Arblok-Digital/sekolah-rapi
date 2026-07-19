@@ -118,7 +118,7 @@ export default function OnboardingPage() {
             <span className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
           </div>
           <h2 className="text-xl font-bold text-white mb-2">Menyiapkan Akun...</h2>
-          <p className="text-white/40">Sebentar ya, kami sedang menyiapkan data sekolah kamu</p>
+          <p className="text-white/60">Sebentar ya, kami sedang menyiapkan data sekolah kamu</p>
         </div>
       </div>
     );
@@ -134,7 +134,7 @@ export default function OnboardingPage() {
             <span className="text-3xl">✓</span>
           </div>
           <h2 className="text-xl font-bold text-white mb-2">Berhasil!</h2>
-          <p className="text-white/40">Akun sekolah kamu sudah dibuat. Menunggu persetujuan admin.</p>
+          <p className="text-white/60">Akun sekolah kamu sudah dibuat. Menunggu persetujuan admin.</p>
         </div>
       </div>
     );
@@ -156,7 +156,7 @@ export default function OnboardingPage() {
 
         <div className="glass rounded-2xl p-8">
           <h1 className="text-2xl font-bold text-white mb-1">Setup Sekolah</h1>
-          <p className="text-white/40 text-sm mb-8">Isi data sekolah untuk memulai</p>
+          <p className="text-white/60 text-sm mb-8">Isi data sekolah untuk memulai</p>
 
           {error && (
             <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-xl mb-6 text-sm">

@@ -79,7 +79,7 @@ function RegisterStudentForm() {
         <div className="fixed inset-0 bg-grid pointer-events-none" />
         <div className="relative z-10 text-center">
           <p className="text-white/60">Link pendaftaran tidak valid.</p>
-          <p className="text-white/30 text-sm mt-2">Hubungi sekolah untuk mendapatkan link yang benar.</p>
+          <p className="text-white/50 text-sm mt-2">Hubungi sekolah untuk mendapatkan link yang benar.</p>
         </div>
       </div>
     );
@@ -133,7 +133,7 @@ function RegisterStudentForm() {
           ) : schoolName ? (
             <p className="text-sm text-indigo-300 font-medium mt-2">{schoolName}</p>
           ) : null}
-          <p className="text-sm text-white/40 mt-1">Isi data berikut untuk mendaftarkan siswa baru</p>
+          <p className="text-sm text-white/60 mt-1">Isi data berikut untuk mendaftarkan siswa baru</p>
         </div>
 
         {/* Form */}
@@ -291,7 +291,7 @@ function RegisterStudentForm() {
             )}
           </button>
 
-          <p className="text-center text-xs text-white/30">
+          <p className="text-center text-xs text-white/50">
             Dengan mengirim formulir ini, Anda menyetujui proses verifikasi oleh pihak sekolah.
           </p>
         </form>

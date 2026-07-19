@@ -48,7 +48,7 @@ export function DashboardShell({ children, schoolName, userName, userRole }: Das
               ) : (
                 <WifiOff className="w-3.5 h-3.5 text-amber-400" />
               )}
-              <span className="text-xs text-white/40 hidden sm:inline">
+              <span className="text-xs text-white/60 hidden sm:inline">
                 {isOnline ? 'Online' : 'Offline'}
               </span>
             </div>
@@ -61,7 +61,7 @@ export function DashboardShell({ children, schoolName, userName, userRole }: Das
                 <div className="font-medium text-white/80 truncate max-w-[120px]">
                   {userName || 'User'}
                 </div>
-                <div className="text-xs text-white/30 capitalize">{userRole || 'staff'}</div>
+                <div className="text-xs text-white/50 capitalize">{userRole || 'staff'}</div>
               </div>
             </div>
           </div>
