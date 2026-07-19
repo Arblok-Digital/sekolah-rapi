@@ -34,7 +34,7 @@ export default function TransactionsPage() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Kas Masuk/Keluar</h2>
+          <h2 className="text-2xl font-bold text-white">Kas Masuk/Keluar</h2>
           <p className="text-sm text-gray-500 mt-1">Kelola pemasukan dan pengeluaran sekolah</p>
         </div>
         <button

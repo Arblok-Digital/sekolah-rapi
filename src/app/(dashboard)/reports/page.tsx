@@ -128,47 +128,47 @@ export default function ReportsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">Laporan</h2>
-          <p className="text-sm text-gray-500 mt-0.5">Rekap keuangan dan SPP tahun {year}</p>
+          <h2 className="text-xl font-bold text-white">Laporan</h2>
+          <p className="text-sm text-white/60 mt-0.5">Rekap keuangan dan SPP tahun {year}</p>
         </div>
         <div className="flex items-center gap-3">
-          <select value={year} onChange={e => setYear(Number(e.target.value))} className="px-3 py-2 border border-gray-300 rounded-xl text-sm">
+          <select value={year} onChange={e => setYear(Number(e.target.value))} className="px-3 py-2 border border-white/15 rounded-xl text-sm">
             {[2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
           </select>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit">
-        <button onClick={() => setReportType('financial')} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${reportType === 'financial' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600'}`}>Keuangan</button>
-        <button onClick={() => setReportType('spp')} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${reportType === 'spp' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600'}`}>Rekap SPP</button>
+      <div className="flex gap-1 bg-white/5 p-1 rounded-xl w-fit">
+        <button onClick={() => setReportType('financial')} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${reportType === 'financial' ? 'bg-white text-white shadow-sm' : 'text-white/70'}`}>Keuangan</button>
+        <button onClick={() => setReportType('spp')} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${reportType === 'spp' ? 'bg-white text-white shadow-sm' : 'text-white/70'}`}>Rekap SPP</button>
       </div>
 
       {loading ? (
-        <div className="text-center py-12"><Loader2 className="w-8 h-8 border-2 border-gray-300 border-t-indigo-600 rounded-full animate-spin mx-auto" /></div>
+        <div className="text-center py-12"><Loader2 className="w-8 h-8 border-2 border-white/15 border-t-indigo-600 rounded-full animate-spin mx-auto" /></div>
       ) : (
         <>
           {/* ── Financial Report ── */}
           {reportType === 'financial' && (
             <>
               <div className="grid grid-cols-3 gap-4">
-                <div className="bg-white rounded-xl border border-gray-200 p-4">
-                  <div className="flex items-center gap-2 mb-2"><TrendingUp className="w-4 h-4 text-emerald-500" /><span className="text-xs text-gray-500">Total Pemasukan</span></div>
+                <div className="bg-white rounded-xl border border-white/10 p-4">
+                  <div className="flex items-center gap-2 mb-2"><TrendingUp className="w-4 h-4 text-emerald-500" /><span className="text-xs text-white/60">Total Pemasukan</span></div>
                   <p className="text-xl font-bold text-emerald-600">{formatRp(totalIncome)}</p>
                 </div>
-                <div className="bg-white rounded-xl border border-gray-200 p-4">
-                  <div className="flex items-center gap-2 mb-2"><TrendingDown className="w-4 h-4 text-red-500" /><span className="text-xs text-gray-500">Total Pengeluaran</span></div>
+                <div className="bg-white rounded-xl border border-white/10 p-4">
+                  <div className="flex items-center gap-2 mb-2"><TrendingDown className="w-4 h-4 text-red-500" /><span className="text-xs text-white/60">Total Pengeluaran</span></div>
                   <p className="text-xl font-bold text-red-600">{formatRp(totalExpense)}</p>
                 </div>
-                <div className="bg-white rounded-xl border border-gray-200 p-4">
-                  <div className="flex items-center gap-2 mb-2"><BarChart3 className="w-4 h-4 text-indigo-500" /><span className="text-xs text-gray-500">Net</span></div>
+                <div className="bg-white rounded-xl border border-white/10 p-4">
+                  <div className="flex items-center gap-2 mb-2"><BarChart3 className="w-4 h-4 text-indigo-500" /><span className="text-xs text-white/60">Net</span></div>
                   <p className={`text-xl font-bold ${totalNet >= 0 ? 'text-indigo-600' : 'text-red-600'}`}>{formatRp(totalNet)}</p>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-                  <h3 className="text-sm font-semibold text-gray-900">Laporan Bulanan</h3>
+              <div className="bg-white rounded-xl border border-white/10 overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+                  <h3 className="text-sm font-semibold text-white">Laporan Bulanan</h3>
                   <button onClick={() => exportCSV('financial')} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100">
                     <Download className="w-3.5 h-3.5" /> Export CSV
                   </button>
@@ -176,23 +176,23 @@ export default function ReportsPage() {
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="text-left px-4 py-2.5 font-medium text-gray-600">Bulan</th>
-                      <th className="text-right px-4 py-2.5 font-medium text-gray-600">Pemasukan</th>
-                      <th className="text-right px-4 py-2.5 font-medium text-gray-600">Pengeluaran</th>
-                      <th className="text-right px-4 py-2.5 font-medium text-gray-600">Net</th>
+                      <th className="text-left px-4 py-2.5 font-medium text-white/70">Bulan</th>
+                      <th className="text-right px-4 py-2.5 font-medium text-white/70">Pemasukan</th>
+                      <th className="text-right px-4 py-2.5 font-medium text-white/70">Pengeluaran</th>
+                      <th className="text-right px-4 py-2.5 font-medium text-white/70">Net</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {financialData.map((r, i) => (
                       <tr key={i} className="hover:bg-gray-50">
-                        <td className="px-4 py-2.5 text-gray-900 font-medium">{r.month}</td>
+                        <td className="px-4 py-2.5 text-white font-medium">{r.month}</td>
                         <td className="px-4 py-2.5 text-right text-emerald-600">{r.income > 0 ? formatRp(r.income) : '-'}</td>
                         <td className="px-4 py-2.5 text-right text-red-600">{r.expense > 0 ? formatRp(r.expense) : '-'}</td>
                         <td className={`px-4 py-2.5 text-right font-medium ${r.net >= 0 ? 'text-indigo-600' : 'text-red-600'}`}>{r.net !== 0 ? formatRp(r.net) : '-'}</td>
                       </tr>
                     ))}
                     <tr className="bg-gray-50 font-semibold">
-                      <td className="px-4 py-2.5 text-gray-900">TOTAL</td>
+                      <td className="px-4 py-2.5 text-white">TOTAL</td>
                       <td className="px-4 py-2.5 text-right text-emerald-600">{formatRp(totalIncome)}</td>
                       <td className="px-4 py-2.5 text-right text-red-600">{formatRp(totalExpense)}</td>
                       <td className={`px-4 py-2.5 text-right ${totalNet >= 0 ? 'text-indigo-600' : 'text-red-600'}`}>{formatRp(totalNet)}</td>
@@ -206,9 +206,9 @@ export default function ReportsPage() {
           {/* ── SPP Recap ── */}
           {reportType === 'spp' && (
             <>
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-                  <h3 className="text-sm font-semibold text-gray-900">Rekap SPP {year}</h3>
+              <div className="bg-white rounded-xl border border-white/10 overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+                  <h3 className="text-sm font-semibold text-white">Rekap SPP {year}</h3>
                   <button onClick={() => exportCSV('spp')} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100">
                     <Download className="w-3.5 h-3.5" /> Export CSV
                   </button>
@@ -216,20 +216,20 @@ export default function ReportsPage() {
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="text-left px-4 py-2.5 font-medium text-gray-600">Bulan</th>
-                      <th className="text-center px-4 py-2.5 font-medium text-gray-600">Siswa</th>
-                      <th className="text-center px-4 py-2.5 font-medium text-gray-600">Lunas</th>
-                      <th className="text-right px-4 py-2.5 font-medium text-gray-600">Terkumpul</th>
-                      <th className="text-center px-4 py-2.5 font-medium text-gray-600">Rate</th>
+                      <th className="text-left px-4 py-2.5 font-medium text-white/70">Bulan</th>
+                      <th className="text-center px-4 py-2.5 font-medium text-white/70">Siswa</th>
+                      <th className="text-center px-4 py-2.5 font-medium text-white/70">Lunas</th>
+                      <th className="text-right px-4 py-2.5 font-medium text-white/70">Terkumpul</th>
+                      <th className="text-center px-4 py-2.5 font-medium text-white/70">Rate</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {sppData.map((r, i) => (
                       <tr key={i} className="hover:bg-gray-50">
-                        <td className="px-4 py-2.5 text-gray-900 font-medium">{r.month}</td>
-                        <td className="px-4 py-2.5 text-center text-gray-600">{r.totalStudents}</td>
-                        <td className="px-4 py-2.5 text-center text-gray-600">{r.paidCount}/{r.totalStudents}</td>
-                        <td className="px-4 py-2.5 text-right text-gray-900">{r.totalCollected > 0 ? formatRp(r.totalCollected) : '-'}</td>
+                        <td className="px-4 py-2.5 text-white font-medium">{r.month}</td>
+                        <td className="px-4 py-2.5 text-center text-white/70">{r.totalStudents}</td>
+                        <td className="px-4 py-2.5 text-center text-white/70">{r.paidCount}/{r.totalStudents}</td>
+                        <td className="px-4 py-2.5 text-right text-white">{r.totalCollected > 0 ? formatRp(r.totalCollected) : '-'}</td>
                         <td className="px-4 py-2.5 text-center">
                           <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${r.collectionRate >= 90 ? 'bg-emerald-100 text-emerald-700' : r.collectionRate >= 70 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>{r.collectionRate}%</span>
                         </td>

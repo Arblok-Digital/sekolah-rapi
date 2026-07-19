@@ -174,7 +174,7 @@ export default function OverviewPage() {
   if (loading || !data) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 border-2 border-gray-300 border-t-indigo-600 rounded-full animate-spin" />
+        <Loader2 className="w-8 h-8 border-2 border-white/15 border-t-indigo-600 rounded-full animate-spin" />
       </div>
     );
   }

@@ -41,13 +41,13 @@ export default function StudentsPage() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Data Siswa</h2>
-          <p className="text-sm text-gray-500 mt-1">Kelola data siswa sekolah</p>
+          <h2 className="text-2xl font-bold text-white">Data Siswa</h2>
+          <p className="text-sm text-white/60 mt-1">Kelola data siswa sekolah</p>
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => setShowImport(true)}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 flex items-center gap-1.5"
+            className="px-4 py-2 text-sm font-medium text-white/80 bg-white border border-white/15 rounded-md hover:bg-gray-50 flex items-center gap-1.5"
           >
             <FileSpreadsheet className="w-4 h-4" />
             Import
@@ -74,12 +74,12 @@ export default function StudentsPage() {
           placeholder="Cari nama atau NIS..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+          className="px-3 py-2 border border-white/15 rounded-md text-sm"
         />
         <select
           value={classFilter}
           onChange={(e) => setClassFilter(e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+          className="px-3 py-2 border border-white/15 rounded-md text-sm"
         >
           <option value="">Semua Kelas</option>
           <option value="7A">7A</option>
@@ -92,7 +92,7 @@ export default function StudentsPage() {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+          className="px-3 py-2 border border-white/15 rounded-md text-sm"
         >
           <option value="">Semua Status</option>
           <option value="active">Aktif</option>
@@ -104,8 +104,8 @@ export default function StudentsPage() {
       {/* Table */}
       {loading ? (
         <div className="text-center py-12">
-          <div className="w-8 h-8 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin mx-auto" />
-          <p className="text-sm text-gray-500 mt-3">Memuat data siswa...</p>
+          <div className="w-8 h-8 border-2 border-white/15 border-t-blue-600 rounded-full animate-spin mx-auto" />
+          <p className="text-sm text-white/60 mt-3">Memuat data siswa...</p>
         </div>
       ) : (
         <StudentTable students={students || []} />
@@ -134,7 +134,7 @@ export default function StudentsPage() {
             />
             <button
               onClick={() => setShowImport(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+              className="absolute top-4 right-4 text-white/50 hover:text-white/70"
             >
               ✕
             </button>

@@ -54,36 +54,36 @@ export default function EnrollmentPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-xl font-bold text-gray-900">Pendaftar Online</h2>
-        <p className="text-sm text-gray-500 mt-0.5">
+        <h2 className="text-xl font-bold text-white">Pendaftar Online</h2>
+        <p className="text-sm text-white/60 mt-0.5">
           Kelola pendaftaran siswa baru dari orang tua
         </p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="bg-white rounded-xl border border-white/10 p-4">
           <div className="flex items-center gap-2 mb-1">
             <Clock className="w-4 h-4 text-amber-500" />
-            <p className="text-xs text-gray-500">Menunggu</p>
+            <p className="text-xs text-white/60">Menunggu</p>
           </div>
           <p className="text-2xl font-bold text-amber-600">
             {enrollments?.filter(e => e.status === 'pending').length || 0}
           </p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="bg-white rounded-xl border border-white/10 p-4">
           <div className="flex items-center gap-2 mb-1">
             <CheckCircle className="w-4 h-4 text-emerald-500" />
-            <p className="text-xs text-gray-500">Disetujui</p>
+            <p className="text-xs text-white/60">Disetujui</p>
           </div>
           <p className="text-2xl font-bold text-emerald-600">
             {enrollments?.filter(e => e.status === 'approved').length || 0}
           </p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="bg-white rounded-xl border border-white/10 p-4">
           <div className="flex items-center gap-2 mb-1">
             <XCircle className="w-4 h-4 text-red-500" />
-            <p className="text-xs text-gray-500">Ditolak</p>
+            <p className="text-xs text-white/60">Ditolak</p>
           </div>
           <p className="text-2xl font-bold text-red-600">
             {enrollments?.filter(e => e.status === 'rejected').length || 0}
@@ -100,7 +100,7 @@ export default function EnrollmentPage() {
             className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
               filter === f
                 ? 'bg-indigo-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                : 'bg-white/5 text-white/80 hover:bg-white/10'
             }`}
           >
             {f === 'all' ? 'Semua' : f === 'pending' ? 'Menunggu' : f === 'approved' ? 'Disetujui' : 'Ditolak'}
@@ -111,15 +111,15 @@ export default function EnrollmentPage() {
       {/* List */}
       {isLoading ? (
         <div className="text-center py-12">
-          <Loader2 className="w-8 h-8 border-2 border-gray-300 border-t-indigo-600 rounded-full animate-spin mx-auto" />
+          <Loader2 className="w-8 h-8 border-2 border-white/15 border-t-indigo-600 rounded-full animate-spin mx-auto" />
         </div>
       ) : !enrollments?.length ? (
-        <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
-          <UserPlus className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500">Belum ada pendaftaran</p>
-          <p className="text-xs text-gray-400 mt-1">Link pendaftaran online:</p>
+        <div className="text-center py-12 bg-white rounded-xl border border-white/10">
+          <UserPlus className="w-12 h-12 text-white/40 mx-auto mb-3" />
+          <p className="text-white/60">Belum ada pendaftaran</p>
+          <p className="text-xs text-white/50 mt-1">Link pendaftaran online:</p>
           <div className="mt-2 flex items-center gap-2 bg-gray-50 rounded-lg p-2">
-            <code className="flex-1 text-xs text-gray-600 truncate">{`${typeof window !== 'undefined' ? window.location.origin : ''}/register-student?school=${schoolId}`}</code>
+            <code className="flex-1 text-xs text-white/70 truncate">{`${typeof window !== 'undefined' ? window.location.origin : ''}/register-student?school=${schoolId}`}</code>
             <button
               onClick={() => {
                 navigator.clipboard.writeText(`${window.location.origin}/register-student?school=${schoolId}`);
@@ -133,14 +133,14 @@ export default function EnrollmentPage() {
       ) : (
         <div className="space-y-3">
           {enrollments.map((enrollment) => (
-            <div key={enrollment.id} className="bg-white rounded-xl border border-gray-200 p-4">
+            <div key={enrollment.id} className="bg-white rounded-xl border border-white/10 p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-semibold text-gray-900">{enrollment.student_name}</h3>
-                  <p className="text-sm text-gray-500">
+                  <h3 className="font-semibold text-white">{enrollment.student_name}</h3>
+                  <p className="text-sm text-white/60">
                     Kelas {enrollment.class} • Orang tua: {enrollment.parent_name} ({enrollment.parent_phone})
                   </p>
-                  <p className="text-xs text-gray-400 mt-1">
+                  <p className="text-xs text-white/50 mt-1">
                     {new Date(enrollment.created_at).toLocaleDateString('id-ID', { dateStyle: 'long' })}
                   </p>
                 </div>
@@ -186,7 +186,7 @@ export default function EnrollmentPage() {
                     value={rejectNotes}
                     onChange={(e) => setRejectNotes(e.target.value)}
                     placeholder="Catatan penolakan (opsional)"
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                    className="flex-1 px-3 py-2 border border-white/15 rounded-lg text-sm"
                   />
                   <button
                     onClick={() => handleReject(enrollment.id)}

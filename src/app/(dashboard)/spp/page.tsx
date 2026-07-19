@@ -55,8 +55,8 @@ export default function SPPPage() {
       {/* Page header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">Pembayaran SPP</h2>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <h2 className="text-xl font-bold text-white">Pembayaran SPP</h2>
+          <p className="text-sm text-white/60 mt-0.5">
             Kelola pembayaran SPP siswa per bulan
           </p>
         </div>
@@ -72,22 +72,22 @@ export default function SPPPage() {
       {/* Summary cards */}
       {summary && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
-            <p className="text-xs text-gray-500 mb-1">Total Siswa Aktif</p>
-            <p className="text-2xl font-bold text-gray-900">{summary.total_siswa}</p>
+          <div className="bg-white rounded-xl border border-white/10 p-4">
+            <p className="text-xs text-white/60 mb-1">Total Siswa Aktif</p>
+            <p className="text-2xl font-bold text-white">{summary.total_siswa}</p>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
-            <p className="text-xs text-gray-500 mb-1">Terkumpul</p>
+          <div className="bg-white rounded-xl border border-white/10 p-4">
+            <p className="text-xs text-white/60 mb-1">Terkumpul</p>
             <p className="text-2xl font-bold text-emerald-600">
               Rp {summary.terkumpul.toLocaleString('id-ID')}
             </p>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
-            <p className="text-xs text-gray-500 mb-1">Belum Bayar</p>
+          <div className="bg-white rounded-xl border border-white/10 p-4">
+            <p className="text-xs text-white/60 mb-1">Belum Bayar</p>
             <p className="text-2xl font-bold text-red-600">{summary.outstanding}</p>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
-            <p className="text-xs text-gray-500 mb-1">Collection Rate</p>
+          <div className="bg-white rounded-xl border border-white/10 p-4">
+            <p className="text-xs text-white/60 mb-1">Collection Rate</p>
             <p className="text-2xl font-bold text-indigo-600">{summary.collection_rate}%</p>
           </div>
         </div>
@@ -98,7 +98,7 @@ export default function SPPPage() {
         <select
           value={filterMonth || ''}
           onChange={(e) => setFilterMonth(e.target.value ? Number(e.target.value) : undefined)}
-          className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+          className="px-3 py-2 border border-white/15 rounded-lg text-sm"
         >
           <option value="">Semua Bulan</option>
           {Array.from({ length: 12 }, (_, i) => (
@@ -110,7 +110,7 @@ export default function SPPPage() {
         <select
           value={filterYear}
           onChange={(e) => setFilterYear(Number(e.target.value))}
-          className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+          className="px-3 py-2 border border-white/15 rounded-lg text-sm"
         >
           {years.map((y) => (
             <option key={y} value={y}>{y}</option>
@@ -128,8 +128,8 @@ export default function SPPPage() {
       {/* Table */}
       {isLoading ? (
         <div className="text-center py-12">
-          <div className="w-8 h-8 border-2 border-gray-300 border-t-indigo-600 rounded-full animate-spin mx-auto" />
-          <p className="text-sm text-gray-500 mt-3">Memuat data SPP...</p>
+          <div className="w-8 h-8 border-2 border-white/15 border-t-indigo-600 rounded-full animate-spin mx-auto" />
+          <p className="text-sm text-white/60 mt-3">Memuat data SPP...</p>
         </div>
       ) : (
         <PaymentTable payments={payments || []} />

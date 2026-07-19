@@ -50,8 +50,8 @@ export default function InventoryPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">Inventaris</h2>
-          <p className="text-sm text-gray-500 mt-0.5">{totalCount} item • Total nilai {formatRp(totalValue)}</p>
+          <h2 className="text-xl font-bold text-white">Inventaris</h2>
+          <p className="text-sm text-white/60 mt-0.5">{totalCount} item • Total nilai {formatRp(totalValue)}</p>
         </div>
         <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors">
           <Plus className="w-4 h-4" /> Tambah Item
@@ -61,60 +61,60 @@ export default function InventoryPage() {
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari item..." className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl text-sm" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari item..." className="w-full pl-10 pr-4 py-2.5 border border-white/15 rounded-xl text-sm" />
         </div>
         <div className="flex gap-1.5 flex-wrap">
           {CATS.map(c => (
-            <button key={c} onClick={() => setCatFilter(c)} className={`px-3 py-2 text-xs font-medium rounded-lg transition-colors ${catFilter === c ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>{c}</button>
+            <button key={c} onClick={() => setCatFilter(c)} className={`px-3 py-2 text-xs font-medium rounded-lg transition-colors ${catFilter === c ? 'bg-indigo-600 text-white' : 'bg-white/5 text-white/70 hover:bg-white/10'}`}>{c}</button>
           ))}
         </div>
       </div>
 
       {/* Table */}
       {isLoading ? (
-        <div className="text-center py-12"><Loader2 className="w-8 h-8 border-2 border-gray-300 border-t-indigo-600 rounded-full animate-spin mx-auto" /></div>
+        <div className="text-center py-12"><Loader2 className="w-8 h-8 border-2 border-white/15 border-t-indigo-600 rounded-full animate-spin mx-auto" /></div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
-          <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500">Belum ada item inventaris</p>
+        <div className="text-center py-12 bg-white rounded-xl border border-white/10">
+          <Package className="w-12 h-12 text-white/40 mx-auto mb-3" />
+          <p className="text-white/60">Belum ada item inventaris</p>
           <button onClick={openCreate} className="mt-3 text-sm text-indigo-600 font-medium hover:underline">+ Tambah Item Pertama</button>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-xl border border-white/10 overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-gray-50 border-b border-white/10">
               <tr>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Nama Item</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Kategori</th>
-                <th className="text-center px-4 py-3 font-medium text-gray-600">Qty</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Kondisi</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Lokasi</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-600">Harga</th>
-                <th className="text-center px-4 py-3 font-medium text-gray-600">Aksi</th>
+                <th className="text-left px-4 py-3 font-medium text-white/70">Nama Item</th>
+                <th className="text-left px-4 py-3 font-medium text-white/70">Kategori</th>
+                <th className="text-center px-4 py-3 font-medium text-white/70">Qty</th>
+                <th className="text-left px-4 py-3 font-medium text-white/70">Kondisi</th>
+                <th className="text-left px-4 py-3 font-medium text-white/70">Lokasi</th>
+                <th className="text-right px-4 py-3 font-medium text-white/70">Harga</th>
+                <th className="text-center px-4 py-3 font-medium text-white/70">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filtered.map(item => (
                 <tr key={item.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-gray-900">{item.name}</td>
-                  <td className="px-4 py-3 text-gray-600">{item.category}</td>
-                  <td className="px-4 py-3 text-center text-gray-900">{item.quantity}</td>
+                  <td className="px-4 py-3 font-medium text-white">{item.name}</td>
+                  <td className="px-4 py-3 text-white/70">{item.category}</td>
+                  <td className="px-4 py-3 text-center text-white">{item.quantity}</td>
                   <td className="px-4 py-3">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${item.condition === 'Baik' ? 'bg-emerald-100 text-emerald-700' : item.condition === 'Rusak Ringan' ? 'bg-amber-100 text-amber-700' : item.condition === 'Rusak Berat' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'}`}>{item.condition}</span>
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${item.condition === 'Baik' ? 'bg-emerald-100 text-emerald-700' : item.condition === 'Rusak Ringan' ? 'bg-amber-100 text-amber-700' : item.condition === 'Rusak Berat' ? 'bg-red-100 text-red-700' : 'bg-white/5 text-white/70'}`}>{item.condition}</span>
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{item.location || '-'}</td>
-                  <td className="px-4 py-3 text-right text-gray-900">{formatRp(item.purchase_price)}</td>
+                  <td className="px-4 py-3 text-white/70">{item.location || '-'}</td>
+                  <td className="px-4 py-3 text-right text-white">{formatRp(item.purchase_price)}</td>
                   <td className="px-4 py-3 text-center">
                     <div className="flex items-center justify-center gap-1">
-                      <button onClick={() => openEdit(item)} className="p-1.5 text-gray-400 hover:text-indigo-600 rounded-lg hover:bg-indigo-50"><Edit className="w-4 h-4" /></button>
+                      <button onClick={() => openEdit(item)} className="p-1.5 text-white/50 hover:text-indigo-600 rounded-lg hover:bg-indigo-50"><Edit className="w-4 h-4" /></button>
                       {deleteConfirm === item.id ? (
                         <div className="flex items-center gap-1">
                           <button onClick={() => handleDelete(item.id)} className="px-2 py-1 bg-red-600 text-white rounded text-xs">Ya</button>
-                          <button onClick={() => setDeleteConfirm(null)} className="px-2 py-1 bg-gray-200 rounded text-xs">Batal</button>
+                          <button onClick={() => setDeleteConfirm(null)} className="px-2 py-1 bg-white/10 rounded text-xs">Batal</button>
                         </div>
                       ) : (
-                        <button onClick={() => setDeleteConfirm(item.id)} className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50"><Trash2 className="w-4 h-4" /></button>
+                        <button onClick={() => setDeleteConfirm(item.id)} className="p-1.5 text-white/50 hover:text-red-600 rounded-lg hover:bg-red-50"><Trash2 className="w-4 h-4" /></button>
                       )}
                     </div>
                   </td>
@@ -129,53 +129,53 @@ export default function InventoryPage() {
       {formOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">{editItem ? 'Edit Item' : 'Tambah Item Baru'}</h3>
+            <h3 className="text-lg font-bold text-white mb-4">{editItem ? 'Edit Item' : 'Tambah Item Baru'}</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nama Item *</label>
-                <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm" placeholder="Contoh: Meja Guru" />
+                <label className="block text-sm font-medium text-white/80 mb-1">Nama Item *</label>
+                <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="w-full px-3 py-2.5 border border-white/15 rounded-xl text-sm" placeholder="Contoh: Meja Guru" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
-                  <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm">
+                  <label className="block text-sm font-medium text-white/80 mb-1">Kategori</label>
+                  <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className="w-full px-3 py-2.5 border border-white/15 rounded-xl text-sm">
                     {CATS.filter(c => c !== 'Semua').map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Jumlah</label>
-                  <input type="number" value={form.quantity} onChange={e => setForm({ ...form, quantity: parseInt(e.target.value) || 0 })} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm" min={0} />
+                  <label className="block text-sm font-medium text-white/80 mb-1">Jumlah</label>
+                  <input type="number" value={form.quantity} onChange={e => setForm({ ...form, quantity: parseInt(e.target.value) || 0 })} className="w-full px-3 py-2.5 border border-white/15 rounded-xl text-sm" min={0} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Kondisi</label>
-                  <select value={form.condition} onChange={e => setForm({ ...form, condition: e.target.value as any })} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm">
+                  <label className="block text-sm font-medium text-white/80 mb-1">Kondisi</label>
+                  <select value={form.condition} onChange={e => setForm({ ...form, condition: e.target.value as any })} className="w-full px-3 py-2.5 border border-white/15 rounded-xl text-sm">
                     {CONDS.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Lokasi</label>
-                  <input value={form.location || ''} onChange={e => setForm({ ...form, location: e.target.value })} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm" placeholder="Contoh: Ruang Guru" />
+                  <label className="block text-sm font-medium text-white/80 mb-1">Lokasi</label>
+                  <input value={form.location || ''} onChange={e => setForm({ ...form, location: e.target.value })} className="w-full px-3 py-2.5 border border-white/15 rounded-xl text-sm" placeholder="Contoh: Ruang Guru" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Tanggal Beli</label>
-                  <input type="date" value={form.purchase_date || ''} onChange={e => setForm({ ...form, purchase_date: e.target.value })} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm" />
+                  <label className="block text-sm font-medium text-white/80 mb-1">Tanggal Beli</label>
+                  <input type="date" value={form.purchase_date || ''} onChange={e => setForm({ ...form, purchase_date: e.target.value })} className="w-full px-3 py-2.5 border border-white/15 rounded-xl text-sm" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Harga Beli (Rp)</label>
-                  <input type="number" value={form.purchase_price} onChange={e => setForm({ ...form, purchase_price: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm" min={0} />
+                  <label className="block text-sm font-medium text-white/80 mb-1">Harga Beli (Rp)</label>
+                  <input type="number" value={form.purchase_price} onChange={e => setForm({ ...form, purchase_price: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2.5 border border-white/15 rounded-xl text-sm" min={0} />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Catatan</label>
-                <textarea value={form.notes || ''} onChange={e => setForm({ ...form, notes: e.target.value })} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm" rows={2} placeholder="Catatan opsional..." />
+                <label className="block text-sm font-medium text-white/80 mb-1">Catatan</label>
+                <textarea value={form.notes || ''} onChange={e => setForm({ ...form, notes: e.target.value })} className="w-full px-3 py-2.5 border border-white/15 rounded-xl text-sm" rows={2} placeholder="Catatan opsional..." />
               </div>
             </div>
             <div className="flex justify-end gap-3 mt-6">
-              <button onClick={() => setFormOpen(false)} className="px-4 py-2.5 text-sm text-gray-600 hover:text-gray-900">Batal</button>
+              <button onClick={() => setFormOpen(false)} className="px-4 py-2.5 text-sm text-white/70 hover:text-white">Batal</button>
               <button onClick={handleSubmit} disabled={!form.name.trim() || createMut.isPending || updateMut.isPending} className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 disabled:opacity-50">
                 {createMut.isPending || updateMut.isPending ? 'Menyimpan...' : editItem ? 'Simpan Perubahan' : 'Tambah Item'}
               </button>
