@@ -155,17 +155,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Dev bypasses school status check
-    // Fix: also check if school data exists when profile has school_id
-    if (profile.role !== 'dev' && school && school.status !== 'active') {
-      router.replace('/pending-approval');
+    // Extra safety: profile punya school_id tapi school blom ke-fetch
+    if (profile.role !== 'dev' && profile.school_id && !school) {
+      // FIX: Jangan redirect ke pending-approval, biarkan user di /overview
+      // atau redirect ke onboarding jika profile belum lengkap
+      if (!profile.name || !profile.role) {
+        router.replace('/onboarding');
+      }
       return;
     }
 
-    // Extra safety: profile punya school_id tapi school blom ke-fetch
-    if (profile.role !== 'dev' && profile.school_id && !school) {
-      router.replace('/pending-approval');
-      return;
+    // Check school status and redirect accordingly
+    if (profile.role !== 'dev') {
+      if (school?.status === 'pending') {
+        router.replace('/pending-approval');
+        return;
+      }
+      if (school?.status === 'rejected') {
+        router.replace('/rejected');
+        return;
+      }
+      if (school?.status !== 'active') {
+        router.replace('/pending-approval');
+        return;
+      }
     }
   }, [loading, session, profile, school, router, isPublicPage]);
 

@@ -1,5 +1,7 @@
-import LandingPage from './(auth)/landing-content';
+'use client';
+
+import MarketingPage from './(marketing)/page';
 
 export default function HomePage() {
-  return <LandingPage />;
+  return <MarketingPage />;
 }
