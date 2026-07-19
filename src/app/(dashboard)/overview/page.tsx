@@ -191,10 +191,10 @@ export default function OverviewPage() {
             <span className="text-[10px] font-medium text-emerald-400">LIVE</span>
           </div>
           {liveCount > 0 && (
-            <span className="text-[10px] text-white/60">#{liveCount} updates</span>
+            <span className="text-[10px] text-white/70">#{liveCount} updates</span>
           )}
         </div>
-        <p className="text-sm text-white/50 mt-0.5">Ringkasan keuangan dan operasional sekolah — data real-time</p>
+        <p className="text-sm text-white/70 mt-0.5">Ringkasan keuangan dan operasional sekolah — data real-time</p>
       </div>
 
       {/* Kas Widgets */}
@@ -203,8 +203,8 @@ export default function OverviewPage() {
           <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-indigo-500/10 to-transparent rounded-full -translate-y-1/2 translate-x-1/2" />
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-medium text-white/60 uppercase tracking-wider">Saldo Kas</span>
-              <button onClick={() => setHideSaldo(!hideSaldo)} className="text-white/50 hover:text-white/60 transition-colors">
+              <span className="text-xs font-medium text-white/70 uppercase tracking-wider">Saldo Kas</span>
+              <button onClick={() => setHideSaldo(!hideSaldo)} className="text-white/70 hover:text-white/70 transition-colors">
                 {hideSaldo ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
@@ -212,7 +212,7 @@ export default function OverviewPage() {
               {hideSaldo ? '••••••••' : formatRp(data.saldo)}
             </div>
             <div className="flex items-center gap-2 text-xs">
-              <span className="text-white/50">Saldo per hari ini</span>
+              <span className="text-white/70">Saldo per hari ini</span>
               <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 text-[10px] font-medium border border-emerald-500/10">Aktif</span>
             </div>
           </div>
@@ -220,24 +220,24 @@ export default function OverviewPage() {
 
         <div className="card-premium p-5">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-medium text-white/60 uppercase tracking-wider">Pemasukan</span>
+            <span className="text-xs font-medium text-white/70 uppercase tracking-wider">Pemasukan</span>
             <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/10">
               <TrendingUp className="w-5 h-5 text-emerald-400" />
             </div>
           </div>
           <div className="text-2xl font-bold text-emerald-400 mb-1">{formatRp(data.incomeBulanIni)}</div>
-          <div className="text-xs text-white/50">Bulan ini</div>
+          <div className="text-xs text-white/70">Bulan ini</div>
         </div>
 
         <div className="card-premium p-5">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-medium text-white/60 uppercase tracking-wider">Pengeluaran</span>
+            <span className="text-xs font-medium text-white/70 uppercase tracking-wider">Pengeluaran</span>
             <div className="w-9 h-9 rounded-xl bg-red-500/10 flex items-center justify-center border border-red-500/10">
               <TrendingDown className="w-5 h-5 text-red-400" />
             </div>
           </div>
           <div className="text-2xl font-bold text-red-400 mb-1">{formatRp(data.expenseBulanIni)}</div>
-          <div className="text-xs text-white/50">Bulan ini</div>
+          <div className="text-xs text-white/70">Bulan ini</div>
         </div>
       </div>
 
@@ -246,12 +246,12 @@ export default function OverviewPage() {
         <div className="card-premium p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-white">Kesehatan SPP</h3>
-            <Receipt className="w-5 h-5 text-white/60" />
+            <Receipt className="w-5 h-5 text-white/70" />
           </div>
 
           <div className="mb-4">
             <div className="flex items-end justify-between mb-2">
-              <span className="text-xs text-white/60">Tingkat Koleksi</span>
+              <span className="text-xs text-white/70">Tingkat Koleksi</span>
               <span className="text-sm font-bold text-white">{data.collectionRate}%</span>
             </div>
             <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
@@ -271,12 +271,12 @@ export default function OverviewPage() {
 
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2">
-              <Users className="w-4 h-4 text-white/50" />
-              <span className="text-white/50">{data.totalSiswa} Siswa</span>
+              <Users className="w-4 h-4 text-white/70" />
+              <span className="text-white/70">{data.totalSiswa} Siswa</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-red-400" />
-              <span className="text-white/50">{data.outstandingSiswa} Menunggak</span>
+              <span className="text-white/70">{data.outstandingSiswa} Menunggak</span>
             </div>
           </div>
 
@@ -296,7 +296,7 @@ export default function OverviewPage() {
           </div>
 
           {displayedTx.length === 0 ? (
-            <p className="text-sm text-white/50 py-4 text-center">Belum ada transaksi.</p>
+            <p className="text-sm text-white/70 py-4 text-center">Belum ada transaksi.</p>
           ) : (
             <div className="divide-y divide-white/[0.04]">
               {displayedTx.map((tx) => (
@@ -316,7 +316,7 @@ export default function OverviewPage() {
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-white/80 truncate">{tx.desc}</p>
-                      <p className="text-xs text-white/50">{tx.date}</p>
+                      <p className="text-xs text-white/70">{tx.date}</p>
                     </div>
                   </div>
                   <span
@@ -335,7 +335,7 @@ export default function OverviewPage() {
           {data.recentTransactions.length > 4 && (
             <button
               onClick={() => setShowAllTx((prev) => !prev)}
-              className="mt-3 text-xs text-white/50 hover:text-white/50 transition-colors font-medium"
+              className="mt-3 text-xs text-white/70 hover:text-white/70 transition-colors font-medium"
             >
               {showAllTx ? 'Tampilkan lebih sedikit' : `Tampilkan ${data.recentTransactions.length - 4} transaksi lainnya`}
             </button>
@@ -347,7 +347,7 @@ export default function OverviewPage() {
       <div className="card-premium p-5">
         <h3 className="text-sm font-semibold text-white mb-3">Perhatian</h3>
         {data.alerts.length === 0 ? (
-          <p className="text-sm text-white/50 py-2">Tidak ada peringatan.</p>
+          <p className="text-sm text-white/70 py-2">Tidak ada peringatan.</p>
         ) : (
           <div className="space-y-2">
             {data.alerts.map((alert) => (
@@ -365,7 +365,7 @@ export default function OverviewPage() {
                 {alert.severity === 'success' && <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />}
                 <div>
                   <p className="text-sm font-medium text-white/80">{alert.title}</p>
-                  <p className="text-xs text-white/50 mt-0.5">{alert.detail}</p>
+                  <p className="text-xs text-white/70 mt-0.5">{alert.detail}</p>
                 </div>
               </div>
             ))}

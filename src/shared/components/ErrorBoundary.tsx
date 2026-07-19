@@ -40,7 +40,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <h2 className="text-xl font-bold text-white">
               Terjadi Kesalahan
             </h2>
-            <p className="text-white/60 text-sm">
+            <p className="text-white/70 text-sm">
               Aplikasi mengalami error yang tidak terduga.
               Silakan refresh halaman atau coba lagi nanti.
             </p>

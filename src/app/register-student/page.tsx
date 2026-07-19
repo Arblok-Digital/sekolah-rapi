@@ -78,8 +78,8 @@ function RegisterStudentForm() {
       <div className="min-h-screen bg-[#0f0f1a] flex items-center justify-center p-4">
         <div className="fixed inset-0 bg-grid pointer-events-none" />
         <div className="relative z-10 text-center">
-          <p className="text-white/60">Link pendaftaran tidak valid.</p>
-          <p className="text-white/50 text-sm mt-2">Hubungi sekolah untuk mendapatkan link yang benar.</p>
+          <p className="text-white/70">Link pendaftaran tidak valid.</p>
+          <p className="text-white/70 text-sm mt-2">Hubungi sekolah untuk mendapatkan link yang benar.</p>
         </div>
       </div>
     );
@@ -96,7 +96,7 @@ function RegisterStudentForm() {
               <CheckCircle className="w-8 h-8 text-emerald-400" />
             </div>
             <h1 className="text-2xl font-bold text-white mb-2">Pendaftaran Berhasil!</h1>
-            <p className="text-white/50 text-sm mb-6">
+            <p className="text-white/70 text-sm mb-6">
               Data pendaftaran {formData.student_name} telah dikirim.
               Pihak sekolah akan menghubungi Anda untuk proses selanjutnya.
             </p>
@@ -133,7 +133,7 @@ function RegisterStudentForm() {
           ) : schoolName ? (
             <p className="text-sm text-indigo-300 font-medium mt-2">{schoolName}</p>
           ) : null}
-          <p className="text-sm text-white/60 mt-1">Isi data berikut untuk mendaftarkan siswa baru</p>
+          <p className="text-sm text-white/70 mt-1">Isi data berikut untuk mendaftarkan siswa baru</p>
         </div>
 
         {/* Form */}
@@ -146,10 +146,10 @@ function RegisterStudentForm() {
 
           {/* Data Siswa */}
           <div>
-            <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wider mb-4">Data Siswa</h2>
+            <h2 className="text-sm font-semibold text-white/70 uppercase tracking-wider mb-4">Data Siswa</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
-                <label className="block text-sm text-white/50 mb-1.5">Nama Lengkap Siswa *</label>
+                <label className="block text-sm text-white/70 mb-1.5">Nama Lengkap Siswa *</label>
                 <input
                   type="text"
                   value={formData.student_name}
@@ -160,7 +160,7 @@ function RegisterStudentForm() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-white/50 mb-1.5">NIS (opsional)</label>
+                <label className="block text-sm text-white/70 mb-1.5">NIS (opsional)</label>
                 <input
                   type="text"
                   value={formData.nis}
@@ -170,7 +170,7 @@ function RegisterStudentForm() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-white/50 mb-1.5">Kelas *</label>
+                <label className="block text-sm text-white/70 mb-1.5">Kelas *</label>
                 <select
                   value={formData.class}
                   onChange={(e) => handleChange('class', e.target.value)}
@@ -184,7 +184,7 @@ function RegisterStudentForm() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm text-white/50 mb-1.5">Jenis Kelamin</label>
+                <label className="block text-sm text-white/70 mb-1.5">Jenis Kelamin</label>
                 <select
                   value={formData.gender}
                   onChange={(e) => handleChange('gender', e.target.value)}
@@ -196,7 +196,7 @@ function RegisterStudentForm() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm text-white/50 mb-1.5">Tempat Lahir</label>
+                <label className="block text-sm text-white/70 mb-1.5">Tempat Lahir</label>
                 <input
                   type="text"
                   value={formData.birth_place}
@@ -206,7 +206,7 @@ function RegisterStudentForm() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-white/50 mb-1.5">Tanggal Lahir</label>
+                <label className="block text-sm text-white/70 mb-1.5">Tanggal Lahir</label>
                 <input
                   type="date"
                   value={formData.birth_date}
@@ -215,7 +215,7 @@ function RegisterStudentForm() {
                 />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm text-white/50 mb-1.5">Alamat</label>
+                <label className="block text-sm text-white/70 mb-1.5">Alamat</label>
                 <textarea
                   value={formData.address}
                   onChange={(e) => handleChange('address', e.target.value)}
@@ -229,10 +229,10 @@ function RegisterStudentForm() {
 
           {/* Data Orang Tua */}
           <div>
-            <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wider mb-4">Data Orang Tua / Wali</h2>
+            <h2 className="text-sm font-semibold text-white/70 uppercase tracking-wider mb-4">Data Orang Tua / Wali</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
-                <label className="block text-sm text-white/50 mb-1.5">Nama Orang Tua / Wali *</label>
+                <label className="block text-sm text-white/70 mb-1.5">Nama Orang Tua / Wali *</label>
                 <input
                   type="text"
                   value={formData.parent_name}
@@ -243,7 +243,7 @@ function RegisterStudentForm() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-white/50 mb-1.5">No. WhatsApp *</label>
+                <label className="block text-sm text-white/70 mb-1.5">No. WhatsApp *</label>
                 <input
                   type="tel"
                   value={formData.parent_phone}
@@ -254,7 +254,7 @@ function RegisterStudentForm() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-white/50 mb-1.5">Email (opsional)</label>
+                <label className="block text-sm text-white/70 mb-1.5">Email (opsional)</label>
                 <input
                   type="email"
                   value={formData.parent_email}
@@ -264,7 +264,7 @@ function RegisterStudentForm() {
                 />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm text-white/50 mb-1.5">Pekerjaan</label>
+                <label className="block text-sm text-white/70 mb-1.5">Pekerjaan</label>
                 <input
                   type="text"
                   value={formData.parent_occupation}
@@ -291,7 +291,7 @@ function RegisterStudentForm() {
             )}
           </button>
 
-          <p className="text-center text-xs text-white/50">
+          <p className="text-center text-xs text-white/70">
             Dengan mengirim formulir ini, Anda menyetujui proses verifikasi oleh pihak sekolah.
           </p>
         </form>

@@ -160,7 +160,7 @@ export default function DevAdminPage() {
       <div className="min-h-screen bg-[#0f0f1a] flex items-center justify-center">
         <div className="text-center">
           <Shield className="w-12 h-12 text-red-400 mx-auto mb-4" />
-          <p className="text-white/60">Akses ditolak. Hanya untuk Dev.</p>
+          <p className="text-white/70">Akses ditolak. Hanya untuk Dev.</p>
         </div>
       </div>
     );
@@ -175,7 +175,7 @@ export default function DevAdminPage() {
             <Shield className="w-6 h-6 text-indigo-400" />
             <h1 className="text-2xl font-bold text-white">Dev Admin Panel</h1>
           </div>
-          <p className="text-sm text-white/60">
+          <p className="text-sm text-white/70">
             Logged in as: {profile?.name} ({profile?.role}) • ID: {profile?.id?.slice(0, 8)}...
           </p>
         </div>
@@ -194,11 +194,11 @@ export default function DevAdminPage() {
       {/* Tabs */}
       <div className="flex gap-2 border-b border-white/10 pb-3">
         <button onClick={() => setTab('schools')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === 'schools' ? 'bg-indigo-500/20 text-indigo-400' : 'text-white/60 hover:text-white/60'}`}>
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === 'schools' ? 'bg-indigo-500/20 text-indigo-400' : 'text-white/70 hover:text-white/70'}`}>
           <School className="w-4 h-4" /> Schools ({schools.length})
         </button>
         <button onClick={() => setTab('users')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === 'users' ? 'bg-indigo-500/20 text-indigo-400' : 'text-white/60 hover:text-white/60'}`}>
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === 'users' ? 'bg-indigo-500/20 text-indigo-400' : 'text-white/70 hover:text-white/70'}`}>
           <Users className="w-4 h-4" /> Users ({users.length})
         </button>
       </div>
@@ -216,28 +216,28 @@ export default function DevAdminPage() {
         <>
           <div className="grid grid-cols-3 gap-4">
             <div className="bg-white/5 rounded-xl border border-white/10 p-4">
-              <p className="text-sm text-white/60 mb-1">Total Schools</p>
+              <p className="text-sm text-white/70 mb-1">Total Schools</p>
               <p className="text-3xl font-bold text-white">{schools.length}</p>
             </div>
             <div className="bg-white/5 rounded-xl border border-white/10 p-4">
-              <p className="text-sm text-white/60 mb-1">Active</p>
+              <p className="text-sm text-white/70 mb-1">Active</p>
               <p className="text-3xl font-bold text-emerald-400">{schools.filter(s => s.status === 'active').length}</p>
             </div>
             <div className="bg-white/5 rounded-xl border border-white/10 p-4">
-              <p className="text-sm text-white/60 mb-1">Pending</p>
+              <p className="text-sm text-white/70 mb-1">Pending</p>
               <p className="text-3xl font-bold text-amber-400">{schools.filter(s => s.status === 'pending').length}</p>
             </div>
           </div>
 
           {loading ? (
             <div className="text-center py-12">
-              <Loader2 className="w-8 h-8 text-white/60 animate-spin mx-auto" />
-              <p className="text-sm text-white/60 mt-3">Memuat schools...</p>
+              <Loader2 className="w-8 h-8 text-white/70 animate-spin mx-auto" />
+              <p className="text-sm text-white/70 mt-3">Memuat schools...</p>
             </div>
           ) : schools.length === 0 ? (
             <div className="text-center py-12 bg-white/5 rounded-xl border border-white/10">
-              <School className="w-12 h-12 text-white/60 mx-auto mb-3" />
-              <p className="text-white/60">Belum ada school. Register dulu lewat /register</p>
+              <School className="w-12 h-12 text-white/70 mx-auto mb-3" />
+              <p className="text-white/70">Belum ada school. Register dulu lewat /register</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -249,17 +249,17 @@ export default function DevAdminPage() {
                       <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">{school.name.charAt(0)}</div>
                       <div>
                         <h3 className="font-semibold text-white">{school.name}</h3>
-                        <p className="text-xs text-white/60">{school.id.slice(0, 8)}... • Plan: {school.plan} • Created: {new Date(school.created_at).toLocaleDateString('id-ID')}</p>
+                        <p className="text-xs text-white/70">{school.id.slice(0, 8)}... • Plan: {school.plan} • Created: {new Date(school.created_at).toLocaleDateString('id-ID')}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-4 text-xs text-white/60">
+                      <div className="flex items-center gap-4 text-xs text-white/70">
                         <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {school.student_count}</span>
                         <span className="flex items-center gap-1"><Database className="w-3 h-3" /> {school.spp_count}</span>
                         <span className="flex items-center gap-1"><FileText className="w-3 h-3" /> {school.transaction_count}</span>
                       </div>
                       <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${school.status === 'active' ? 'bg-emerald-500/20 text-emerald-400' : school.status === 'pending' ? 'bg-amber-500/20 text-amber-400' : 'bg-red-500/20 text-red-400'}`}>{school.status}</span>
-                      {expandedSchool === school.id ? <ChevronUp className="w-4 h-4 text-white/60" /> : <ChevronDown className="w-4 h-4 text-white/60" />}
+                      {expandedSchool === school.id ? <ChevronUp className="w-4 h-4 text-white/70" /> : <ChevronDown className="w-4 h-4 text-white/70" />}
                     </div>
                   </div>
                   {expandedSchool === school.id && (
@@ -285,7 +285,7 @@ export default function DevAdminPage() {
                           </button>
                         )}
                       </div>
-                      <div className="text-xs text-white/50 font-mono">School ID: {school.id}</div>
+                      <div className="text-xs text-white/70 font-mono">School ID: {school.id}</div>
                     </div>
                   )}
                 </div>
@@ -300,13 +300,13 @@ export default function DevAdminPage() {
         <>
           {loading ? (
             <div className="text-center py-12">
-              <Loader2 className="w-8 h-8 text-white/60 animate-spin mx-auto" />
-              <p className="text-sm text-white/60 mt-3">Memuat users...</p>
+              <Loader2 className="w-8 h-8 text-white/70 animate-spin mx-auto" />
+              <p className="text-sm text-white/70 mt-3">Memuat users...</p>
             </div>
           ) : users.length === 0 ? (
             <div className="text-center py-12 bg-white/5 rounded-xl border border-white/10">
-              <Users className="w-12 h-12 text-white/60 mx-auto mb-3" />
-              <p className="text-white/60">Belum ada user</p>
+              <Users className="w-12 h-12 text-white/70 mx-auto mb-3" />
+              <p className="text-white/70">Belum ada user</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -321,7 +321,7 @@ export default function DevAdminPage() {
                         <span className="text-sm font-medium text-white truncate">{user.email}</span>
                         <span className={`px-2 py-0.5 rounded text-xs font-medium shrink-0 ${user.role === 'dev' ? 'bg-purple-500/20 text-purple-400' : user.role === 'owner' ? 'bg-blue-500/20 text-blue-400' : 'bg-red-500/20 text-red-400'}`}>{user.role}</span>
                       </div>
-                      <div className="flex items-center gap-3 text-xs text-white/60 mt-0.5">
+                      <div className="flex items-center gap-3 text-xs text-white/70 mt-0.5">
                         <span>{user.name}</span>
                         {user.school !== '-' && <span>• 🏫 {user.school} ({user.school_status})</span>}
                         <span>• {new Date(user.created_at).toLocaleDateString('id-ID')}</span>
@@ -335,7 +335,7 @@ export default function DevAdminPage() {
                       {actionLoading === user.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserX className="w-4 h-4" />}
                     </button>
                   ) : (
-                    <span className="ml-3 text-xs text-white/60 shrink-0">🔒</span>
+                    <span className="ml-3 text-xs text-white/70 shrink-0">🔒</span>
                   )}
                 </div>
               ))}

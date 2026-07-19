@@ -48,7 +48,7 @@ export default function LoginPage() {
 
         <div className="glass rounded-2xl p-8">
           <h1 className="text-2xl font-bold text-white mb-1">Selamat Datang</h1>
-          <p className="text-white/60 text-sm mb-8">Masuk ke dashboard sekolah kamu</p>
+          <p className="text-white/70 text-sm mb-8">Masuk ke dashboard sekolah kamu</p>
 
           {error && (
             <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-xl mb-6 text-sm">
@@ -58,7 +58,7 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-white/60 mb-1.5">Email</label>
+              <label className="block text-sm font-medium text-white/70 mb-1.5">Email</label>
               <input
                 type="email"
                 value={email}
@@ -70,7 +70,7 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-white/60 mb-1.5">Password</label>
+              <label className="block text-sm font-medium text-white/70 mb-1.5">Password</label>
               <input
                 type="password"
                 value={password}
@@ -98,7 +98,7 @@ export default function LoginPage() {
           </form>
 
           <div className="mt-6 pt-6 border-t border-white/5 text-center">
-            <p className="text-sm text-white/60">
+            <p className="text-sm text-white/70">
               Belum punya akun?{' '}
               <Link href="/register" className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
                 Daftar Sekolah

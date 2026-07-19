@@ -16,7 +16,7 @@ export default function DashboardLayout({
       <div className="min-h-screen bg-[#0f0f1a] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <span className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-          <p className="text-sm text-white/60">Memuat...</p>
+          <p className="text-sm text-white/70">Memuat...</p>
         </div>
       </div>
     );

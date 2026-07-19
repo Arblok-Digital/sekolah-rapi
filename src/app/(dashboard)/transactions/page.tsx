@@ -25,7 +25,7 @@ export default function TransactionsPage() {
   if (!schoolId) {
     return (
       <div className="text-center py-12">
-        <p className="text-white/60">Memuat data sekolah...</p>
+        <p className="text-white/70">Memuat data sekolah...</p>
       </div>
     );
   }

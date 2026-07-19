@@ -37,7 +37,7 @@ export default function LandingPage() {
       <section className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-32 text-center">
         <div className="animate-fade-in">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm text-white/60 mb-8">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm text-white/70 mb-8">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse-glow" />
             Offline-ready · Multi-sekolah · PWA
           </div>
@@ -49,7 +49,7 @@ export default function LandingPage() {
             <span className="text-gradient">Sekolah yang Rapi</span>
           </h1>
 
-          <p className="text-lg sm:text-xl text-white/60 max-w-2xl mx-auto mb-10 leading-relaxed">
+          <p className="text-lg sm:text-xl text-white/70 max-w-2xl mx-auto mb-10 leading-relaxed">
             Kelola SPP, kas masuk/keluar, dan pantau keuangan sekolah{' '}
             <span className="text-white/70">dari mana saja.</span>
             <br />
@@ -67,7 +67,7 @@ export default function LandingPage() {
             </Link>
             <Link
               href="/login"
-              className="text-white/60 hover:text-white px-8 py-4 rounded-xl text-lg font-medium transition-all duration-200"
+              className="text-white/70 hover:text-white px-8 py-4 rounded-xl text-lg font-medium transition-all duration-200"
             >
               Sudah punya akun? Login →
             </Link>
@@ -83,7 +83,7 @@ export default function LandingPage() {
             ].map(([stat, label]) => (
               <div key={label} className="text-center">
                 <div className="text-2xl sm:text-3xl font-bold text-gradient mb-1">{stat}</div>
-                <div className="text-sm text-white/60">{label}</div>
+                <div className="text-sm text-white/70">{label}</div>
               </div>
             ))}
           </div>
@@ -132,7 +132,7 @@ export default function LandingPage() {
             >
               <div className="text-2xl mb-4">{icon}</div>
               <h3 className="text-white font-semibold text-lg mb-2">{title}</h3>
-              <p className="text-white/60 text-sm leading-relaxed">{desc}</p>
+              <p className="text-white/70 text-sm leading-relaxed">{desc}</p>
             </div>
           ))}
         </div>
@@ -146,7 +146,7 @@ export default function LandingPage() {
             <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
               Siap Rapiin Keuangan Sekolah?
             </h2>
-            <p className="text-white/60 text-lg mb-8 max-w-lg mx-auto">
+            <p className="text-white/70 text-lg mb-8 max-w-lg mx-auto">
               Gratis selamanya untuk fitur dasar. Upgrade kapan aja kalau sekolah udah makin besar.
             </p>
             <Link
@@ -163,13 +163,13 @@ export default function LandingPage() {
       <footer className="relative z-10 border-t border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2 text-sm text-white/50">
+            <div className="flex items-center gap-2 text-sm text-white/70">
               <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-gray-600 to-gray-800 flex items-center justify-center">
                 <span className="text-[7px] text-white font-bold">AD</span>
               </div>
               <span>© 2026 {APP_NAME} — Powered by {POWERED_BY}</span>
             </div>
-            <div className="flex items-center gap-6 text-sm text-white/50">
+            <div className="flex items-center gap-6 text-sm text-white/70">
               <span>Privacy</span>
               <span>Terms</span>
               <span>Contact</span>

@@ -112,7 +112,7 @@ export default function RegisterPage() {
             <span className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
           </div>
           <h2 className="text-xl font-bold text-white mb-2">Menyiapkan Akun...</h2>
-          <p className="text-white/60">Sebentar ya, kami sedang menyiapkan data sekolah kamu</p>
+          <p className="text-white/70">Sebentar ya, kami sedang menyiapkan data sekolah kamu</p>
         </div>
       </div>
     );
@@ -135,7 +135,7 @@ export default function RegisterPage() {
 
         <div className="glass rounded-2xl p-8">
           <h1 className="text-2xl font-bold text-white mb-1">Daftar Akun Baru</h1>
-          <p className="text-white/60 text-sm mb-8">Buat akun sekolah kamu sekarang juga, gratis!</p>
+          <p className="text-white/70 text-sm mb-8">Buat akun sekolah kamu sekarang juga, gratis!</p>
 
           {error && (
             <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-xl mb-6 text-sm">
@@ -145,7 +145,7 @@ export default function RegisterPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-white/60 mb-1.5">Nama Lengkap *</label>
+              <label className="block text-sm font-medium text-white/70 mb-1.5">Nama Lengkap *</label>
               <input
                 type="text"
                 value={name}
@@ -156,7 +156,7 @@ export default function RegisterPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-white/60 mb-1.5">Nama Sekolah</label>
+              <label className="block text-sm font-medium text-white/70 mb-1.5">Nama Sekolah</label>
               <input
                 type="text"
                 value={schoolName}
@@ -166,7 +166,7 @@ export default function RegisterPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-white/60 mb-1.5">Email *</label>
+              <label className="block text-sm font-medium text-white/70 mb-1.5">Email *</label>
               <input
                 type="email"
                 value={email}
@@ -177,7 +177,7 @@ export default function RegisterPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-white/60 mb-1.5">No. WhatsApp</label>
+              <label className="block text-sm font-medium text-white/70 mb-1.5">No. WhatsApp</label>
               <input
                 type="tel"
                 value={phone}
@@ -187,7 +187,7 @@ export default function RegisterPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-white/60 mb-1.5">Password *</label>
+              <label className="block text-sm font-medium text-white/70 mb-1.5">Password *</label>
               <input
                 type="password"
                 value={password}
@@ -216,7 +216,7 @@ export default function RegisterPage() {
           </form>
 
           <div className="mt-6 pt-6 border-t border-white/5 text-center">
-            <p className="text-sm text-white/60">
+            <p className="text-sm text-white/70">
               Sudah punya akun?{' '}
               <Link href="/login" className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
                 Login
