@@ -1,5 +1,4 @@
 import { createSupabaseClient } from '@/shared/services/supabase/client';
-import { db } from '@/modules/offline/db';
 import type { Student, StudentFormData } from '../types/student.types';
 
 export async function getStudents(
@@ -55,7 +54,8 @@ export async function createStudent(
     .single();
 
   if (error) {
-    // Offline fallback: store locally and queue
+    // Offline fallback: store locally and queue (lazy import to avoid Node detection)
+    const { db } = await import('@/modules/offline/db');
     const localId = crypto.randomUUID();
     await db.students.add({
       id: localId,
