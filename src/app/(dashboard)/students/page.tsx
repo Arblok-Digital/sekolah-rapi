@@ -47,7 +47,7 @@ export default function StudentsPage() {
         <div className="flex gap-2">
           <button
             onClick={() => setShowImport(true)}
-            className="px-4 py-2 text-sm font-medium text-white/80 bg-white border border-white/15 rounded-md hover:bg-gray-50 flex items-center gap-1.5"
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 flex items-center gap-1.5"
           >
             <FileSpreadsheet className="w-4 h-4" />
             Import
@@ -134,7 +134,7 @@ export default function StudentsPage() {
             />
             <button
               onClick={() => setShowImport(false)}
-              className="absolute top-4 right-4 text-white/50 hover:text-white/70"
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
             >
               ✕
             </button>

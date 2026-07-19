@@ -73,21 +73,21 @@ export default function SPPPage() {
       {summary && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div className="bg-white rounded-xl border border-white/10 p-4">
-            <p className="text-xs text-white/60 mb-1">Total Siswa Aktif</p>
-            <p className="text-2xl font-bold text-white">{summary.total_siswa}</p>
+            <p className="text-xs text-gray-500 mb-1">Total Siswa Aktif</p>
+            <p className="text-2xl font-bold text-gray-900">{summary.total_siswa}</p>
           </div>
           <div className="bg-white rounded-xl border border-white/10 p-4">
-            <p className="text-xs text-white/60 mb-1">Terkumpul</p>
+            <p className="text-xs text-gray-500 mb-1">Terkumpul</p>
             <p className="text-2xl font-bold text-emerald-600">
               Rp {summary.terkumpul.toLocaleString('id-ID')}
             </p>
           </div>
           <div className="bg-white rounded-xl border border-white/10 p-4">
-            <p className="text-xs text-white/60 mb-1">Belum Bayar</p>
+            <p className="text-xs text-gray-500 mb-1">Belum Bayar</p>
             <p className="text-2xl font-bold text-red-600">{summary.outstanding}</p>
           </div>
           <div className="bg-white rounded-xl border border-white/10 p-4">
-            <p className="text-xs text-white/60 mb-1">Collection Rate</p>
+            <p className="text-xs text-gray-500 mb-1">Collection Rate</p>
             <p className="text-2xl font-bold text-indigo-600">{summary.collection_rate}%</p>
           </div>
         </div>
