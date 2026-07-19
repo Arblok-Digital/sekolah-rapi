@@ -21,6 +21,11 @@ export const metadata: Metadata = {
   title: APP_NAME,
   description: 'Administrasi keuangan sekolah swasta',
   manifest: '/manifest.json',
+  icons: {
+    icon: '/icons/favicon-school.ico',
+    shortcut: '/icons/favicon-school.ico',
+    apple: '/icons/school-512.png',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',

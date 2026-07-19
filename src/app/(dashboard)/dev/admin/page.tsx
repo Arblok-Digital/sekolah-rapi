@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { createSupabaseClient } from '@/shared/services/supabase/client';
 import {
   Shield, Trash2, Database, RefreshCw, CheckCircle, AlertTriangle,
-  School, Users, FileText, ChevronDown, ChevronUp, Loader2, Zap, UserX
+  School, Users, FileText, ChevronDown, ChevronUp, Loader2, Zap, UserX, XCircle
 } from 'lucide-react';
 
 interface SchoolData {
@@ -129,6 +129,10 @@ export default function DevAdminPage() {
         const { error } = await supabase.rpc('dev_set_school_status', { target_school_id: schoolId, new_status: 'pending' });
         if (error) throw error;
         setMessage({ type: 'success', text: `${label} dipending` });
+      } else if (action === 'reject') {
+        const { error } = await supabase.rpc('dev_reject_school', { target_school_id: schoolId });
+        if (error) throw error;
+        setMessage({ type: 'success', text: `${label} ditolak` });
       }
       tab === 'schools' ? await fetchSchools() : await fetchUsers();
     } catch (err: any) {
@@ -282,6 +286,12 @@ export default function DevAdminPage() {
                           <button onClick={() => handleAction('activate', school.id, school.name)} disabled={actionLoading === school.id + 'activate'}
                             className="flex items-center gap-2 px-3 py-2 bg-emerald-600/80 hover:bg-emerald-600 text-white rounded-lg text-sm transition-colors disabled:opacity-50">
                             <CheckCircle className="w-4 h-4" /> Activate
+                          </button>
+                        )}
+                        {school.status === 'pending' && (
+                          <button onClick={() => handleAction('reject', school.id, school.name)} disabled={actionLoading === school.id + 'reject'}
+                            className="flex items-center gap-2 px-3 py-2 bg-red-600/80 hover:bg-red-600 text-white rounded-lg text-sm transition-colors disabled:opacity-50">
+                            <XCircle className="w-4 h-4" /> Reject
                           </button>
                         )}
                       </div>

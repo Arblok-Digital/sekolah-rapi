@@ -99,8 +99,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null);
     setProfile(null);
     setSchool(null);
-    router.push('/login');
-  }, [router]);
+    // Hard redirect to break any middleware/auth loop
+    window.location.href = '/login';
+  }, []);
 
   useEffect(() => {
     const supabase = createSupabaseClient();
@@ -155,7 +156,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     // Dev bypasses school status check
+    // Fix: also check if school data exists when profile has school_id
     if (profile.role !== 'dev' && school && school.status !== 'active') {
+      router.replace('/pending-approval');
+      return;
+    }
+
+    // Extra safety: profile punya school_id tapi school blom ke-fetch
+    if (profile.role !== 'dev' && profile.school_id && !school) {
       router.replace('/pending-approval');
       return;
     }

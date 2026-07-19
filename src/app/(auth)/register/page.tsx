@@ -92,9 +92,9 @@ export default function RegisterPage() {
 
       if (profileError) throw new Error('Gagal membuat profil: ' + profileError.message);
 
-      // 5. All good — redirect to dashboard
+      // 5. All good — redirect to pending approval (status = pending)
       router.refresh();
-      router.push('/overview');
+      router.push('/pending-approval');
     } catch (err: any) {
       setError(err.message);
       setStep('form');

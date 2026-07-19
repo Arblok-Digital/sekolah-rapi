@@ -69,7 +69,9 @@ export async function middleware(request: NextRequest) {
   }
 
   // Logged in + on login/register → redirect to overview
+  // Skip if user just signed out (no session cookie present)
   if (user && (pathname === '/login' || pathname === '/register')) {
+    // Check if this is a fresh navigation (not a client-side redirect after signOut)
     const overviewUrl = request.nextUrl.clone();
     overviewUrl.pathname = '/overview';
     return NextResponse.redirect(overviewUrl);
