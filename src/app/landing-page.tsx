@@ -43,12 +43,12 @@ export default function MarketingPage() {
           <div className="space-y-8">
             <div className="space-y-4">
               <h1 className="text-5xl sm:text-6xl font-bold leading-tight">
-                Administrasi Keuangan Sekolah
+                Administrasi Keuangan & Pendaftaran Sekolah Online
                 <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#7c5cff] to-[#22c98e]">Lebih Rapi, Lebih Cepat</span>
               </h1>
               <p className="text-lg text-white/70 max-w-lg leading-relaxed">
-                Kelola SPP, kas, inventaris, dan laporan keuangan sekolah dengan mudah — offline-ready, real-time, dan aman.
+                Kelola pendaftaran siswa baru, SPP, kas, inventaris, dan laporan keuangan sekolah dengan mudah — offline-ready, real-time, dan aman.
               </p>
             </div>
             <div className="flex flex-col sm:flex-row items-start gap-4">
@@ -152,6 +152,11 @@ export default function MarketingPage() {
         <h2 className="text-3xl font-bold text-center mb-12">Fitur Utama</h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {[
+            {
+              icon: <Users className="w-6 h-6" />,
+              title: 'Pendaftaran Online',
+              desc: 'Formulir pendaftaran siswa baru yang bisa diakses kapan saja, lengkap dengan verifikasi dokumen.',
+            },
             {
               icon: <CreditCard className="w-6 h-6" />,
               title: 'Manajemen SPP',
