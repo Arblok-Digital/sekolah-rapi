@@ -85,18 +85,6 @@
   select.input-modern option {
     @apply text-gray-900 bg-white;
   }
-  select {
-    @apply text-gray-900;
-  }
-  select option {
-    @apply text-gray-900;
-  }
-  input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]) {
-    @apply text-gray-900;
-  }
-  textarea {
-    @apply text-gray-900;
-  }
 
   .btn-primary-modern {
     @apply w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 

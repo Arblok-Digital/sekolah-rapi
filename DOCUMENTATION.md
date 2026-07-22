@@ -352,22 +352,31 @@ Button: "Nuclear Delete" (red, top-right)
 ### 8.3 Auto-Transaction from Inventory
 ```
 /inventory → "Tambah Barang"
-├── Input: name, category, quantity, condition, price
+├── Input: name, category, quantity, condition, price, purchase_price
 ├── INSERT INTO inventory_items
 ├── If purchase_price > 0:
-│   └── INSERT INTO transactions (type='expense', category='ATK', amount=price*qty)
+│   └── ⚡ LANGSUNG: INSERT INTO transactions (type='expense', category='ATK' atau auto-create, amount=price*qty, recorded_by=userId or null)
 └── Auto-update dashboard
 ```
+> ⚡ **IMMEDIATE CASH IMPACT**: Begitu barang disimpan, kas langsung berkurang. Tidak ada step konfirmasi terpisah. Ini desain intentional untuk pembelian tunai.
 
-### 8.4 Auto-Transaction from Payroll
+### 8.4 Auto-Transaction from Payroll (2-Step Flow)
 ```
-/payroll → "Generate Gaji" → "Bayar"
-├── Generate: batch create payroll_records for all active employees
-├── Mark paid: UPDATE payroll_records SET paid=true
-├── If paid:
-│   └── INSERT INTO transactions (type='expense', category='Gaji Guru', amount=total)
-└── Auto-update dashboard
+STEP 1 — Generate (NO cash impact)
+/payroll → "Generate Gaji"
+├── Batch create payroll_records for all active employees
+├── paid=false (default)
+└── KAS BELUM KENA — cuma catatan
+
+STEP 2 — Bayar (cash impact)
+/payroll → klik tombol "Bayar" pada record per guru
+├── UPDATE payroll_records SET paid=true
+├── Duplicate check: cari transaksi yg sudah ada dengan deskripsi yg sama
+├── If belum ada:
+│   └── ⚡ INSERT INTO transactions (type='expense', category='Gaji Guru', amount=total, recorded_by=null)
+└── Auto-update dashboard & kas
 ```
+> ⚠️ **2-STEP DESIGN**: Generate hanya bikin record. Kas baru kepotong setelah owner klik "Bayar". `recorded_by` null karena fungsi payroll belum nerima userId — aman karena DB allow null.
 
 ---
 
@@ -398,10 +407,16 @@ Button: "Nuclear Delete" (red, top-right)
 ├── Search: by name
 ├── "Tambah Barang":
 │   ├── Input: name, category, quantity, condition, location, purchase_price
-│   └── Auto-create transaction (expense) if purchase_price > 0
+│   └── ⚡ LANGSUNG POTONG KAS: Auto-create expense transaction (amount = purchase_price * quantity)
+│       └──  Cat: kategori otomatis "ATK". Kalo blom ada, auto-dibikin.
+│       └──  Konsekuensi: BI检查 langsung mengubah saldo kas sekolah.
 ├── Edit/Delete items
+│   └── CATATAN: Edit/Delete item TIDAK mengubah transaksi yg sudah terlanjur dibuat.
+│       └──  Kalau harga beli salah, harus hapus transaksi manual di menu Transaksi.
 └── Condition tracking: Baik, Rusak Ringan, Rusak Berat, Hilang
 ```
+
+> ⚠️ **PENTING UNTUK DEVELOPER**: `createInventory()` di `inventory.service.ts` langsung INSERT ke tabel `transactions` (expense). Ini BUKAN bug — ini desain yang intentional. `recorded_by` diisi dari `userId || null` dan aman karena di database kolom ini nullable.
 
 ---
 
@@ -414,11 +429,19 @@ Button: "Nuclear Delete" (red, top-right)
 │   └── Status: active / inactive
 ├── Tab "Gaji": payroll records per month
 │   ├── "Generate Gaji": batch create records for all active employees
+│   │   └──  KAS BELUM KENA — hanya bikin record payroll (paid = false)
 │   ├── Records: base_salary + bonus - deduction = total
-│   ├── Mark as paid → auto-create transaction (expense)
+│   ├── Klik "Bayar" (toggle paid = true):
+│   │   └── ⚡ BARU POTONG KAS: Auto-create expense transaction
+│   │       └──  Cat: Dicek dulu apakah transaksi sudah ada (pakai duplicate check by description)
+│   │       └──  Kalo sudah ada, skip — gak bakal double entry
 │   └── Filter: month + year
 └── Auto-update dashboard when paid
 ```
+
+> ⚠️ **PENTING UNTUK DEVELOPER**: Payroll pake **2-step flow**. Jangan tambah auto-transaction di `createPayroll()` — itu hanya generate record. Transaksi dibuat di `updatePayroll()` saat `paid` diubah ke `true`. `recorded_by` diisi `null` karena fungsi payroll belum nerima userId, dan database mengizinkan null.
+>
+> ❌ JANGAN REFACTOR `updatePayroll` jadi auto-create di `createPayroll`. Flow generate→bayar adalah intentional biar sekolah bisa review dulu sebelum gaji cair.
 
 ---
 
