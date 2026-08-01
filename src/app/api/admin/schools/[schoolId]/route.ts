@@ -32,6 +32,7 @@ export async function PATCH(
   // Clients are request-scoped so authenticated state cannot leak between requests.
   const supabaseAuth = createClient(supabaseUrl, anonKey, {
     auth: { persistSession: false, autoRefreshToken: false },
+    global: { headers: { Authorization: `Bearer ${token}` } },
   });
   const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -47,7 +48,11 @@ export async function PATCH(
     .select('role')
     .eq('id', user.id)
     .single();
-  if (profileError || profile?.role !== 'dev') {
+  if (profileError) {
+    console.error('Admin school update: failed to load caller profile', profileError);
+    return NextResponse.json({ error: 'Gagal memverifikasi akun admin' }, { status: 500 });
+  }
+  if (profile?.role !== 'dev') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
@@ -79,15 +84,22 @@ export async function PATCH(
     return NextResponse.json({ error: 'Plan atau status wajib diisi' }, { status: 400 });
   }
 
-  const { data: school, error: updateError } = await supabaseAdmin
-    .from('schools')
-    .update(updates)
-    .eq('id', params.schoolId)
-    .select('id, name, status, plan')
-    .single();
+  const { data: school, error: updateError } = await supabaseAuth.rpc('dev_update_school_access', {
+    target_school_id: params.schoolId,
+    next_status: updates.status ?? null,
+    next_plan: updates.plan ?? null,
+  }).maybeSingle();
 
   if (updateError) {
+    if (updateError.code === '42501' || updateError.message === 'Forbidden') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    console.error('Admin school update failed', updateError);
     return NextResponse.json({ error: updateError.message }, { status: 500 });
+  }
+
+  if (!school) {
+    return NextResponse.json({ error: 'Sekolah tidak ditemukan' }, { status: 404 });
   }
 
   return NextResponse.json({ school }, {
