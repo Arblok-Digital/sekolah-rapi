@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/shared/providers/AuthProvider';
+import { assertSchoolFeature } from '@/shared/services/plan-guard';
 import { createSupabaseClient } from '@/shared/services/supabase/client';
 import { MONTHS } from '@/modules/payroll/types/payroll.types';
 import { BarChart3, FileSpreadsheet, Download, Loader2, TrendingUp, TrendingDown, Receipt, Users } from 'lucide-react';
@@ -38,10 +39,17 @@ export default function ReportsPage() {
 
   useEffect(() => {
     if (!schoolId) return;
+    const activeSchoolId = schoolId;
     const supabase = createSupabaseClient();
     setLoading(true);
 
     async function fetchData() {
+      try {
+        await assertSchoolFeature(activeSchoolId, 'reports');
+      } catch {
+        setLoading(false);
+        return;
+      }
       // Fetch all transactions for the year
       const yearStart = `${year}-01-01`;
       const yearEnd = `${year}-12-31`;
@@ -49,20 +57,20 @@ export default function ReportsPage() {
       const { data: txData } = await supabase
         .from('transactions')
         .select('amount, type, reference_date')
-        .eq('school_id', schoolId!)
+        .eq('school_id', activeSchoolId)
         .gte('reference_date', yearStart)
         .lte('reference_date', yearEnd);
 
       const { data: sppData } = await supabase
         .from('spp_payments')
         .select('student_id, month, year, amount, paid_amount, status')
-        .eq('school_id', schoolId!)
+        .eq('school_id', activeSchoolId)
         .eq('year', year);
 
       const { data: students } = await supabase
         .from('students')
         .select('id, status')
-        .eq('school_id', schoolId!)
+        .eq('school_id', activeSchoolId)
         .eq('status', 'active');
 
       const activeStudents = students?.length || 0;

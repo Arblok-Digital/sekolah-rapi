@@ -1,7 +1,10 @@
 'use client';
 
 import { useAuth } from '@/shared/providers/AuthProvider';
+import { usePathname } from 'next/navigation';
 import { DashboardShell } from '@/shared/components/Layout/DashboardShell';
+import { EntitlementGate } from '@/shared/components/EntitlementGate';
+import { getRouteFeature } from '@/shared/entitlements';
 
 export default function DashboardLayout({
   children,
@@ -9,6 +12,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const { session, profile, school, loading } = useAuth();
+  const pathname = usePathname();
 
   // AuthProvider handles redirects — just show loading
   if (loading) {
@@ -26,6 +30,7 @@ export default function DashboardLayout({
   if (!session || !profile) return null;
 
   const schoolName = school?.name ?? 'SekolahRapi';
+  const feature = getRouteFeature(pathname);
 
   return (
     <DashboardShell
@@ -33,7 +38,7 @@ export default function DashboardLayout({
       userName={profile.name}
       userRole={profile.role}
     >
-      {children}
+      {feature ? <EntitlementGate feature={feature}>{children}</EntitlementGate> : children}
     </DashboardShell>
   );
 }

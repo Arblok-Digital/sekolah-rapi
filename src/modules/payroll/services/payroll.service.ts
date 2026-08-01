@@ -1,5 +1,6 @@
 import { createSupabaseClient } from '@/shared/services/supabase/client';
 import type { Employee, PayrollRecord, EmployeeFormInput, PayrollFormInput } from '../types/payroll.types';
+import { assertSchoolFeature } from '@/shared/services/plan-guard';
 
 // ── Employees ──
 export async function getEmployees(schoolId: string) {
@@ -10,6 +11,7 @@ export async function getEmployees(schoolId: string) {
 }
 
 export async function createEmployee(schoolId: string, input: EmployeeFormInput) {
+  await assertSchoolFeature(schoolId, 'payroll');
   const supabase = createSupabaseClient();
   const { data, error } = await supabase.from('employees').insert({ ...input, school_id: schoolId }).select().single();
   if (error) throw error;
@@ -18,6 +20,8 @@ export async function createEmployee(schoolId: string, input: EmployeeFormInput)
 
 export async function updateEmployee(id: string, input: Partial<EmployeeFormInput>) {
   const supabase = createSupabaseClient();
+  const { data: current } = await supabase.from('employees').select('school_id').eq('id', id).single();
+  if (current?.school_id) await assertSchoolFeature(current.school_id, 'payroll');
   const { data, error } = await supabase.from('employees').update({ ...input, updated_at: new Date().toISOString() }).eq('id', id).select().single();
   if (error) throw error;
   return data as Employee;
@@ -25,6 +29,8 @@ export async function updateEmployee(id: string, input: Partial<EmployeeFormInpu
 
 export async function deleteEmployee(id: string) {
   const supabase = createSupabaseClient();
+  const { data: current } = await supabase.from('employees').select('school_id').eq('id', id).single();
+  if (current?.school_id) await assertSchoolFeature(current.school_id, 'payroll');
   const { error } = await supabase.from('employees').delete().eq('id', id);
   if (error) throw error;
 }
@@ -42,6 +48,7 @@ export async function getPayroll(schoolId: string, month?: number, year?: number
 }
 
 export async function createPayroll(schoolId: string, input: PayrollFormInput) {
+  await assertSchoolFeature(schoolId, 'payroll');
   const supabase = createSupabaseClient();
   const { data, error } = await supabase.from('payroll_records').insert({ ...input, school_id: schoolId }).select('*, employee:employees(*)').single();
   if (error) throw error;
@@ -70,6 +77,8 @@ export async function createPayroll(schoolId: string, input: PayrollFormInput) {
 
 export async function updatePayroll(id: string, input: Partial<PayrollFormInput>) {
   const supabase = createSupabaseClient();
+  const { data: current } = await supabase.from('payroll_records').select('school_id').eq('id', id).single();
+  if (current?.school_id) await assertSchoolFeature(current.school_id, 'payroll');
   const { data, error } = await supabase.from('payroll_records').update(input).eq('id', id).select('*, employee:employees(*)').single();
   if (error) throw error;
 
@@ -106,12 +115,15 @@ export async function updatePayroll(id: string, input: Partial<PayrollFormInput>
 
 export async function deletePayroll(id: string) {
   const supabase = createSupabaseClient();
+  const { data: current } = await supabase.from('payroll_records').select('school_id').eq('id', id).single();
+  if (current?.school_id) await assertSchoolFeature(current.school_id, 'payroll');
   const { error } = await supabase.from('payroll_records').delete().eq('id', id);
   if (error) throw error;
 }
 
 // ── Batch generate payroll for all active employees ──
 export async function generatePayroll(schoolId: string, month: number, year: number) {
+  await assertSchoolFeature(schoolId, 'payroll');
   const supabase = createSupabaseClient();
   const employees = await getEmployees(schoolId);
   const active = employees.filter(e => e.status === 'active');

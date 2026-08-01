@@ -1,5 +1,6 @@
 import { createSupabaseClient } from '@/shared/services/supabase/client';
 import type { EnrollmentRequest, EnrollmentFormInput } from '../types/enrollment.types';
+import { assertSchoolFeature } from '@/shared/services/plan-guard';
 
 const TABLE = 'enrollment_requests';
 
@@ -11,11 +12,9 @@ export async function submitEnrollment(
   input: EnrollmentFormInput
 ): Promise<EnrollmentRequest> {
   const supabase = createSupabaseClient();
-
-  const { data, error } = await supabase
-    .from(TABLE)
-    .insert({
-      school_id: schoolId,
+  const { data, error } = await supabase.rpc('submit_enrollment', {
+    target_school_id: schoolId,
+    enrollment: {
       student_name: input.student_name,
       nis: input.nis || null,
       class: input.class,
@@ -27,13 +26,12 @@ export async function submitEnrollment(
       parent_phone: input.parent_phone,
       parent_email: input.parent_email || null,
       parent_occupation: input.parent_occupation || null,
-      status: 'pending',
-    })
-    .select()
-    .single();
+    },
+  });
 
   if (error) throw new Error(error.message);
-  return data as EnrollmentRequest;
+  const result = Array.isArray(data) ? data[0] : data;
+  return result as EnrollmentRequest;
 }
 
 /**
@@ -43,6 +41,7 @@ export async function getEnrollments(
   schoolId: string,
   status?: string
 ): Promise<EnrollmentRequest[]> {
+  await assertSchoolFeature(schoolId, 'enrollment');
   const supabase = createSupabaseClient();
 
   let query = supabase
@@ -68,44 +67,11 @@ export async function approveEnrollment(
   adminId: string
 ): Promise<void> {
   const supabase = createSupabaseClient();
-
-  // 1. Fetch enrollment data
-  const { data: enrollment, error: fetchError } = await supabase
-    .from(TABLE)
-    .select('*')
-    .eq('id', enrollmentId)
-    .single();
-
-  if (fetchError || !enrollment) throw new Error('Enrollment not found');
-
-  // 2. Create student record
-  const { error: studentError } = await supabase
-    .from('students')
-    .insert({
-      school_id: enrollment.school_id,
-      nis: enrollment.nis || null,
-      name: enrollment.student_name,
-      class: enrollment.class,
-      gender: enrollment.gender || null,
-      address: enrollment.address || null,
-      parent_name: enrollment.parent_name,
-      parent_phone: enrollment.parent_phone,
-      status: 'active',
-    });
-
-  if (studentError) throw new Error('Gagal membuat data siswa: ' + studentError.message);
-
-  // 3. Update enrollment status
-  const { error: updateError } = await supabase
-    .from(TABLE)
-    .update({
-      status: 'approved',
-      processed_by: adminId,
-      processed_at: new Date().toISOString(),
-    })
-    .eq('id', enrollmentId);
-
-  if (updateError) throw new Error('Gagal update status: ' + updateError.message);
+  const { error } = await supabase.rpc('approve_enrollment', {
+    target_enrollment_id: enrollmentId,
+    admin_id: adminId,
+  });
+  if (error) throw new Error('Gagal menyetujui pendaftaran: ' + error.message);
 }
 
 /**
@@ -117,16 +83,10 @@ export async function rejectEnrollment(
   notes?: string
 ): Promise<void> {
   const supabase = createSupabaseClient();
-
-  const { error } = await supabase
-    .from(TABLE)
-    .update({
-      status: 'rejected',
-      admin_notes: notes || null,
-      processed_by: adminId,
-      processed_at: new Date().toISOString(),
-    })
-    .eq('id', enrollmentId);
-
-  if (error) throw new Error('Gagal update status: ' + error.message);
+  const { error } = await supabase.rpc('reject_enrollment', {
+    target_enrollment_id: enrollmentId,
+    admin_id: adminId,
+    notes: notes || null,
+  });
+  if (error) throw new Error('Gagal menolak pendaftaran: ' + error.message);
 }

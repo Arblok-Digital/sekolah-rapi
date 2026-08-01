@@ -1,7 +1,6 @@
 'use client';
 
 import { Sidebar } from '@/shared/components/Layout/Sidebar';
-import { cn } from '@/shared/utils/cn';
 import { Wifi, WifiOff } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -28,45 +27,44 @@ export function DashboardShell({ children, schoolName, userName, userRole }: Das
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#0f0f1a] flex">
+    <div className="dashboard-shell flex min-h-screen bg-[#101c18]">
       <Sidebar />
-      <div className="flex-1 flex flex-col min-w-0">
-        <header className="sticky top-0 z-20 h-16 bg-[#16162a]/80 backdrop-blur-xl border-b border-white/5 flex items-center justify-between px-4 lg:px-6 shrink-0">
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center justify-between border-b border-white/10 bg-[#173f35]/90 px-4 backdrop-blur-xl lg:px-7">
           <div className="flex items-center gap-3">
-            <span className="lg:hidden w-8" />
             <div>
-              <h1 className="text-sm lg:text-base font-semibold text-white truncate max-w-[200px] lg:max-w-xs">
+              <h1 className="max-w-[200px] truncate text-sm font-black text-white lg:max-w-xs lg:text-base">
                 {schoolName || 'Dashboard'}
               </h1>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.05]">
+            <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/10 px-2.5 py-1.5">
               {isOnline ? (
                 <Wifi className="w-3.5 h-3.5 text-emerald-400" />
               ) : (
                 <WifiOff className="w-3.5 h-3.5 text-amber-400" />
               )}
-              <span className="text-xs text-white/70 hidden sm:inline">
+              <span className="hidden text-xs font-bold text-white/70 sm:inline">
                 {isOnline ? 'Online' : 'Offline'}
               </span>
             </div>
 
-            <div className="flex items-center gap-2 pl-3 border-l border-white/5">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500/30 to-purple-600/30 flex items-center justify-center text-indigo-300 font-semibold text-sm border border-white/5">
+            <div className="flex items-center gap-2 border-l border-white/10 pl-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#dfe99a] text-sm font-black text-[#173f35]">
                 {(userName || 'U').charAt(0).toUpperCase()}
               </div>
               <div className="hidden sm:block text-sm leading-tight">
-                <div className="font-medium text-white/80 truncate max-w-[120px]">
+                <div className="max-w-[120px] truncate font-bold text-white/90">
                   {userName || 'User'}
                 </div>
-                <div className="text-xs text-white/70 capitalize">{userRole || 'staff'}</div>
+                <div className="text-xs capitalize text-white/55">{userRole || 'staff'}</div>
               </div>
             </div>
           </div>
         </header>
-        <main className="flex-1 overflow-auto p-4 lg:p-6">
+        <main className="flex-1 overflow-auto bg-[radial-gradient(circle_at_90%_0%,rgba(184,212,75,.08),transparent_25%)] p-4 pb-24 lg:p-7">
           {children}
         </main>
       </div>

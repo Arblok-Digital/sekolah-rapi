@@ -1,5 +1,6 @@
 import { createSupabaseClient } from '@/shared/services/supabase/client';
 import type { InventoryItem, InventoryFormInput } from '../types/inventory.types';
+import { assertSchoolFeature } from '@/shared/services/plan-guard';
 
 const TABLE = 'inventory_items';
 
@@ -13,6 +14,7 @@ export async function getInventory(schoolId: string, category?: string) {
 }
 
 export async function createInventory(schoolId: string, input: InventoryFormInput, userId?: string) {
+  await assertSchoolFeature(schoolId, 'inventory');
   const supabase = createSupabaseClient();
   const { data, error } = await supabase
     .from(TABLE)
@@ -46,6 +48,8 @@ export async function createInventory(schoolId: string, input: InventoryFormInpu
 
 export async function updateInventory(id: string, input: Partial<InventoryFormInput>) {
   const supabase = createSupabaseClient();
+  const { data: item } = await supabase.from(TABLE).select('school_id').eq('id', id).single();
+  if (item?.school_id) await assertSchoolFeature(item.school_id, 'inventory');
   const { data, error } = await supabase
     .from(TABLE)
     .update({ ...input, updated_at: new Date().toISOString() })
@@ -58,6 +62,8 @@ export async function updateInventory(id: string, input: Partial<InventoryFormIn
 
 export async function deleteInventory(id: string) {
   const supabase = createSupabaseClient();
+  const { data: item } = await supabase.from(TABLE).select('school_id').eq('id', id).single();
+  if (item?.school_id) await assertSchoolFeature(item.school_id, 'inventory');
   const { error } = await supabase.from(TABLE).delete().eq('id', id);
   if (error) throw error;
 }

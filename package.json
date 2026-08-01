@@ -8,7 +8,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start -p 3000",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:entitlements": "node --experimental-strip-types --test tests/unit/entitlements.test.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.0",

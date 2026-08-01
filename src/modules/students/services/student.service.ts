@@ -1,5 +1,6 @@
 import { createSupabaseClient } from '@/shared/services/supabase/client';
 import type { Student, StudentFormData } from '../types/student.types';
+import { assertSchoolFeature } from '@/shared/services/plan-guard';
 
 export async function getStudents(
   schoolId: string,
@@ -93,17 +94,13 @@ export async function importFromCSV(
   schoolId: string,
   records: StudentFormData[]
 ): Promise<{ imported: number; failed: number }> {
-  let imported = 0;
-  let failed = 0;
-
-  for (const record of records) {
-    try {
-      await createStudent({ ...record, school_id: schoolId });
-      imported++;
-    } catch {
-      failed++;
-    }
-  }
-
-  return { imported, failed };
+  await assertSchoolFeature(schoolId, 'student_import');
+  const supabase = createSupabaseClient();
+  const { data, error } = await supabase.rpc('import_students', {
+    target_school_id: schoolId,
+    records,
+  });
+  if (error) throw error;
+  const result = Array.isArray(data) ? data[0] : data;
+  return { imported: result?.imported ?? 0, failed: result?.failed ?? records.length };
 }

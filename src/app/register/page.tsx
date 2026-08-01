@@ -4,6 +4,12 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createSupabaseClient } from '@/shared/services/supabase/client';
 import Link from 'next/link';
+import { Building2, Loader2, LockKeyhole, Mail, Phone, UserRound } from 'lucide-react';
+import {
+  AuthShell,
+  authButtonClassName,
+  authFieldClassName,
+} from '@/shared/components/Auth/AuthShell';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
@@ -104,126 +110,76 @@ export default function RegisterPage() {
 
   if (step === 'creating') {
     return (
-      <div className="min-h-screen bg-[#0f0f1a] flex items-center justify-center p-4">
-        <div className="fixed inset-0 bg-grid pointer-events-none" />
-        <div className="fixed inset-0 bg-glow-lg pointer-events-none" />
-        <div className="relative z-10 text-center animate-fade-in">
-          <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/25">
-            <span className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-          </div>
-          <h2 className="text-xl font-bold text-white mb-2">Menyiapkan Akun...</h2>
-          <p className="text-white/70">Sebentar ya, kami sedang menyiapkan data sekolah kamu</p>
+      <div className="flex min-h-screen items-center justify-center bg-[#f7f4ed] p-5 text-[#17211b]">
+        <div className="text-center">
+          <span className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-[#173f35] shadow-[0_6px_0_#b8d44b]">
+            <Loader2 className="h-7 w-7 animate-spin text-white" />
+          </span>
+          <h2 className="mt-7 text-2xl font-black tracking-tight">Menyiapkan ruang kerja...</h2>
+          <p className="mt-2 text-sm text-[#5c675f]">Data akun dan sekolah sedang kami hubungkan.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0f0f1a] flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-grid pointer-events-none" />
-      <div className="fixed inset-0 bg-glow-lg pointer-events-none" />
-
-      <div className="relative z-10 w-full max-w-md animate-slide-up">
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-500/25">
-              SR
-            </div>
-            <span className="text-xl font-bold text-white">SekolahRapi</span>
-          </Link>
+    <AuthShell
+      eyebrow="Mulai program pilot"
+      title="Daftarkan sekolah Anda."
+      description="Isi data penanggung jawab dan sekolah. Tim kami akan meninjau pendaftaran sebelum ruang kerja digunakan."
+    >
+      {error && (
+        <div role="alert" className="mb-6 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
+          {error}
         </div>
+      )}
 
-        <div className="glass rounded-2xl p-8">
-          <h1 className="text-2xl font-bold text-white mb-1">Daftar Akun Baru</h1>
-          <p className="text-white/70 text-sm mb-8">Buat akun sekolah kamu sekarang juga, gratis!</p>
-
-          {error && (
-            <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-xl mb-6 text-sm">
-              {error}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-white/70 mb-1.5">Nama Lengkap *</label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="input-modern"
-                placeholder="Nama Kepala Sekolah / Bendahara"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-white/70 mb-1.5">Nama Sekolah</label>
-              <input
-                type="text"
-                value={schoolName}
-                onChange={(e) => setSchoolName(e.target.value)}
-                className="input-modern"
-                placeholder="SD/SMP/SMA Bina Bangsa"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-white/70 mb-1.5">Email *</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="input-modern"
-                placeholder="nama@sekolah.sch.id"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-white/70 mb-1.5">No. WhatsApp</label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="input-modern"
-                placeholder="0812-xxxx-xxxx"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-white/70 mb-1.5">Password *</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="input-modern"
-                placeholder="Min. 8 karakter"
-                required
-                minLength={8}
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-primary-modern flex items-center justify-center gap-2 disabled:opacity-60"
-            >
-              {loading ? (
-                <>
-                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Mendaftar...
-                </>
-              ) : (
-                'Daftar Gratis'
-              )}
-            </button>
-          </form>
-
-          <div className="mt-6 pt-6 border-t border-white/5 text-center">
-            <p className="text-sm text-white/70">
-              Sudah punya akun?{' '}
-              <Link href="/login" className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
-                Login
-              </Link>
-            </p>
-          </div>
+      <form onSubmit={handleSubmit} className="grid gap-5 sm:grid-cols-2">
+        <AuthField icon={UserRound} id="name" label="Nama lengkap *" value={name} onChange={setName} placeholder="Kepala sekolah / bendahara" autoComplete="name" required />
+        <AuthField icon={Building2} id="school" label="Nama sekolah" value={schoolName} onChange={setSchoolName} placeholder="SMP Bina Bangsa" />
+        <AuthField icon={Mail} id="email" label="Email *" value={email} onChange={setEmail} placeholder="nama@sekolah.sch.id" type="email" autoComplete="email" required />
+        <AuthField icon={Phone} id="phone" label="No. WhatsApp" value={phone} onChange={setPhone} placeholder="0812 xxxx xxxx" type="tel" autoComplete="tel" />
+        <div className="sm:col-span-2">
+          <AuthField icon={LockKeyhole} id="password" label="Password *" value={password} onChange={setPassword} placeholder="Minimal 8 karakter" type="password" autoComplete="new-password" required minLength={8} />
         </div>
+        <div className="sm:col-span-2">
+          <button type="submit" disabled={loading} className={authButtonClassName}>
+            {loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Mendaftarkan...</> : 'Kirim pendaftaran sekolah'}
+          </button>
+          <p className="mt-4 text-center text-xs leading-5 text-[#6d786f]">
+            Dengan mendaftar, Anda menyatakan data sekolah yang diberikan sudah benar.
+          </p>
+        </div>
+      </form>
+
+      <p className="mt-6 border-t border-[#17211b]/10 pt-6 text-center text-sm text-[#5c675f]">
+        Sudah punya akun?{' '}
+        <Link href="/login" className="font-black text-[#26735d] hover:text-[#173f35]">Login</Link>
+      </p>
+    </AuthShell>
+  );
+}
+
+interface AuthFieldProps {
+  icon: React.ComponentType<{ className?: string }>;
+  id: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  type?: string;
+  autoComplete?: string;
+  required?: boolean;
+  minLength?: number;
+}
+
+function AuthField({ icon: Icon, id, label, value, onChange, placeholder, type = 'text', ...props }: AuthFieldProps) {
+  return (
+    <div>
+      <label htmlFor={id} className="text-sm font-bold text-[#354139]">{label}</label>
+      <div className="relative">
+        <Icon className="pointer-events-none absolute left-4 top-1/2 mt-1 h-4 w-4 -translate-y-1/2 text-[#7b857e]" />
+        <input id={id} type={type} value={value} onChange={(event) => onChange(event.target.value)} className={`${authFieldClassName} pl-11`} placeholder={placeholder} {...props} />
       </div>
     </div>
   );

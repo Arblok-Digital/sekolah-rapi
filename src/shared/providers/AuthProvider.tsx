@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState, useCallback, ReactNode 
 import { useRouter, usePathname } from 'next/navigation';
 import { createSupabaseClient } from '@/shared/services/supabase/client';
 import type { Session } from '@supabase/supabase-js';
+import { hasFeature, normalizePlan, type Feature, type Plan } from '@/shared/entitlements';
 
 interface Profile {
   id: string;
@@ -18,7 +19,7 @@ interface School {
   id: string;
   name: string;
   status: string;
-  plan: string;
+  plan: Plan;
   owner_id: string;
 }
 
@@ -32,6 +33,8 @@ interface AuthContextType {
   userRole: string | null;
   refreshProfile: () => Promise<void>;
   signOut: () => Promise<void>;
+  plan: Plan;
+  canUse: (feature: Feature) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -44,6 +47,8 @@ const AuthContext = createContext<AuthContextType>({
   userRole: null,
   refreshProfile: async () => {},
   signOut: async () => {},
+  plan: 'free',
+  canUse: () => false,
 });
 
 // Pages that don't need auth
@@ -185,6 +190,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isDev = profile?.role === 'dev';
   const schoolId = profile?.school_id ?? null;
   const userRole = profile?.role ?? null;
+  const plan = normalizePlan(school?.plan);
+  const canUse = useCallback((feature: Feature) => isDev || hasFeature(plan, feature), [isDev, plan]);
 
   return (
     <AuthContext.Provider
@@ -198,6 +205,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         userRole,
         refreshProfile,
         signOut,
+        plan,
+        canUse,
       }}
     >
       {children}

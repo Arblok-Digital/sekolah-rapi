@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/shared/providers/AuthProvider';
 import { createSupabaseClient } from '@/shared/services/supabase/client';
 import {
-  Wallet,
   TrendingUp,
   TrendingDown,
   AlertTriangle,
@@ -57,7 +56,7 @@ interface DashboardData {
 }
 
 export default function OverviewPage() {
-  const { schoolId } = useAuth();
+  const { schoolId, canUse, isDev } = useAuth();
   const [showAllTx, setShowAllTx] = useState(false);
   const [hideSaldo, setHideSaldo] = useState(false);
   const [data, setData] = useState<DashboardData | null>(null);
@@ -147,7 +146,9 @@ export default function OverviewPage() {
 
     fetchDashboard();
 
-    // Realtime subscriptions
+    if (!isDev && !canUse('realtime_dashboard')) return;
+
+    // Realtime is a Pro entitlement; lower plans still load an on-demand snapshot.
     const channel = supabase
       .channel('dashboard-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions', filter: `school_id=eq.${schoolId}` }, () => {
@@ -169,7 +170,7 @@ export default function OverviewPage() {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [schoolId]);
+  }, [schoolId, canUse, isDev]);
 
   if (loading || !data) {
     return (
@@ -185,67 +186,71 @@ export default function OverviewPage() {
     <div className="space-y-6 animate-fade-in">
       <div>
         <div className="flex items-center gap-3">
-          <h2 className="text-xl font-bold text-white">Dashboard</h2>
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-[10px] font-medium text-emerald-400">LIVE</span>
-          </div>
+          <h2 className="text-2xl font-black tracking-tight text-white">Ringkasan sekolah</h2>
+          {(isDev || canUse('realtime_dashboard')) && (
+            <div className="flex items-center gap-1.5 rounded-full border border-[#b8d44b]/20 bg-[#b8d44b]/10 px-2 py-0.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-[10px] font-black text-[#dfe99a]">LIVE</span>
+            </div>
+          )}
           {liveCount > 0 && (
             <span className="text-[10px] text-white/70">#{liveCount} updates</span>
           )}
         </div>
-        <p className="text-sm text-white/70 mt-0.5">Ringkasan keuangan dan operasional sekolah — data real-time</p>
+        <p className="mt-1 text-sm text-white/60">
+          Ringkasan keuangan dan operasional sekolah{isDev || canUse('realtime_dashboard') ? ', diperbarui secara real-time.' : '.'}
+        </p>
       </div>
 
       {/* Kas Widgets */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="card-premium p-5 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-indigo-500/10 to-transparent rounded-full -translate-y-1/2 translate-x-1/2" />
+        <div className="card-premium relative overflow-hidden border-white/10 bg-[#173f35] p-5 shadow-[0_20px_50px_rgba(0,0,0,.18)]">
+          <div className="absolute right-0 top-0 h-32 w-32 -translate-y-1/2 translate-x-1/2 rounded-full bg-gradient-to-bl from-[#b8d44b]/20 to-transparent" />
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-medium text-white/70 uppercase tracking-wider">Saldo Kas</span>
+              <span className="text-xs font-black uppercase tracking-wider text-[#dfe99a]">Saldo Kas</span>
               <button onClick={() => setHideSaldo(!hideSaldo)} className="text-white/70 hover:text-white/70 transition-colors">
                 {hideSaldo ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
-            <div className="text-2xl font-bold text-white mb-1">
+            <div className="mb-1 text-2xl font-black text-white">
               {hideSaldo ? '••••••••' : formatRp(data.saldo)}
             </div>
             <div className="flex items-center gap-2 text-xs">
-              <span className="text-white/70">Saldo per hari ini</span>
-              <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 text-[10px] font-medium border border-emerald-500/10">Aktif</span>
+              <span className="text-white/60">Saldo per hari ini</span>
+              <span className="rounded-md border border-[#b8d44b]/20 bg-[#b8d44b]/10 px-1.5 py-0.5 text-[10px] font-black text-[#dfe99a]">Aktif</span>
             </div>
           </div>
         </div>
 
-        <div className="card-premium p-5">
+        <div className="card-premium border-white/10 bg-white/[.07] p-5">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-medium text-white/70 uppercase tracking-wider">Pemasukan</span>
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/10">
+            <span className="text-xs font-black uppercase tracking-wider text-white/60">Pemasukan</span>
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-emerald-400/15 bg-emerald-400/10">
               <TrendingUp className="w-5 h-5 text-emerald-400" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-emerald-400 mb-1">{formatRp(data.incomeBulanIni)}</div>
-          <div className="text-xs text-white/70">Bulan ini</div>
+          <div className="mb-1 text-2xl font-black text-emerald-300">{formatRp(data.incomeBulanIni)}</div>
+          <div className="text-xs text-white/50">Bulan ini</div>
         </div>
 
-        <div className="card-premium p-5">
+        <div className="card-premium border-white/10 bg-white/[.07] p-5">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-medium text-white/70 uppercase tracking-wider">Pengeluaran</span>
-            <div className="w-9 h-9 rounded-xl bg-red-500/10 flex items-center justify-center border border-red-500/10">
+            <span className="text-xs font-black uppercase tracking-wider text-white/60">Pengeluaran</span>
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-red-400/15 bg-red-400/10">
               <TrendingDown className="w-5 h-5 text-red-400" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-red-400 mb-1">{formatRp(data.expenseBulanIni)}</div>
-          <div className="text-xs text-white/70">Bulan ini</div>
+          <div className="mb-1 text-2xl font-black text-red-300">{formatRp(data.expenseBulanIni)}</div>
+          <div className="text-xs text-white/50">Bulan ini</div>
         </div>
       </div>
 
       {/* SPP Health + Recent Transactions */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="card-premium p-5">
+        <div className="card-premium border-white/10 bg-white/[.07] p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-white">Kesehatan SPP</h3>
+            <h3 className="text-sm font-black text-white">Kesehatan SPP</h3>
             <Receipt className="w-5 h-5 text-white/70" />
           </div>
 
@@ -281,16 +286,16 @@ export default function OverviewPage() {
           </div>
 
           <div className="mt-4 pt-3 border-t border-white/5">
-            <a href="/spp" className="text-xs text-indigo-400 hover:text-indigo-300 font-medium flex items-center gap-1 transition-colors">
+            <a href="/spp" className="flex items-center gap-1 text-xs font-black text-[#dfe99a] transition-colors hover:text-white">
               Kelola SPP <ArrowRight className="w-3 h-3" />
             </a>
           </div>
         </div>
 
-        <div className="lg:col-span-2 card-premium p-5">
+        <div className="card-premium border-white/10 bg-white/[.07] p-5 lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-white">Transaksi Terbaru</h3>
-            <a href="/transactions" className="text-xs text-indigo-400 hover:text-indigo-300 font-medium flex items-center gap-1 transition-colors">
+            <h3 className="text-sm font-black text-white">Transaksi Terbaru</h3>
+            <a href="/transactions" className="flex items-center gap-1 text-xs font-black text-[#dfe99a] transition-colors hover:text-white">
               Lihat Semua <ArrowRight className="w-3 h-3" />
             </a>
           </div>
@@ -344,8 +349,8 @@ export default function OverviewPage() {
       </div>
 
       {/* Alerts */}
-      <div className="card-premium p-5">
-        <h3 className="text-sm font-semibold text-white mb-3">Perhatian</h3>
+      <div className="card-premium border-white/10 bg-white/[.07] p-5">
+        <h3 className="mb-3 text-sm font-black text-white">Perhatian</h3>
         {data.alerts.length === 0 ? (
           <p className="text-sm text-white/70 py-2">Tidak ada peringatan.</p>
         ) : (

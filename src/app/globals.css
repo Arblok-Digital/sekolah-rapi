@@ -32,6 +32,63 @@
   body {
     @apply bg-background text-foreground antialiased;
   }
+
+  /* White legacy cards and modals must not inherit the dashboard's white text. */
+  .dashboard-shell .bg-white {
+    color: #17211b;
+  }
+
+  /* Legacy dashboard forms live on both dark pages and white modals. */
+  .dashboard-shell input:not([type='radio']):not([type='checkbox']):not([type='file']),
+  .dashboard-shell select,
+  .dashboard-shell textarea {
+    color: #17211b;
+    background-color: #ffffff;
+    caret-color: #173f35;
+  }
+
+  .dashboard-shell input:not([type='radio']):not([type='checkbox']):not([type='file'])::placeholder,
+  .dashboard-shell textarea::placeholder {
+    color: #7b857e;
+    opacity: 1;
+  }
+
+  .dashboard-shell select option,
+  .dashboard-shell select optgroup {
+    color: #17211b;
+    background-color: #ffffff;
+  }
+
+  .dashboard-shell input:not([type='radio']):not([type='checkbox']):not([type='file']):focus,
+  .dashboard-shell select:focus,
+  .dashboard-shell textarea:focus {
+    border-color: #26735d;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(38, 115, 93, 0.16);
+  }
+
+  .dashboard-shell input:disabled,
+  .dashboard-shell select:disabled,
+  .dashboard-shell textarea:disabled {
+    color: #526058;
+    background-color: #eef1ed;
+    cursor: not-allowed;
+    opacity: 1;
+  }
+
+  .dashboard-shell input:-webkit-autofill,
+  .dashboard-shell input:-webkit-autofill:hover,
+  .dashboard-shell input:-webkit-autofill:focus,
+  .dashboard-shell textarea:-webkit-autofill,
+  .dashboard-shell select:-webkit-autofill {
+    -webkit-text-fill-color: #17211b;
+    box-shadow: 0 0 0 1000px #ffffff inset;
+    caret-color: #173f35;
+  }
+
+  .dashboard-shell input[type='date'] {
+    color-scheme: light;
+  }
 }
 
 @layer utilities {

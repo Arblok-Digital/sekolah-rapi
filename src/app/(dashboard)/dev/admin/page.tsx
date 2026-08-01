@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/shared/providers/AuthProvider';
 import { useRouter } from 'next/navigation';
 import { createSupabaseClient } from '@/shared/services/supabase/client';
+import { PLAN_DEFINITIONS, type Plan } from '@/shared/entitlements';
 import {
   Shield, Trash2, Database, RefreshCw, CheckCircle, AlertTriangle,
   School, Users, FileText, ChevronDown, ChevronUp, Loader2, Zap, UserX, XCircle
@@ -28,6 +29,7 @@ interface UserData {
   role: string;
   school: string;
   school_status: string;
+  school_plan: string;
   created_at: string;
 }
 
@@ -40,6 +42,7 @@ export default function DevAdminPage() {
   const [loading, setLoading] = useState(true);
   const [expandedSchool, setExpandedSchool] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [selectedPlans, setSelectedPlans] = useState<Record<string, Plan>>({});
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
@@ -65,6 +68,12 @@ export default function DevAdminPage() {
       })
     );
     setSchools(schoolsWithCounts);
+    setSelectedPlans((current) => Object.fromEntries(
+      schoolsWithCounts.map((school) => [
+        school.id,
+        current[school.id] || (school.plan in PLAN_DEFINITIONS ? school.plan as Plan : 'free'),
+      ])
+    ));
     setLoading(false);
   }, []);
 
@@ -77,7 +86,7 @@ export default function DevAdminPage() {
       .from('profiles').select('*').order('created_at', { ascending: false });
 
     const { data: schoolsList } = await supabase
-      .from('schools').select('id, name, status, owner_id');
+      .from('schools').select('id, name, status, plan, owner_id');
 
     const userList = (profiles || []).map((p) => {
       const school = schoolsList?.find((s) => s.owner_id === p.id);
@@ -88,6 +97,7 @@ export default function DevAdminPage() {
         role: p.role || 'no_profile',
         school: school?.name || '-',
         school_status: school?.status || '-',
+        school_plan: school?.plan || '-',
         created_at: p.created_at,
       };
     });
@@ -95,6 +105,26 @@ export default function DevAdminPage() {
     setUsers(userList);
     setLoading(false);
   }, []);
+
+  const updateSchoolAccess = async (
+    schoolId: string,
+    updates: { status?: 'pending' | 'active' | 'rejected'; plan?: Plan }
+  ) => {
+    const supabase = createSupabaseClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Session dev tidak ditemukan. Silakan login ulang.');
+
+    const response = await fetch(`/api/admin/schools/${schoolId}`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updates),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Gagal memperbarui akses sekolah');
+  };
 
   useEffect(() => {
     if (isDev) {
@@ -122,17 +152,19 @@ export default function DevAdminPage() {
         if (error) throw error;
         setMessage({ type: 'success', text: 'SEMUA data berhasil dihapus!' });
       } else if (action === 'activate') {
-        const { error } = await supabase.rpc('dev_set_school_status', { target_school_id: schoolId, new_status: 'active' });
-        if (error) throw error;
-        setMessage({ type: 'success', text: `${label} diaktifkan` });
+        const selectedPlan = selectedPlans[schoolId] || 'free';
+        await updateSchoolAccess(schoolId, { status: 'active', plan: selectedPlan });
+        setMessage({ type: 'success', text: `${label} disetujui dengan plan ${PLAN_DEFINITIONS[selectedPlan].label}` });
       } else if (action === 'pending') {
-        const { error } = await supabase.rpc('dev_set_school_status', { target_school_id: schoolId, new_status: 'pending' });
-        if (error) throw error;
+        await updateSchoolAccess(schoolId, { status: 'pending' });
         setMessage({ type: 'success', text: `${label} dipending` });
       } else if (action === 'reject') {
-        const { error } = await supabase.rpc('dev_reject_school', { target_school_id: schoolId });
-        if (error) throw error;
+        await updateSchoolAccess(schoolId, { status: 'rejected' });
         setMessage({ type: 'success', text: `${label} ditolak` });
+      } else if (action === 'plan') {
+        const selectedPlan = selectedPlans[schoolId] || 'free';
+        await updateSchoolAccess(schoolId, { plan: selectedPlan });
+        setMessage({ type: 'success', text: `Plan ${label} diubah ke ${PLAN_DEFINITIONS[selectedPlan].label}` });
       }
       tab === 'schools' ? await fetchSchools() : await fetchUsers();
     } catch (err: any) {
@@ -253,7 +285,7 @@ export default function DevAdminPage() {
                       <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">{school.name.charAt(0)}</div>
                       <div>
                         <h3 className="font-semibold text-white">{school.name}</h3>
-                        <p className="text-xs text-white/70">{school.id.slice(0, 8)}... • Plan: {school.plan} • Created: {new Date(school.created_at).toLocaleDateString('id-ID')}</p>
+                        <p className="text-xs text-white/70">{school.id.slice(0, 8)}... • Created: {new Date(school.created_at).toLocaleDateString('id-ID')}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
@@ -262,12 +294,34 @@ export default function DevAdminPage() {
                         <span className="flex items-center gap-1"><Database className="w-3 h-3" /> {school.spp_count}</span>
                         <span className="flex items-center gap-1"><FileText className="w-3 h-3" /> {school.transaction_count}</span>
                       </div>
+                      <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-500/20 text-indigo-300 uppercase">{school.plan}</span>
                       <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${school.status === 'active' ? 'bg-emerald-500/20 text-emerald-400' : school.status === 'pending' ? 'bg-amber-500/20 text-amber-400' : 'bg-red-500/20 text-red-400'}`}>{school.status}</span>
                       {expandedSchool === school.id ? <ChevronUp className="w-4 h-4 text-white/70" /> : <ChevronDown className="w-4 h-4 text-white/70" />}
                     </div>
                   </div>
                   {expandedSchool === school.id && (
                     <div className="border-t border-white/5 p-4 space-y-3">
+                      <div className="flex flex-wrap items-end gap-3 rounded-xl border border-indigo-500/20 bg-indigo-500/5 p-3">
+                        <label className="min-w-44">
+                          <span className="mb-1.5 block text-xs font-medium text-white/70">Plan yang dibayar client</span>
+                          <select
+                            value={selectedPlans[school.id] || 'free'}
+                            onChange={(event) => setSelectedPlans((current) => ({ ...current, [school.id]: event.target.value as Plan }))}
+                            className="w-full rounded-lg border border-white/10 bg-[#17152d] px-3 py-2 text-sm text-white outline-none focus:border-indigo-400"
+                          >
+                            {(Object.keys(PLAN_DEFINITIONS) as Plan[]).map((plan) => (
+                              <option key={plan} value={plan}>{PLAN_DEFINITIONS[plan].label}</option>
+                            ))}
+                          </select>
+                        </label>
+                        {school.status === 'active' && (
+                          <button onClick={() => handleAction('plan', school.id, school.name)} disabled={actionLoading === school.id + 'plan' || selectedPlans[school.id] === school.plan}
+                            className="flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-2 text-sm text-white transition-colors hover:bg-indigo-500 disabled:opacity-40">
+                            {actionLoading === school.id + 'plan' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />} Simpan Plan
+                          </button>
+                        )}
+                        <p className="text-xs text-white/50">Aktivasi dilakukan server setelah pembayaran diverifikasi.</p>
+                      </div>
                       <div className="flex flex-wrap gap-2">
                         <button onClick={() => handleAction('seed', school.id, school.name)} disabled={actionLoading === school.id + 'seed'}
                           className="flex items-center gap-2 px-3 py-2 bg-emerald-600/80 hover:bg-emerald-600 text-white rounded-lg text-sm transition-colors disabled:opacity-50">
@@ -285,7 +339,7 @@ export default function DevAdminPage() {
                         ) : (
                           <button onClick={() => handleAction('activate', school.id, school.name)} disabled={actionLoading === school.id + 'activate'}
                             className="flex items-center gap-2 px-3 py-2 bg-emerald-600/80 hover:bg-emerald-600 text-white rounded-lg text-sm transition-colors disabled:opacity-50">
-                            <CheckCircle className="w-4 h-4" /> Activate
+                            <CheckCircle className="w-4 h-4" /> Approve + Aktifkan Plan
                           </button>
                         )}
                         {school.status === 'pending' && (
@@ -333,7 +387,7 @@ export default function DevAdminPage() {
                       </div>
                       <div className="flex items-center gap-3 text-xs text-white/70 mt-0.5">
                         <span>{user.name}</span>
-                        {user.school !== '-' && <span>• 🏫 {user.school} ({user.school_status})</span>}
+                        {user.school !== '-' && <span>• 🏫 {user.school} ({user.school_status}) • Plan: {user.school_plan}</span>}
                         <span>• {new Date(user.created_at).toLocaleDateString('id-ID')}</span>
                       </div>
                     </div>

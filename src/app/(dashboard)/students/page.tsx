@@ -15,7 +15,7 @@ export default function StudentsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [classFilter, setClassFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const { schoolId } = useAuth();
+  const { schoolId, canUse } = useAuth();
 
   const { students, loading, error, addStudent } = useStudents({
     schoolId: schoolId || '',
@@ -46,7 +46,9 @@ export default function StudentsPage() {
         </div>
         <div className="flex gap-2">
           <button
-            onClick={() => setShowImport(true)}
+            onClick={() => canUse('student_import') && setShowImport(true)}
+            disabled={!canUse('student_import')}
+            title={!canUse('student_import') ? 'Import siswa tersedia mulai paket Basic' : undefined}
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 flex items-center gap-1.5"
           >
             <FileSpreadsheet className="w-4 h-4" />
@@ -125,7 +127,7 @@ export default function StudentsPage() {
       )}
 
       {/* Import Modal */}
-      {showImport && (
+      {showImport && canUse('student_import') && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-auto">
             <StudentImport
