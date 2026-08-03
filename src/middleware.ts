@@ -1,8 +1,36 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-// Public paths — no auth required
-const publicPaths = ['/', '/login', '/register', '/register-student', '/pricing', '/features'];
+// Route publik yang layak diindeks (crawlable + indexable).
+const indexablePublicPaths = ['/', '/pricing'];
+
+// Prefiks route marketing: artikel/halaman baru di bawah prefiks ini otomatis
+// publik tanpa perlu menambahkan allowlist manual.
+const indexablePublicPrefixes = [
+  '/fitur',
+  '/solusi',
+  '/panduan',
+  '/blog',
+  '/tentang',
+  '/kontak',
+  '/keamanan-data',
+  '/kebijakan-privasi',
+  '/syarat-ketentuan',
+];
+
+// Route publik tetapi TIDAK layak diindeks (auth/account surfaces).
+const publicNoindexPaths = ['/login', '/register', '/register-student'];
+
+function isIndexablePublic(pathname: string): boolean {
+  return (
+    indexablePublicPaths.includes(pathname) ||
+    indexablePublicPrefixes.some((p) => pathname.startsWith(p))
+  );
+}
+
+function isPublicNoindex(pathname: string): boolean {
+  return publicNoindexPaths.some((p) => pathname === p || pathname.startsWith(p + '?'));
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -15,6 +43,8 @@ export async function middleware(request: NextRequest) {
   ) {
     return NextResponse.next();
   }
+
+  const indexable = isIndexablePublic(pathname);
 
   // Production: block dev panel entirely
   if (pathname.startsWith('/dev')) {
@@ -57,12 +87,10 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isPublicPath = publicPaths.some(
-    (p) => pathname === p || pathname.startsWith(p + '?')
-  );
+  const isPublic = indexable || isPublicNoindex(pathname);
 
   // Not logged in + not on public page → redirect to login
-  if (!user && !isPublicPath) {
+  if (!user && !isPublic) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = '/login';
     return NextResponse.redirect(loginUrl);
@@ -75,6 +103,11 @@ export async function middleware(request: NextRequest) {
     const overviewUrl = request.nextUrl.clone();
     overviewUrl.pathname = '/overview';
     return NextResponse.redirect(overviewUrl);
+  }
+
+  // SEO: semua surface private/app/auth tidak boleh diindeks.
+  if (!indexable) {
+    supabaseResponse.headers.set('X-Robots-Tag', 'noindex, nofollow');
   }
 
   // IMPORTANT: Return supabaseResponse (with updated cookies), not NextResponse.next()

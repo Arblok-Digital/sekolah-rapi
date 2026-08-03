@@ -4,6 +4,16 @@
 
 SekolahRapi membantu pengelola sekolah swasta/madrasah merapikan administrasi operasional yang tersebar di buku, chat, dan spreadsheet: data siswa, SPP, kas, pendaftaran, inventaris, dan payroll.
 
+## Acquisition Strategy
+
+Status: `PLANNED`; implementasi bertahap mengikuti `.ai/ORGANIC-GROWTH-ROADMAP.md`.
+
+- Organic-first karena belum ada budget ads: SEO, AEO, GEO, konten edukasi, distribusi komunitas, dan founder-led demo.
+- Homepage menjelaskan positioning; halaman fitur/solusi menangkap commercial intent; panduan menangkap informational intent.
+- Konten harus memindahkan calon buyer ke langkah relevan: artikel → fitur/solusi → pricing/demo → onboarding/pilot.
+- Ukur impression, CTR, lead WhatsApp/demo, registrasi berkualitas, pilot, dan pelanggan aktif; traffic saja bukan success metric.
+- Tidak ada jaminan ranking/citation AI dan tidak boleh membuat statistik traffic, testimonial, atau social proof palsu.
+
 ## ICP Awal
 
 - Owner/yayasan, kepala sekolah, atau bendahara sekolah swasta dan madrasah kecil-menengah.
@@ -38,6 +48,33 @@ Status: `PLANNED`, keputusan kerja untuk redesign; konfirmasi owner sebelum publ
 - Jangan membuat link ke route yang tidak ada (`/docs`, `/about`, `/blog`, dan sejenisnya) tanpa implementasi.
 - Metadata, canonical, Open Graph, FAQ, dan structured data harus sesuai konten aktual.
 - SEO/GEO/AEO: jawab pertanyaan buyer secara langsung, gunakan heading jelas, FAQ faktual, dan entity naming konsisten.
+- Landing page tidak memuat payment widget atau direct checkout. CTA diarahkan ke demo, pricing, register, atau kontak.
+- Billing langganan SekolahRapi adalah domain terpisah dari pembayaran SPP siswa dan ditempatkan di area akun setelah onboarding bila sudah diotomasi.
+
+## Search Intent Map
+
+| Intent | Contoh query | Target page type |
+|---|---|---|
+| Problem-aware | cara merapikan administrasi sekolah | Panduan/solution page |
+| Feature-aware | aplikasi pembayaran SPP sekolah | Feature pillar |
+| Commercial | aplikasi administrasi sekolah swasta | Homepage/solution/pricing |
+| Operational | contoh buku kas atau rekap tunggakan SPP | Panduan praktis |
+| Branded | SekolahRapi, harga SekolahRapi | Homepage/pricing |
+
+Keyword masih hipotesis sampai ada data Search Console atau riset buyer. Jangan membuat banyak halaman tipis hanya untuk variasi keyword.
+
+## Organic Conversion Path
+
+```text
+Search/community content
+  → guide, feature, or solution page
+  → contextual CTA to demo/pricing
+  → register and onboarding
+  → assisted pilot
+  → manual payment link/invoice or future in-app billing
+```
+
+Checkout tidak menjadi elemen landing page. Saat billing otomatis belum tersedia, pembayaran/aktivasi tetap melalui jalur manual yang terverifikasi.
 
 ## Kata Kunci Awal
 

@@ -6,20 +6,19 @@ const description =
   "Terima pendaftaran siswa online, pantau uang masuk dan keluar tanpa menunggu rekap, lalu kelola administrasi sekolah dalam satu sistem.";
 
 export const metadata: Metadata = {
-  title: `Aplikasi Administrasi Sekolah | ${APP_NAME}`,
+  title: 'Aplikasi Administrasi Sekolah',
   description,
-  alternates: { canonical: APP_URL },
+  alternates: { canonical: '/' },
   openGraph: {
-    type: "website",
-    locale: "id_ID",
-    url: APP_URL,
+    type: 'website',
+    locale: 'id_ID',
     siteName: APP_NAME,
-    title: "Pendaftaran Online dan Pantauan Kas Sekolah | SekolahRapi",
+    title: 'Pendaftaran Online dan Pantauan Kas Sekolah | SekolahRapi',
     description,
   },
   twitter: {
-    card: "summary",
-    title: `Aplikasi Administrasi Sekolah | ${APP_NAME}`,
+    card: 'summary',
+    title: 'Aplikasi Administrasi Sekolah | SekolahRapi',
     description,
   },
 };

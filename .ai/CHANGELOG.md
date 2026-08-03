@@ -2,6 +2,15 @@
 
 Tuliskan entri terbaru di atas. Maksimal ringkas: hasil, file, validasi, blocker, next step.
 
+## 2026-08-03 - Organic Growth and Billing Boundary Roadmap
+
+- Hasil: audit SEO/AEO/GEO dan AI crawler diterjemahkan menjadi roadmap fase technical foundation, entity/trust, content architecture, measurement, dan billing automation.
+- Keputusan: organic-first tanpa ads; landing page tetap conversion surface tanpa checkout; billing SaaS dipisahkan dari domain pembayaran SPP.
+- File: `.ai/ORGANIC-GROWTH-ROADMAP.md`, `RAG.md`, `.ai/BUSINESS-MARKETING.md`, `.ai/TASKS.md`, `.ai/DECISIONS.md`, `.ai/CHANGELOG.md`.
+- Safety: item belum aktif diberi label `PLANNED`; metadata homepage yang sudah ada tidak disalahartikan sebagai organic architecture yang lengkap.
+- Validasi: documentation links, status labels, dan Git diff diperiksa; tidak ada kode aplikasi atau migration yang diubah.
+- Next: implementasikan Fase 1 technical SEO sebelum memperbanyak halaman/artikel; billing automation tetap fase terakhir setelah offer/onboarding tervalidasi.
+
 ## 2026-08-01 - Landing Hero Problem-first
 
 - Hasil: pesan 3 detik pertama dipusatkan pada pendaftaran yang tercecer dan owner yang menunggu rekap kas; administrasi siswa, SPP, kas, laporan, inventaris, dan payroll tetap menjadi fondasi produk.

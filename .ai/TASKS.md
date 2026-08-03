@@ -69,3 +69,41 @@ Goal: membuat context system ringkas agar model AI yang berganti dapat bekerja t
 - Audit dan lengkapi offline behavior.
 - Verifikasi auto-transaction pada update SPP paid.
 - Tambah test scripts dan coverage untuk alur kritis.
+
+## Roadmap Organic Growth
+
+Goal: membangun akuisisi organik SEO/AEO/GEO yang terukur tanpa ads, dengan klaim faktual dan conversion path menuju demo/pilot.
+
+Detail dan acceptance criteria: `.ai/ORGANIC-GROWTH-ROADMAP.md`.
+
+### Fase 1 — Technical Foundation
+
+- [ ] Tambahkan robots, sitemap, `llms.txt`, canonical/metadata defaults, dan OG image.
+- [ ] Terapkan `noindex` pada auth, onboarding, dashboard, dev/admin, dan status akun.
+- [ ] Rapikan middleware agar route marketing/content baru crawlable tanpa allowlist manual per artikel.
+- [ ] Perbaiki viewport accessibility dan audit Core Web Vitals/broken links/status code.
+
+### Fase 2 — Entity dan Trust
+
+- [ ] Buat JSON-LD entity graph Organization, WebSite, SoftwareApplication, dan breadcrumb reusable.
+- [ ] Implementasikan halaman tentang, kontak, keamanan data, privasi, dan syarat ketentuan.
+- [ ] Tambahkan author/reviewer dan bukti pilot hanya bila identitas, izin, dan datanya nyata.
+
+### Fase 3 — Organic Content Architecture
+
+- [ ] Buat marketing layout serta pillar pages fitur/solusi prioritas.
+- [ ] Buat knowledge hub `/panduan` atau `/blog` dengan template artikel yang lengkap.
+- [ ] Terbitkan cluster awal 5–8 artikel berkualitas dengan internal links dan CTA kontekstual.
+
+### Fase 4 — Measurement dan Distribution
+
+- [ ] Verifikasi Google Search Console dan Bing Webmaster Tools, lalu submit sitemap.
+- [ ] Pasang analytics ringan dan event CTA/demo/register dengan consent yang sesuai.
+- [ ] Review query, impression, CTR, lead, dan conversion secara bulanan.
+
+### Fase 5 — Billing SaaS Terpisah
+
+- [ ] Kunci offer, pricing, lifecycle subscription, refund/cancellation, legal entity, dan provider.
+- [ ] Buat bounded context billing yang terpisah dari domain pembayaran SPP.
+- [ ] Implementasikan server-side checkout, webhook signed+idempotent, invoice/history, dan activation audit.
+- [ ] Tempatkan billing setelah onboarding di area akun; jangan menaruh checkout di landing page.

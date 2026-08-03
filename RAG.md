@@ -32,6 +32,7 @@ RAG lokal ini menjaga model tetap memahami produk walau sesi dan model AI bergan
 | Memahami produk/fakta fitur | `.ai/PRODUCT-TRUTH.md` |
 | Mengubah kode/arsitektur/database | `.ai/ARCHITECTURE-MAP.md`, lalu source terkait |
 | Landing page, copy, SEO, penawaran | `.ai/BUSINESS-MARKETING.md`, `.ai/PRODUCT-TRUTH.md` |
+| Roadmap organic, SEO/AEO/GEO, AI crawler, content, billing placement | `.ai/ORGANIC-GROWTH-ROADMAP.md`, lalu `.ai/BUSINESS-MARKETING.md` |
 | Melanjutkan pekerjaan model sebelumnya | `.ai/CURRENT-STATE.md`, `.ai/TASKS.md`, `.ai/CHANGELOG.md` |
 | Memahami alasan keputusan | `.ai/DECISIONS.md` |
 | Memulai model/sesi baru | `.ai/README.md`, `.ai/PROMPTS.md` |
@@ -47,6 +48,9 @@ RAG lokal ini menjaga model tetap memahami produk walau sesi dan model AI bergan
 - `VERIFIED`: Model role sengaja tunggal — 1 client = 1 sekolah = 1 akun pemilik (`owner`). `staff`/`owner` hanya label; otorisasi app cuma dev vs non-dev. Multi-role per sekolah TIDAK direncanakan (bukan ekosistem sekolah) — siapa yang login (bendahara/kepsek) adalah urusan internal sekolah.
 - `VERIFIED`: Owner wajib bisa login dari HP dan memantau arus kas real-time (fitur realtime_dashboard di dashboard/overview).
 - `VERIFIED`: 1 akun boleh login bersamaan di banyak device (laptop browser + HP PWA). Session per-device (localStorage + cookie via `@supabase/ssr`), signOut cuma per-device, dan Supabase Auth defaultnya multi-session. Realtime publication `supabase_realtime` (students, spp_payments, transactions, enrollment_requests) sudah aktif di DB live.
+- `PARTIAL`: Homepage memiliki metadata, canonical, Open Graph, Twitter card, schema `SoftwareApplication`, struktur heading, FAQ, dan CTA; organic acquisition architecture masih terbatas pada homepage/pricing.
+- `PLANNED`: robots, sitemap, `llms.txt`, noindex private routes, entity graph, trust pages, feature/solution pages, knowledge hub, dan measurement organik. Detail ada di `.ai/ORGANIC-GROWTH-ROADMAP.md`.
+- `VERIFIED`: Landing page tidak memuat checkout. Keputusan arsitektur: billing langganan SekolahRapi tetap terpisah dari pembayaran SPP dan ditempatkan setelah pricing/demo/onboarding, bukan di landing page.
 - `DO NOT CLAIM`: 100% offline, 5 role aktif, multi-cabang, compliance formal, testimonial/rating, atau fitur yang hanya muncul di copy.
 
 ## Stack Singkat

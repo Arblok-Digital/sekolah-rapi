@@ -1,0 +1,40 @@
+# SekolahRapi
+
+> SekolahRapi adalah aplikasi web administrasi sekolah untuk sekolah swasta dan madrasah kecil-menengah di Indonesia. Satu sistem untuk data siswa, pembayaran SPP, kas masuk/keluar, pendaftaran siswa online, inventaris, dan penggajian guru.
+
+## Untuk siapa
+
+- Owner / yayasan sekolah swasta
+- Kepala sekolah
+- Bendahara sekolah
+
+## Fitur utama
+
+- **Data siswa**: manajemen siswa lengkap + import siswa dari Excel
+- **SPP**: pencatatan pembayaran SPP per siswa per bulan, rekap tunggakan
+- **Kas**: pemasukan dan pengeluaran dengan kategori, riwayat audit saldo berjalan, export CSV
+- **Pendaftaran siswa online**: formulir publik + review oleh sekolah
+- **Inventaris**: pencatatan barang dan aset
+- **Penggajian**: data karyawan dan slip gaji bulanan
+- **Laporan**: rekap keuangan bulanan dan rekap SPP
+- **Dashboard**: ringkasan keuangan; pembaruan real-time tersedia di paket Pro
+- **Offline-ready**: pencatatan tetap bisa dilakukan untuk alur tertentu saat koneksi terputus (cakupan terbatas)
+
+## Keamanan dan privasi data
+
+- Setiap sekolah terpisah dengan pengenal `school_id` dan kebijakan Row Level Security di database
+- Akses data sekolah dibatasi pada akun pemilik sekolah
+
+## Harga (per Agustus 2026)
+
+- **Gratis**: manajemen siswa & SPP dasar, pencatatan kas dasar, 1 pengguna
+- **Basic** (Rp 490.000/tahun): laporan operasional/keuangan, export & import Excel, kategori kas tanpa batas
+- **Pro** (Rp 990.000/tahun): pendaftaran siswa online, dashboard owner real-time (mobile-friendly), penggajian, inventaris, support prioritas
+
+Harga, durasi, dan fitur dapat berubah. Hubungi tim untuk penawaran dan aktivasi.
+
+## Link
+
+- Beranda: https://sekolah-rapi.vercel.app
+- Harga: https://sekolah-rapi.vercel.app/pricing
+- Daftar sekolah: https://sekolah-rapi.vercel.app/register

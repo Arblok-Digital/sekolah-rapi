@@ -5,7 +5,7 @@ import { AuthProvider } from '@/shared/providers/AuthProvider';
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary';
 import { Toaster } from '@/shared/components/ui/toaster';
 import { ToastProvider } from '@/shared/components/ui/toast';
-import { APP_NAME } from '@/shared/constants';
+import { APP_NAME, APP_URL } from '@/shared/constants';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -13,13 +13,15 @@ const inter = Inter({ subsets: ['latin'] });
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   themeColor: '#4F46E5',
 };
 
 export const metadata: Metadata = {
-  title: APP_NAME,
+  metadataBase: new URL(APP_URL),
+  title: {
+    default: APP_NAME,
+    template: `%s | ${APP_NAME}`,
+  },
   description: 'Administrasi keuangan sekolah swasta',
   manifest: '/manifest.json',
   icons: {
@@ -31,6 +33,19 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: 'default',
     title: APP_NAME,
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'id_ID',
+    siteName: APP_NAME,
+    url: APP_URL,
+    title: APP_NAME,
+    description: 'Administrasi keuangan sekolah swasta',
+  },
+  twitter: {
+    card: 'summary',
+    title: APP_NAME,
+    description: 'Administrasi keuangan sekolah swasta',
   },
 };
 
