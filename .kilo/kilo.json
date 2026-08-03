@@ -1,0 +1,17 @@
+{
+  "$schema": "https://app.kilo.ai/config.json",
+  "skills": { "paths": [".kilo/skills"] },
+  "default_agent": "code",
+  "permission": {
+    "bash": "allow",
+    "edit": {
+      "src/**": "allow",
+      "tests/**": "allow",
+      ".kilo/**": "allow",
+      ".ai/**": "allow",
+      "*.md": "allow",
+      "*": "ask"
+    },
+    "read": "allow"
+  }
+}

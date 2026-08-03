@@ -10,26 +10,32 @@
 
 ## Route Map
 
-Public berdasarkan middleware:
+Sumber kebenaran visibility route: `src/shared/constants/public-paths.ts` (dipakai bersama oleh middleware dan AuthProvider).
 
-- `/` landing page.
+Public indexable:
+
+- `/` landing page, `/pricing`.
+- Marketing prefixes: `/fitur`, `/solusi`, `/panduan`, plus planned `/blog`, `/tentang`, `/kontak`, `/keamanan-data`, `/kebijakan-privasi`, `/syarat-ketentuan` (otomatis publik via prefix, tanpa allowlist manual).
+
+Public noindex:
+
 - `/login`, `/register` auth.
 - `/register-student` formulir pendaftaran publik.
-- `/pricing` harga.
-- `/features` diizinkan middleware, tetapi route file belum terlihat saat snapshot.
 
 Protected/dashboard:
 
 - `/overview`, `/students`, `/spp`, `/transactions`, `/reports`.
 - `/enrollment`, `/inventory`, `/payroll`.
+- `/audit` (riwayat kas/audit cashflow), `/categories` (manager kategori).
 - `/onboarding`, `/pending-approval`, `/rejected`.
-- `/dev/admin` hanya non-production menurut middleware.
+- `/dev/admin` hanya non-production menurut middleware (redirect di NODE_ENV=production).
 
-API admin:
+API:
 
 - `src/app/api/admin/users/route.ts`.
 - `src/app/api/admin/delete-user/route.ts`.
-- `src/app/api/admin/test-auth/route.ts`.
+- `src/app/api/admin/schools/[schoolId]/route.ts`.
+- `src/app/api/cron/keepalive/route.ts` (keepalive anti-pause Supabase, jadwal via `vercel.json`).
 
 ## Module Pattern
 
@@ -69,6 +75,6 @@ Sebelum DDL:
 
 ## Validation
 
-- Minimum code change: `npm run lint` dan `npm run build` jika memungkinkan.
-- Test folders tersedia di `tests/unit`, `tests/integration`, `tests/e2e`, tetapi `package.json` belum menyediakan script test.
+- Minimum code change: `npm run lint`, `npm run typecheck`, `npm run test` (Vitest), dan `npm run build` jika memungkinkan.
+- Test folders: `tests/unit`, `tests/integration`, `tests/e2e`.
 - Untuk perubahan DB, jalankan advisor/security check jika tool Supabase tersedia.

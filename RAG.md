@@ -33,7 +33,7 @@ RAG lokal ini menjaga model tetap memahami produk walau sesi dan model AI bergan
 | Mengubah kode/arsitektur/database | `.ai/ARCHITECTURE-MAP.md`, lalu source terkait |
 | Landing page, copy, SEO, penawaran | `.ai/BUSINESS-MARKETING.md`, `.ai/PRODUCT-TRUTH.md` |
 | Roadmap organic, SEO/AEO/GEO, AI crawler, content, billing placement | `.ai/ORGANIC-GROWTH-ROADMAP.md`, lalu `.ai/BUSINESS-MARKETING.md` |
-| Melanjutkan pekerjaan model sebelumnya | `.ai/CURRENT-STATE.md`, `.ai/TASKS.md`, `.ai/CHANGELOG.md` |
+| Melanjutkan pekerjaan model sebelumnya | `.ai/TASKS.md`, `.ai/CHANGELOG.md`, `.ai/DECISIONS.md` |
 | Memahami alasan keputusan | `.ai/DECISIONS.md` |
 | Memulai model/sesi baru | `.ai/README.md`, `.ai/PROMPTS.md` |
 
@@ -64,7 +64,7 @@ RAG lokal ini menjaga model tetap memahami produk walau sesi dan model AI bergan
 
 - Audit fullstack (2026-08-01/02) sudah dibereskan: privilege escalation `profiles.role/school_id` di-lock, `SECURITY DEFINER` di-harden (`search_path=''` + REVOKE PUBLIC), view keuangan `security_invoker`, offline sync di-mount, auto-transaction SPP/payroll/inventory diperbaiki, endpoint debug `test-auth` dihapus.
 - Migration yang WAJIB dianggap sudah applied di semua env: `20260802001` (lock profiles), `20260802002` (harden functions+views), `20260802003` (dedupe kategori + UNIQUE). Jangan mengedit ulang isi migration 005/006 — kontennya sudah ditukar agar fresh deploy lolos (005 = categories, 006 = transactions).
-- Dokumentasi lama (`.ai/*`, `DOCUMENTATION.md`) masih berguna tapi sebagian stale; verifikasi ke source/migration dulu.
+- Dokumentasi di `.ai/*` berguna tapi sebagian bisa stale; verifikasi ke source/migration dulu. `DOCUMENTATION.md` dan `CURRENT-STATE.md` sudah dihapus (superseded oleh RAG.md + `.ai/*`).
 - Klaim landing/pricing harus disesuaikan dengan enforce plan yang ada (mis. "kas 2 kategori", "1 pengguna", "export Excel") — beberapa belum benar-benar di-enforce di DB.
 - Prioritas produk: owner mobile-first (login HP) + pemantauan arus kas real-time. Jangan tambah kompleksitas multi-role/ekosistem sekolah kecuali diminta.
 

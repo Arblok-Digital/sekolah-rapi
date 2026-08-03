@@ -13,7 +13,7 @@ Tidak perlu menempel seluruh dokumentasi ke chat. Model membuka konteks sesuai t
 Urutan boot:
 
 1. Baca `RAG.md`.
-2. Baca `.ai/CURRENT-STATE.md` dan `.ai/TASKS.md`.
+2. Baca `.ai/TASKS.md`.
 3. Baca satu atau dua dokumen domain yang ditunjuk router.
 4. Jalankan `git status --short` sebelum edit.
 5. Baca source target dan dependensinya; jangan mengandalkan ringkasan saja.
@@ -25,7 +25,7 @@ Urutan boot:
 
 - Jangan muat semua file `.ai` jika tugas sederhana.
 - Gunakan pencarian file/simbol sebelum membaca file panjang.
-- Buka `DOCUMENTATION.md` hanya untuk detail yang tidak diringkas di RAG, lalu cek kembali ke source.
+- Cari detail yang tidak diringkas di RAG di file `.ai` yang ditunjuk router, lalu cek kembali ke source.
 - Perlakukan `AUDIT-REPORT.md` sebagai snapshot historis, bukan status mutakhir.
 - Materi `marketing/` adalah draft copy, bukan bukti fitur.
 

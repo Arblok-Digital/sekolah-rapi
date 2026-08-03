@@ -19,7 +19,7 @@ Tanggal snapshot: 2026-08-01. Verifikasi ulang jika source berubah.
 | Realtime | `VERIFIED` | Digunakan untuk pembaruan data tertentu | `src/app/(dashboard)/overview/page.tsx` |
 | Offline | `PARTIAL` | Dexie/sync tersedia, tetapi fallback tidak merata di semua modul | `src/modules/offline/`, `src/modules/students/services/student.service.ts` |
 | PWA | `VERIFIED` | Manifest dan next-pwa dependency/config tersedia | `public/manifest.json`, `next.config.mjs` |
-| Role | `PARTIAL` | Docs, types, constants, dan implementasi tidak konsisten | `src/shared/types/index.ts`, `src/shared/constants/index.ts`, `DOCUMENTATION.md` |
+| Role | `PARTIAL` | Docs, types, constants, dan implementasi tidak konsisten | `src/shared/types/index.ts`, `src/shared/constants/index.ts`, `RAG.md` |
 | Plan/entitlement | `VERIFIED` | Registry canonical, UI/route UX gate, service preflight, serta enforcement RLS/RPC tersedia; aktivasi pembayaran masih manual melalui Dev Admin/API terpercaya | `src/shared/entitlements/`, `src/shared/services/plan-guard.ts`, migration `20260801001` dan `20260801002` |
 | Dev admin | `VERIFIED` | Route ada dan diblokir middleware di production | `src/app/(dashboard)/dev/admin/page.tsx`, `src/middleware.ts` |
 
@@ -55,7 +55,7 @@ Tanggal snapshot: 2026-08-01. Verifikasi ulang jika source berubah.
 
 | Konflik | Status saat ini |
 |---|---|
-| `DOCUMENTATION.md` menyebut `dev/owner`; shared types/constants menyebut role lain | Belum dinormalisasi; jangan klaim 5 role |
+| Docs lama menyebut `dev/owner`; shared types/constants menyebut role lain | Belum dinormalisasi; jangan klaim 5 role |
 | Docs lama menyebut plan `free/basic/premium`; registry canonical memakai `free/basic/pro/lifetime` | Resolved di registry; docs legacy tetap harus ditinjau sebelum dijadikan referensi |
 | Audit lama menyebut `.env.example` tidak ada | Sudah stale; file sekarang ada |
 | Marketing menyebut 100% offline | Bertentangan dengan implementasi parsial |

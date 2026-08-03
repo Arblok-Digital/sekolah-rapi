@@ -164,4 +164,3 @@ Jangan menjalankan `next build` bersamaan dengan `next dev` pada working tree ya
 - `.ai/PRODUCT-TRUTH.md` - fitur terverifikasi dan guardrail klaim.
 - `.ai/ARCHITECTURE-MAP.md` - peta route, module, auth, dan database.
 - `.ai/DECISIONS.md` - keputusan produk dan teknis.
-- `DOCUMENTATION.md` - dokumentasi historis yang harus diverifikasi terhadap source terbaru.

@@ -3,13 +3,13 @@
 ## Boot Standar
 
 ```text
-Baca RAG.md dulu. Ikuti peta baca hemat token, lalu baca CURRENT-STATE dan TASKS. Jangan menebak fakta; verifikasi source target, cek git status, jangan timpa edit user, dan update TASKS + CHANGELOG setelah selesai.
+Baca RAG.md dulu. Ikuti peta baca hemat token, lalu baca TASKS. Jangan menebak fakta; verifikasi source target, cek git status, jangan timpa edit user, dan update TASKS + CHANGELOG setelah selesai.
 ```
 
 ## Lanjut Task Aktif
 
 ```text
-Baca RAG.md, .ai/CURRENT-STATE.md, .ai/TASKS.md, dan changelog terbaru. Kerjakan hanya task Active/Next yang saya sebut. Jelaskan blocker, jalankan validasi relevan, lalu buat handoff ringkas.
+Baca RAG.md, .ai/TASKS.md, dan changelog terbaru. Kerjakan hanya task Active/Next yang saya sebut. Jelaskan blocker, jalankan validasi relevan, lalu buat handoff ringkas.
 ```
 
 ## Coding
