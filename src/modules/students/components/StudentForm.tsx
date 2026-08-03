@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast, getErrorMessage } from '@/shared/components/ui/toast';
+import { CLASS_OPTIONS } from '@/shared/constants';
 import type { StudentFormData } from '../types/student.types';
 
 const studentSchema = z.object({
@@ -84,12 +85,15 @@ export function StudentForm({ onSubmit, onCancel, initialData }: StudentFormProp
       {/* Class */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Kelas</label>
-        <input
-          type="text"
+        <select
           {...register('class')}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
-          placeholder="VII-A"
-        />
+        >
+          <option value="">Pilih kelas...</option>
+          {CLASS_OPTIONS.map((c) => (
+            <option key={c} value={c}>{c}</option>
+          ))}
+        </select>
         {errors.class && (
           <p className="mt-1 text-sm text-red-600">{errors.class.message}</p>
         )}

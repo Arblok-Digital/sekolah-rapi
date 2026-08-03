@@ -31,7 +31,7 @@ const HEADER_MAP: Record<string, string> = {
 
 function downloadTemplate() {
   const headers = ['NIS', 'Nama Lengkap', 'Kelas', 'Jenis Kelamin (L/P)', 'Alamat', 'Nama Orang Tua', 'No. HP'];
-  const example = ['1001', 'Ahmad Fauzi', '7A', 'L', 'Jl. Merdeka No. 10', 'Budi Santoso', '081234567890'];
+  const example = ['1001', 'Ahmad Fauzi', '1A', 'L', 'Jl. Merdeka No. 10', 'Budi Santoso', '081234567890'];
   const ws = XLSX.utils.aoa_to_sheet([headers, example]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Template');

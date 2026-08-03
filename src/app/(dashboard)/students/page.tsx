@@ -7,6 +7,7 @@ import { StudentForm } from '@/modules/students/components/StudentForm';
 import { StudentImport } from '@/modules/students/components/StudentImport';
 import { useStudents } from '@/modules/students/hooks/useStudents';
 import type { Student, StudentFormData } from '@/modules/students/types/student.types';
+import { CLASS_OPTIONS } from '@/shared/constants';
 import { FileSpreadsheet } from 'lucide-react';
 
 export default function StudentsPage() {
@@ -139,12 +140,9 @@ export default function StudentsPage() {
           className="px-3 py-2 border border-white/15 rounded-md text-sm"
         >
           <option value="">Semua Kelas</option>
-          <option value="7A">7A</option>
-          <option value="7B">7B</option>
-          <option value="8A">8A</option>
-          <option value="8B">8B</option>
-          <option value="9A">9A</option>
-          <option value="9B">9B</option>
+          {CLASS_OPTIONS.map((c) => (
+            <option key={c} value={c}>{c}</option>
+          ))}
         </select>
         <select
           value={statusFilter}
