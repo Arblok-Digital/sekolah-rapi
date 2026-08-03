@@ -64,7 +64,9 @@ export const PILLAR_TITLES: Record<string, string> = {
   '/fitur/keuangan-sekolah': 'Fitur Keuangan Sekolah',
   '/fitur/pembayaran-spp': 'Fitur Pembayaran SPP',
   '/fitur/pendaftaran-siswa-online': 'Fitur Pendaftaran Siswa Online',
+  '/fitur/laporan-sekolah': 'Fitur Laporan Sekolah',
   '/solusi/sekolah-swasta': 'Solusi Sekolah Swasta',
+  '/solusi/madrasah': 'Solusi Madrasah',
 };
 
 const BULAN_INDONESIA = [
@@ -637,6 +639,451 @@ export const PANDUAN_ARTICLES: PanduanArticle[] = [
       {
         q: 'Kalau orang tua mengaku sudah membayar tunai tapi tidak ada catatan?',
         a: 'Minta nomor kwitansi atau bukti lain. Ini sebabnya setiap pembayaran tunai harus selalu diberi kwitansi bernomor — dokumen itu melindungi orang tua dan sekolah sekaligus.',
+      },
+    ],
+  },
+  {
+    slug: 'apa-itu-aplikasi-administrasi-sekolah',
+    title: 'Apa Itu Aplikasi Administrasi Sekolah?',
+    description:
+      'Aplikasi administrasi sekolah adalah perangkat lunak untuk mencatat dan merapikan data operasional sekolah seperti data siswa, pembayaran SPP, kas, absensi, dan inventaris dalam satu tempat.',
+    category: 'administrasi',
+    date: '2026-08-03',
+    readMinutes: 5,
+    author: 'Tim SekolahRapi',
+    pillarHref: '/fitur/keuangan-sekolah',
+    relatedSlugs: [
+      'administrasi-sekolah-swasta-yang-perlu-dirapikan',
+      'aplikasi-keuangan-sekolah-swasta',
+      'berapa-biaya-aplikasi-administrasi-sekolah',
+    ],
+    sections: [
+      {
+        heading: 'Jawaban singkat',
+        paragraphs: [
+          'Aplikasi administrasi sekolah adalah perangkat lunak (web atau mobile) yang dipakai sekolah untuk mencatat dan mengelola data operasional harian — mulai dari data siswa, pembayaran SPP, kas masuk dan keluar, absensi, sampai inventaris — agar semua informasi tersimpan rapi di satu tempat dan mudah dicari kembali.',
+        ],
+      },
+      {
+        heading: 'Masalah yang diselesaikan aplikasi administrasi sekolah',
+        list: [
+          'Data siswa tersebar di buku, spreadsheet, dan chat sehingga sulit dicari.',
+          'Rekap SPP dan tunggakan harus dihitung manual setiap kali ditanya.',
+          'Kas masuk dan keluar tidak tercatat konsisten, saldo sering tidak jelas.',
+          'Laporan untuk kepala sekolah atau yayasan memakan waktu berjam-jam.',
+          'Saat bendahara atau operator berganti, data lama sulit dibaca.',
+        ],
+      },
+      {
+        heading: 'Fitur yang umum ada',
+        list: [
+          'Data siswa: profil, kelas, mutasi, dan arsip dokumen.',
+          'Pembayaran SPP: pencatatan per siswa per bulan dan rekap tunggakan.',
+          'Kas: pemasukan, pengeluaran, kategori, dan riwayat saldo.',
+          'Laporan: rekap bulanan keuangan dan SPP yang bisa diekspor.',
+          'Pendaftaran siswa online, inventaris, dan penggajian — tergantung paket yang dipakai.',
+        ],
+      },
+      {
+        heading: 'Apakah sekolah kecil perlu aplikasi administrasi?',
+        paragraphs: [
+          'Sekolah kecil sekalipun terbantu, terutama di sisi keuangan dan SPP. Data yang tercatat rutin di satu tempat lebih mudah dipertanggungjawabkan dibanding tumpukan catatan manual. Mulai dari fitur paling dibutuhkan — misalnya kas dan SPP — lalu kembangkan seiring kebutuhan.',
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: 'Apakah aplikasi administrasi sekolah bisa dipakai di HP?',
+        a: 'Bisa untuk aplikasi berbasis web yang responsif, seperti SekolahRapi yang nyaman dibuka dari ponsel untuk memantau arus kas. Pastikan menanyakan hal ini sebelum memilih aplikasi.',
+      },
+      {
+        q: 'Data sekolah aman disimpan di aplikasi?',
+        a: 'Pada aplikasi yang memakai database cloud dengan pemisahan data per sekolah dan kebijakan akses berlapis (row level security), data sekolah tidak bisa dibaca sekolah lain. Tanyakan bagaimana data Anda dipisahkan dan siapa yang bisa mengaksesnya.',
+      },
+    ],
+  },
+  {
+    slug: 'aplikasi-keuangan-sekolah-swasta',
+    title: 'Aplikasi Keuangan untuk Sekolah Swasta',
+    description:
+      'Cara memilih aplikasi keuangan sekolah swasta: pencatatan kas, rekap bulanan, laporan untuk yayasan, dan fitur yang paling dibutuhkan bendahara.',
+    category: 'keuangan',
+    date: '2026-08-03',
+    readMinutes: 6,
+    author: 'Tim SekolahRapi',
+    pillarHref: '/fitur/keuangan-sekolah',
+    relatedSlugs: [
+      'cara-membuat-laporan-keuangan-sekolah-sederhana',
+      'cara-bendahara-sekolah-mencatat-kas-masuk-keluar',
+      'apa-itu-aplikasi-administrasi-sekolah',
+    ],
+    sections: [
+      {
+        heading: 'Kenapa keuangan sekolah swasta perlu aplikasi khusus',
+        paragraphs: [
+          'Keuangan sekolah swasta punya karakter yang berbeda dari toko atau kantor biasa: sumber pemasukan utama adalah SPP yang bersifat periodik dan per siswa, sedangkan pengeluaran mencakup gaji, operasional, dan kegiatan. Aplikasi keuangan sekolah membantu mencatat keduanya dengan kategori yang konsisten dan rekap yang bisa dibaca pemangku kepentingan.',
+        ],
+      },
+      {
+        heading: 'Fitur yang sebaiknya dicari',
+        list: [
+          'Pencatatan kas masuk dan keluar dengan kategori yang bisa disesuaikan.',
+          'Riwayat transaksi dengan saldo berjalan agar bisa diaudit.',
+          'Rekap bulanan pemasukan, pengeluaran, dan saldo akhir.',
+          'Ekspor data (Excel/CSV) untuk kebutuhan pelaporan.',
+          'Integrasi yang wajar dengan pencatatan SPP agar tidak dicatat dobel.',
+        ],
+      },
+      {
+        heading: 'Fitur yang belum tentu dibutuhkan di awal',
+        list: [
+          'Neraca, laba rugi formal, dan laporan standar akuntansi — umumnya baru diperlukan saat sekolah memiliki kewajiban pelaporan lebih besar.',
+          'Integrasi rekening bank otomatis — praktis, tetapi tidak semua sekolah siap prosesnya.',
+          'Payroll dan inventaris — tambahkan setelah kebutuhan kas dan SPP stabil.',
+        ],
+      },
+      {
+        heading: 'Cara mengevaluasi aplikasi sebelum memilih',
+        steps: [
+          'Buat daftar kebutuhan nyata: catat 3-5 masalah keuangan yang paling sering terjadi.',
+          'Coba demo dengan data sekolah Anda sendiri, bukan data contoh.',
+          'Uji dari HP karena bendahara sering bekerja di luar meja.',
+          'Tanyakan proses cadangan data dan siapa yang bisa mengakses data.',
+          'Mulai dari paket paling sederhana, lalu naik saat kebutuhan bertambah.',
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: 'Berapa biaya aplikasi keuangan sekolah?',
+        a: 'Bervariasi. Ada yang gratis dengan fitur dasar, ada yang berlangganan tahunan mulai ratusan ribu rupiah untuk sekolah. Bandingkan fitur yang benar-benar dipakai dengan biayanya.',
+      },
+      {
+        q: 'Apakah aplikasi bisa menggantikan bendahara?',
+        a: 'Tidak. Aplikasi adalah alat bantu pencatatan dan rekap; bendahara tetap yang memasukkan data dan bertanggung jawab atas kebenarannya. Aplikasi membuat pekerjaan bendahara lebih cepat dan rapi.',
+      },
+    ],
+  },
+  {
+    slug: 'aplikasi-pembayaran-spp-sekolah',
+    title: 'Aplikasi Pembayaran SPP Sekolah',
+    description:
+      'Aplikasi pembayaran SPP membantu mencatat pembayaran per siswa per bulan, merekap tunggakan, dan memastikan uang yang masuk tercatat di kas sekolah.',
+    category: 'spp',
+    date: '2026-08-03',
+    readMinutes: 5,
+    author: 'Tim SekolahRapi',
+    pillarHref: '/fitur/pembayaran-spp',
+    relatedSlugs: [
+      'contoh-format-pembayaran-spp-siswa',
+      'template-rekap-tunggakan-spp',
+      'cara-bendahara-sekolah-mencatat-kas-masuk-keluar',
+    ],
+    sections: [
+      {
+        heading: 'Apa itu aplikasi pembayaran SPP',
+        paragraphs: [
+          'Aplikasi pembayaran SPP adalah alat untuk mencatat pembayaran SPP siswa secara digital — siapa yang sudah bayar, bulan apa saja, berapa nominalnya, dan siapa yang masih menunggak — sehingga tidak perlu menghitung manual di buku atau spreadsheet.',
+        ],
+      },
+      {
+        heading: 'Masalah umum pencatatan SPP manual',
+        list: [
+          'Status pembayaran tersebar di buku, chat, dan catatan kecil.',
+          'Rekap tunggakan baru dibuat saat diminta, bukan rutin.',
+          'Nominal yang dibayar sebagian sulit dilacak sisanya.',
+          'Pembayaran yang masuk tidak otomatis tercatat di kas sekolah.',
+        ],
+      },
+      {
+        heading: 'Fitur yang membantu bendahara SPP',
+        list: [
+          'Catat pembayaran per siswa per bulan dengan status lunas, sebagian, atau belum.',
+          'Rekap tunggakan otomatis per siswa dan per bulan.',
+          'Pembayaran SPP yang lunas otomatis tercatat sebagai pemasukan kas.',
+          'Riwayat pembayaran yang bisa ditunjukkan ke orang tua.',
+        ],
+      },
+      {
+        heading: 'Tips memilih aplikasi SPP',
+        list: [
+          'Pastikan pembayaran SPP terhubung dengan pencatatan kas, agar tidak dicatat dua kali.',
+          'Cek bisa tidaknya mencatat pembayaran sebagian (angsuran).',
+          'Uji proses dari HP, karena sering dipakai saat menerima pembayaran.',
+          'Tanyakan format ekspor untuk kebutuhan pelaporan.',
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: 'Apakah aplikasi bisa menerima pembayaran online dari orang tua?',
+        a: 'Ada aplikasi yang menyediakan channel pembayaran, tetapi itu fitur yang berbeda dari sekadar pencatatan. Untuk memulai, pencatatan digital sudah jauh lebih rapi daripada buku manual. Tanyakan ke penyedia apakah channel pembayaran tersedia dan berapa biayanya.',
+      },
+      {
+        q: 'Bagaimana jika orang tua membayar tunai?',
+        a: 'Tetap dicatat manual di aplikasi: pilih siswa, bulan, dan nominal, lalu status berubah lunas. Aplikasi tidak mengharuskan semua pembayaran lewat transfer.',
+      },
+    ],
+  },
+  {
+    slug: 'format-administrasi-sekolah',
+    title: 'Format Administrasi Sekolah yang Umum Dipakai',
+    description:
+      'Daftar format administrasi sekolah yang umum dipakai: buku induk siswa, buku kas, rekap SPP, absensi, dan inventaris — beserta kolom-kolom dasarnya.',
+    category: 'administrasi',
+    date: '2026-08-03',
+    readMinutes: 6,
+    author: 'Tim SekolahRapi',
+    pillarHref: '/solusi/sekolah-swasta',
+    relatedSlugs: [
+      'administrasi-sekolah-swasta-yang-perlu-dirapikan',
+      'contoh-format-pembayaran-spp-siswa',
+      'cara-merapikan-data-administrasi-sekolah',
+    ],
+    sections: [
+      {
+        heading: 'Format buku induk siswa',
+        paragraphs: [
+          'Buku induk adalah dokumen inti data siswa. Formatnya mencatat identitas dan riwayat siswa sejak masuk sampai keluar.',
+        ],
+        list: [
+          'Nomor induk, nama lengkap, tempat tanggal lahir, jenis kelamin.',
+          'Alamat, nama orang tua/wali, pekerjaan, dan nomor HP.',
+          'Tahun masuk, asal sekolah, dan riwayat mutasi.',
+        ],
+      },
+      {
+        heading: 'Format buku kas sekolah',
+        paragraphs: [
+          'Buku kas mencatat seluruh uang masuk dan keluar secara kronologis.',
+        ],
+        list: [
+          'Tanggal, nomor urut, keterangan, pemasukan, pengeluaran, dan saldo.',
+          'Sumber pemasukan (misal SPP an. nama siswa) dan keperluan pengeluaran.',
+          'Referensi bukti: nomor kwitansi atau nota.',
+        ],
+      },
+      {
+        heading: 'Format rekap SPP dan tunggakan',
+        paragraphs: [
+          'Rekap SPP biasanya disusun per bulan dengan satu baris per siswa.',
+        ],
+        list: [
+          'Nama siswa, kelas, bulan yang dibayar, nominal, dan status.',
+          'Total terkumpul per bulan dan daftar tunggakan per siswa.',
+        ],
+      },
+      {
+        heading: 'Format absensi dan inventaris',
+        list: [
+          'Absensi: daftar hadir harian per kelas dengan keterangan hadir/izin/sakit/tanpa keterangan.',
+          'Inventaris: nama barang, jumlah, kondisi, lokasi, penanggung jawab, dan tahun pengadaan.',
+        ],
+      },
+      {
+        heading: 'Format bisa disederhanakan',
+        paragraphs: [
+          'Format tidak harus sempurna — yang penting konsisten dan selalu diperbarui. Banyak sekolah memakai spreadsheet atau aplikasi administrasi seperti SekolahRapi untuk menegakkan format yang sama tanpa harus menggambar tabel manual.',
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: 'Apakah ada format baku dari pemerintah untuk administrasi sekolah?',
+        a: 'Ada pedoman tertentu yang berlaku di lingkungan sekolah sesuai jenjangnya. Untuk kebutuhan operasional harian, format sederhana di atas sudah memadai; ketentuan resmi bisa disesuaikan kemudian.',
+      },
+      {
+        q: 'Bolehkah mengganti format lama dengan yang baru?',
+        a: 'Boleh, selama data lama tetap tersimpan dan format baru lebih mudah dipakai. Konsistensi ke depan lebih penting daripada mempertahankan format yang tidak praktis.',
+      },
+    ],
+  },
+  {
+    slug: 'cara-merapikan-data-administrasi-sekolah',
+    title: 'Cara Merapikan Data Administrasi Sekolah',
+    description:
+      'Langkah merapikan data administrasi sekolah: inventarisasi dokumen, satu pintu data, standarisasi format, dan jadwal pemeliharaan rutin.',
+    category: 'administrasi',
+    date: '2026-08-03',
+    readMinutes: 6,
+    author: 'Tim SekolahRapi',
+    pillarHref: '/solusi/sekolah-swasta',
+    relatedSlugs: [
+      'administrasi-sekolah-swasta-yang-perlu-dirapikan',
+      'format-administrasi-sekolah',
+      'cara-membuat-laporan-keuangan-sekolah-sederhana',
+    ],
+    sections: [
+      {
+        heading: 'Mulai dari inventarisasi dokumen',
+        paragraphs: [
+          'Sebelum merapikan, ketahui dulu apa saja yang ada: buku induk, arsip kwitansi, rekap SPP, absensi, dan file digital yang tersebar. Buat daftar dan tandai mana yang masih dipakai aktif, mana yang arsip, dan mana yang sudah tidak perlu.',
+        ],
+      },
+      {
+        heading: 'Terapkan satu pintu data',
+        paragraphs: [
+          'Masalah terbesar administrasi bukan pada format, melainkan data yang masuk lewat banyak pintu: chat, kertas, spreadsheet pribadi, dan ingatan. Tetapkan satu tempat sebagai sumber utama setiap jenis data.',
+        ],
+        list: [
+          'Data siswa: satu daftar induk yang diperbarui terpusat.',
+          'Pembayaran SPP: satu tempat pencatatan per transaksi.',
+          'Kas: satu buku kas yang menampung semua transaksi.',
+          'Dokumen: satu folder/laci untuk arsip penting.',
+        ],
+      },
+      {
+        heading: 'Standarisasi format dan penamaan',
+        steps: [
+          'Tetapkan format kolom yang sama untuk setiap jenis data.',
+          'Atur penamaan file digital: [tahun]-[jenis]-[nama], misalnya 2026-SPP-Desember.xlsx.',
+          'Beri nomor urut pada kwitansi dan arsip fisik.',
+          'Tentukan siapa yang boleh mengubah data dan siapa yang mengecek.',
+        ],
+      },
+      {
+        heading: 'Jadwalkan pemeliharaan rutin',
+        list: [
+          'Harian: catat transaksi kas dan pembayaran SPP.',
+          'Bulanan: tutup rekap, cocokkan saldo, perbarui tunggakan.',
+          'Tahunan: rapiakan arsip tahun ajaran lama dan perbarui daftar induk.',
+        ],
+      },
+      {
+        heading: 'Kapan beralih ke aplikasi',
+        paragraphs: [
+          'Ketika spreadsheet mulai penuh dan rekap memakan waktu berjam-jam, aplikasi administrasi seperti SekolahRapi membantu menegakkan satu pintu data dan format yang konsisten secara otomatis.',
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: 'Berapa lama waktu yang dibutuhkan untuk merapikan data?',
+        a: 'Tergantung kondisi awal. Mulai dari data keuangan dan SPP (paling sering ditanya), biasanya beberapa hari sampai beberapa minggu sambil tetap menjalankan operasional harian.',
+      },
+      {
+        q: 'Haruskah semua dokumen didigitalkan?',
+        a: 'Tidak harus semuanya sekaligus. Prioritaskan dokumen yang sering diakses (data siswa, rekap keuangan), lalu lanjutkan ke arsip lain bertahap.',
+      },
+    ],
+  },
+  {
+    slug: 'software-manajemen-madrasah',
+    title: 'Software Manajemen Madrasah: Pilih yang Sesuai Kebutuhan',
+    description:
+      'Panduan memilih software manajemen madrasah: data santri/siswa, iuran dan SPP, kas, sampai laporan — dengan catatan penting soal integrasi khusus.',
+    category: 'administrasi',
+    date: '2026-08-03',
+    readMinutes: 6,
+    author: 'Tim SekolahRapi',
+    pillarHref: '/solusi/madrasah',
+    relatedSlugs: [
+      'administrasi-sekolah-swasta-yang-perlu-dirapikan',
+      'aplikasi-pembayaran-spp-sekolah',
+      'cara-bendahara-sekolah-mencatat-kas-masuk-keluar',
+    ],
+    sections: [
+      {
+        heading: 'Kebutuhan administrasi madrasah',
+        paragraphs: [
+          'Madrasah menghadapi kebutuhan administrasi yang mirip sekolah umum: mencatat data santri/siswa, iuran dan SPP, kas, serta laporan rutin. Perbedaannya ada pada istilah dan kebiasaan operasional, misalnya penggunaan istilah santri dan jadwal kegiatan keagamaan — pastikan aplikasi yang dipilih tetap bisa menyesuaikan.',
+        ],
+      },
+      {
+        heading: 'Fitur dasar yang dibutuhkan madrasah',
+        list: [
+          'Data santri/siswa: profil, kelas/rombel, dan mutasi.',
+          'Pencatatan SPP/iuran per siswa per bulan dengan rekap tunggakan.',
+          'Kas masuk dan keluar dengan riwayat yang bisa ditelusuri.',
+          'Laporan bulanan untuk pengurus yayasan atau pembina.',
+        ],
+      },
+      {
+        heading: 'Catatan penting soal integrasi khusus',
+        paragraphs: [
+          'Beberapa madrasah membutuhkan pelaporan ke lembaga terkait. Saat ini banyak aplikasi administrasi umum (termasuk SekolahRapi) belum menyediakan integrasi khusus ke sistem lembaga. Tanyakan hal ini secara eksplisit sebelum memilih, dan jangan berasumsi semua aplikasi "untuk madrasah" sudah tersambung otomatis.',
+        ],
+      },
+      {
+        heading: 'Langkah memilih software madrasah',
+        steps: [
+          'Tulis kebutuhan nyata: data apa yang paling sering dicari dan dilaporkan.',
+          'Tanyakan dukungan integrasi ke lembaga bila itu kewajiban operasional Anda.',
+          'Uji demo dengan data madrasah Anda sendiri.',
+          'Pastikan bisa diakses dari HP oleh bendahara.',
+          'Hitung biaya tahunan dan bandingkan dengan manfaatnya.',
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: 'Apakah software madrasah harus punya fitur khusus keagamaan?',
+        a: 'Tergantung kebutuhan. Sebagian madrasah cukup dengan pencatatan administrasi umum, sebagian lagi menginginkan kolom khusus seperti status hafalan atau kegiatan. Pastikan aplikasi mengizinkan penyesuaian sederhana.',
+      },
+      {
+        q: 'Bagaimana dengan pelaporan ke lembaga?',
+        a: 'Konfirmasi langsung ke penyedia apakah ada integrasi khusus. Jika tidak ada, Anda tetap bisa menyusun laporan dari data yang diekspor dari aplikasi.',
+      },
+    ],
+  },
+  {
+    slug: 'berapa-biaya-aplikasi-administrasi-sekolah',
+    title: 'Berapa Biaya Aplikasi Administrasi Sekolah?',
+    description:
+      'Kisaran biaya aplikasi administrasi sekolah: gratis, langganan tahunan, hingga paket lengkap — plus cara menghitung nilai yang sepadan untuk sekolah.',
+    category: 'administrasi',
+    date: '2026-08-03',
+    readMinutes: 5,
+    author: 'Tim SekolahRapi',
+    pillarHref: '/fitur/keuangan-sekolah',
+    relatedSlugs: [
+      'apa-itu-aplikasi-administrasi-sekolah',
+      'aplikasi-keuangan-sekolah-swasta',
+      'administrasi-sekolah-swasta-yang-perlu-dirapikan',
+    ],
+    sections: [
+      {
+        heading: 'Jawaban singkat',
+        paragraphs: [
+          'Biaya aplikasi administrasi sekolah di Indonesia bervariasi dari Rp 0 (gratis dengan fitur dasar) sampai jutaan rupiah per tahun untuk paket lengkap. Sebagai gambaran, SekolahRapi menawarkan paket Gratis, Basic Rp 490.000/tahun, dan Pro Rp 990.000/tahun. Yang menentukan nilai bukan harga, tetapi fitur yang benar-benar dipakai sekolah.',
+        ],
+      },
+      {
+        heading: 'Pola harga yang umum',
+        list: [
+          'Gratis: fitur dasar seperti data siswa dan pencatatan kas sederhana, sering dengan batasan kategori atau jumlah data.',
+          'Langganan tahunan: ratusan ribu rupiah, mencakup laporan, ekspor/import Excel, dan kategori tanpa batas.',
+          'Paket lengkap: mendekati satu juta rupiah per tahun, menambahkan fitur seperti pendaftaran online, payroll, dan inventaris.',
+          'Biaya tambahan: setup, pelatihan, atau channel pembayaran online bila tersedia.',
+        ],
+      },
+      {
+        heading: 'Cara menghitung nilai sepadan',
+        paragraphs: [
+          'Bandingkan biaya dengan waktu yang dihemat. Jika rekap SPP dan laporan bulanan memakan 5-10 jam kerja staf, aplikasi yang menghemat waktu itu bisa bernilai jauh di atas biaya langganannya.',
+        ],
+        steps: [
+          'Hitung jam kerja bulanan untuk rekap manual.',
+          'Bandingkan dengan biaya aplikasi per bulan (bagi harga tahunan dengan 12).',
+          'Tambahkan nilai akurasi: data yang tidak salah hitung.',
+          'Cek biaya tersembunyi: pelatihan, penyimpanan tambahan, atau batas jumlah siswa.',
+        ],
+      },
+      {
+        heading: 'Mulai dari yang paling sederhana',
+        paragraphs: [
+          'Banyak sekolah memulai dari paket gratis untuk menguji alur, lalu naik ke paket berbayar saat data dan kebutuhan bertambah. Pastikan data Anda bisa dibawa naik tanpa perlu input ulang.',
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: 'Apakah aplikasi gratis bisa diandalkan?',
+        a: 'Bisa untuk mencoba dan untuk sekolah dengan kebutuhan dasar. Perhatikan batasan kategori, jumlah data, dan apakah data Anda dipisahkan dengan aman dari sekolah lain.',
+      },
+      {
+        q: 'Harga murah berarti fitur kurang?',
+        a: 'Tidak selalu. Bandingkan daftar fitur dan batasannya. Yang penting bukan harganya, melainkan apakah aplikasi menyelesaikan masalah nyata sekolah Anda.',
       },
     ],
   },

@@ -37,4 +37,7 @@ Harga, durasi, dan fitur dapat berubah. Hubungi tim untuk penawaran dan aktivasi
 
 - Beranda: https://sekolah-rapi.vercel.app
 - Harga: https://sekolah-rapi.vercel.app/pricing
+- Fitur: https://sekolah-rapi.vercel.app/fitur
+- Solusi: https://sekolah-rapi.vercel.app/solusi
+- Panduan (artikel praktis): https://sekolah-rapi.vercel.app/panduan
 - Daftar sekolah: https://sekolah-rapi.vercel.app/register

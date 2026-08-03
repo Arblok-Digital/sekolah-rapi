@@ -114,9 +114,18 @@ export default function MarketingPage() {
             </span>
           </Link>
           <div className="hidden items-center gap-7 text-sm font-bold md:flex">
-            <a href="#fitur" className="hover:text-[#26735d]">
+            <Link href="/fitur" className="hover:text-[#26735d]">
               Fitur
-            </a>
+            </Link>
+            <Link href="/solusi" className="hover:text-[#26735d]">
+              Solusi
+            </Link>
+            <Link href="/panduan" className="hover:text-[#26735d]">
+              Panduan
+            </Link>
+            <Link href="/pricing" className="hover:text-[#26735d]">
+              Harga
+            </Link>
             <a href="#cara-kerja" className="hover:text-[#26735d]">
               Cara kerja
             </a>
@@ -447,10 +456,12 @@ export default function MarketingPage() {
             </p>
           </div>
           <div className="flex flex-wrap gap-5 text-sm font-bold">
-            <a href="#fitur">Fitur</a>
+            <Link href="/fitur">Fitur</Link>
+            <Link href="/solusi">Solusi</Link>
+            <Link href="/panduan">Panduan</Link>
+            <Link href="/pricing">Harga</Link>
             <a href="#cara-kerja">Cara kerja</a>
             <a href="#faq">FAQ</a>
-            <Link href="/pricing">Paket lainnya</Link>
             <Link href="/login">Login</Link>
           </div>
         </div>

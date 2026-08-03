@@ -5,7 +5,7 @@ import MarketingLayout from '@/shared/components/marketing/MarketingLayout';
 import { Breadcrumb } from '@/shared/components/marketing/Breadcrumb';
 import { CtaSection } from '@/shared/components/marketing/CtaSection';
 import { RelatedLinks } from '@/shared/components/marketing/RelatedLinks';
-import { APP_URL } from '@/shared/constants';
+import { APP_NAME, APP_URL } from '@/shared/constants';
 import {
   CATEGORY_LABEL,
   PANDUAN_ARTICLES,
@@ -67,8 +67,53 @@ export default function PanduanArticlePage({
     })),
   ];
 
+  const articleUrl = `${APP_URL}/panduan/${article.slug}`;
+
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'Article',
+        headline: article.title,
+        description: article.description,
+        datePublished: article.date,
+        author: { '@type': 'Organization', name: article.author },
+        publisher: {
+          '@type': 'Organization',
+          name: APP_NAME,
+          url: APP_URL,
+        },
+        mainEntityOfPage: articleUrl,
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: APP_URL },
+          { '@type': 'ListItem', position: 2, name: 'Panduan', item: `${APP_URL}/panduan` },
+          { '@type': 'ListItem', position: 3, name: article.title, item: articleUrl },
+        ],
+      },
+      ...(article.faq && article.faq.length > 0
+        ? [
+            {
+              '@type': 'FAQPage',
+              mainEntity: article.faq.map((item) => ({
+                '@type': 'Question',
+                name: item.q,
+                acceptedAnswer: { '@type': 'Answer', text: item.a },
+              })),
+            },
+          ]
+        : []),
+    ],
+  };
+
   return (
     <MarketingLayout>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       <article className="mx-auto max-w-3xl px-5 py-14 sm:px-8">
         <Breadcrumb
           items={[
