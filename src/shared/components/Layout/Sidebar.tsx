@@ -14,6 +14,7 @@ import {
   Package,
   ClipboardList,
   FileText,
+  History,
   Menu,
   X,
   ChevronRight,
@@ -35,6 +36,7 @@ const navLinks = [
   { href: '/inventory', label: 'Inventaris', icon: Package, feature: 'inventory' as Feature },
   { href: '/payroll', label: 'Penggajian', icon: ClipboardList, feature: 'payroll' as Feature },
   { href: '/reports', label: 'Laporan', icon: FileText, feature: 'reports' as Feature },
+  { href: '/audit', label: 'Riwayat Kas', icon: History, feature: 'reports' as Feature },
 ];
 
 const devLinks = [

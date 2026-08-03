@@ -66,6 +66,8 @@ export interface Transaction {
   proof_url?: string;
   recorded_by: string;
   approved_by?: string;
+  source_type?: 'spp' | 'payroll' | 'inventory' | 'reversal' | null;
+  source_id?: string | null;
   created_at?: string;
   updated_at?: string;
 }

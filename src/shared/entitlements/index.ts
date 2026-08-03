@@ -80,7 +80,7 @@ export function getRouteFeature(pathname: string): Feature | undefined {
   const cleanPathname = pathname.split(/[?#]/, 1)[0].replace(/\/+$/, '') || '/';
   const routes: Array<[string, Feature]> = [
     ['/students', 'students'], ['/spp', 'spp'], ['/transactions', 'transactions'], ['/categories', 'transactions'],
-    ['/reports', 'reports'], ['/enrollment', 'enrollment'], ['/payroll', 'payroll'], ['/inventory', 'inventory'],
+    ['/reports', 'reports'], ['/audit', 'reports'], ['/enrollment', 'enrollment'], ['/payroll', 'payroll'], ['/inventory', 'inventory'],
   ];
   return routes.find(([route]) => cleanPathname === route || cleanPathname.startsWith(`${route}/`))?.[1];
 }
