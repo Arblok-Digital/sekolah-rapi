@@ -9,6 +9,43 @@ import type { Transaction } from '@/shared/types';
 
 function formatRp(n: number) { return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n); }
 function formatDate(d: string) { return d ? d.slice(0, 10) : '-'; }
+function localIso(d: Date) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+type Timeframe = 'today' | '7d' | 'month' | 'lastmonth' | 'year' | 'all' | 'custom';
+
+const TIMEFRAME_LABELS: Record<Exclude<Timeframe, 'custom'>, string> = {
+  today: 'Hari Ini',
+  '7d': '7 Hari',
+  month: 'Bulan Ini',
+  lastmonth: 'Bulan Lalu',
+  year: 'Tahun Ini',
+  all: 'Semua',
+};
+
+function timeframeRange(tf: Exclude<Timeframe, 'custom'>): { start: string; end: string } {
+  const now = new Date();
+  switch (tf) {
+    case 'today': return { start: localIso(now), end: localIso(now) };
+    case '7d': {
+      const s = new Date(now);
+      s.setDate(s.getDate() - 6);
+      return { start: localIso(s), end: localIso(now) };
+    }
+    case 'month': return { start: localIso(new Date(now.getFullYear(), now.getMonth(), 1)), end: localIso(now) };
+    case 'lastmonth': {
+      const s = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const e = new Date(now.getFullYear(), now.getMonth(), 0);
+      return { start: localIso(s), end: localIso(e) };
+    }
+    case 'year': return { start: `${now.getFullYear()}-01-01`, end: localIso(now) };
+    case 'all': return { start: '', end: '' };
+  }
+}
 
 interface SourceMeta {
   label: string;
@@ -35,8 +72,22 @@ export default function AuditPage() {
 
   const [typeFilter, setTypeFilter] = useState<'all' | 'income' | 'expense'>('all');
   const [categoryFilter, setCategoryFilter] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [timeframe, setTimeframe] = useState<Timeframe>('month');
+  const [startDate, setStartDate] = useState(() => timeframeRange('month').start);
+  const [endDate, setEndDate] = useState(() => timeframeRange('month').end);
+
+  function applyTimeframe(tf: Exclude<Timeframe, 'custom'>) {
+    const range = timeframeRange(tf);
+    setTimeframe(tf);
+    setStartDate(range.start);
+    setEndDate(range.end);
+  }
+
+  function handleCustomDate(field: 'start' | 'end', value: string) {
+    setTimeframe('custom');
+    if (field === 'start') setStartDate(value);
+    else setEndDate(value);
+  }
 
   useEffect(() => {
     if (!schoolId) return;
@@ -179,6 +230,33 @@ export default function AuditPage() {
             </div>
           </div>
 
+          {/* Timeframe panel */}
+          <div className="bg-white rounded-xl border border-white/10 p-4">
+            <div className="flex items-center gap-1.5 mb-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+              <History className="w-3.5 h-3.5" /> Rentang Waktu
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {(Object.keys(TIMEFRAME_LABELS) as Array<Exclude<Timeframe, 'custom'>>).map((tf) => (
+                <button
+                  key={tf}
+                  onClick={() => applyTimeframe(tf)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    timeframe === tf
+                      ? 'bg-indigo-600 text-white shadow-sm'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {TIMEFRAME_LABELS[tf]}
+                </button>
+              ))}
+              {timeframe === 'custom' && (
+                <span className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-indigo-50 text-indigo-600">
+                  Custom
+                </span>
+              )}
+            </div>
+          </div>
+
           {/* Filters */}
           <div className="bg-white rounded-xl border border-white/10 p-4">
             <div className="flex flex-wrap items-center gap-3 text-sm">
@@ -208,11 +286,11 @@ export default function AuditPage() {
 
               <label className="flex items-center gap-1.5 text-gray-500">
                 Dari
-                <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="px-2 py-1.5 border border-gray-200 rounded-lg text-sm" />
+                <input type="date" value={startDate} onChange={(e) => handleCustomDate('start', e.target.value)} className="px-2 py-1.5 border border-gray-200 rounded-lg text-sm" />
               </label>
               <label className="flex items-center gap-1.5 text-gray-500">
                 Sampai
-                <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="px-2 py-1.5 border border-gray-200 rounded-lg text-sm" />
+                <input type="date" value={endDate} onChange={(e) => handleCustomDate('end', e.target.value)} className="px-2 py-1.5 border border-gray-200 rounded-lg text-sm" />
               </label>
             </div>
           </div>
