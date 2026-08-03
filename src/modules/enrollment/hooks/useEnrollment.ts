@@ -5,6 +5,7 @@ import {
   getEnrollments,
   approveEnrollment,
   rejectEnrollment,
+  deleteEnrollmentRequest,
 } from '../services/enrollment.service';
 import type { EnrollmentStatus } from '../types/enrollment.types';
 
@@ -51,6 +52,20 @@ export function useRejectEnrollment() {
   return useMutation({
     mutationFn: ({ enrollmentId, adminId, notes }: { enrollmentId: string; adminId: string; notes?: string }) =>
       rejectEnrollment(enrollmentId, adminId, notes),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ENROLLMENT_KEYS.all });
+    },
+  });
+}
+
+/**
+ * Hook: delete an enrollment request.
+ */
+export function useDeleteEnrollment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (enrollmentId: string) => deleteEnrollmentRequest(enrollmentId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ENROLLMENT_KEYS.all });
     },

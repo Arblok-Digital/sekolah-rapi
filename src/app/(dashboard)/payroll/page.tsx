@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import { useAuth } from '@/shared/providers/AuthProvider';
 import { useToast, getErrorMessage } from '@/shared/components/ui/toast';
-import { useEmployees, useCreateEmployee, useUpdateEmployee, useDeleteEmployee, usePayroll, useGeneratePayroll, useUpdatePayroll } from '@/modules/payroll/hooks/usePayroll';
+import { useEmployees, useCreateEmployee, useUpdateEmployee, useDeleteEmployee, usePayroll, useGeneratePayroll, useUpdatePayroll, useDeletePayroll } from '@/modules/payroll/hooks/usePayroll';
 import { MONTHS } from '@/modules/payroll/types/payroll.types';
-import type { Employee, EmployeeFormInput } from '@/modules/payroll/types/payroll.types';
+import type { Employee, EmployeeFormInput, PayrollRecord } from '@/modules/payroll/types/payroll.types';
 import { Plus, Edit, Trash2, Users, Loader2, Zap, CheckCircle, XCircle } from 'lucide-react';
 
 const emptyEmp: EmployeeFormInput = { name: '', position: 'Guru', phone: '', base_salary: 0, status: 'active' };
@@ -28,6 +28,12 @@ export default function PayrollPage() {
   const [empForm, setEmpForm] = useState<EmployeeFormInput>(emptyEmp);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
+  // Payroll form
+  const [payFormOpen, setPayFormOpen] = useState(false);
+  const [editPay, setEditPay] = useState<PayrollRecord | null>(null);
+  const [payForm, setPayForm] = useState({ bonus: 0, deduction: 0 });
+  const [payDeleteConfirm, setPayDeleteConfirm] = useState<string | null>(null);
+
   const { data: employees, isLoading: empLoading } = useEmployees(schoolId || '');
   const createEmp = useCreateEmployee(schoolId || '');
   const updateEmp = useUpdateEmployee(schoolId || '');
@@ -36,6 +42,7 @@ export default function PayrollPage() {
   const { data: payroll, isLoading: payLoading } = usePayroll(schoolId || '', month, year);
   const generateMut = useGeneratePayroll(schoolId || '');
   const updatePay = useUpdatePayroll(schoolId || '');
+  const deletePay = useDeletePayroll(schoolId || '');
 
   function openCreateEmp() { setEditEmp(null); setEmpForm(emptyEmp); setEmpFormOpen(true); }
   function openEditEmp(e: Employee) { setEditEmp(e); setEmpForm({ name: e.name, position: e.position, phone: e.phone || '', base_salary: e.base_salary, status: e.status }); setEmpFormOpen(true); }
@@ -78,6 +85,38 @@ export default function PayrollPage() {
     } catch (err) {
       toast({ title: 'Gagal memperbarui status pembayaran', description: getErrorMessage(err), variant: 'error' });
     }
+  }
+
+  function openEditPay(r: PayrollRecord) {
+    setEditPay(r);
+    setPayForm({ bonus: r.bonus, deduction: r.deduction });
+    setPayFormOpen(true);
+  }
+
+  async function handlePayEditSubmit() {
+    if (!editPay) return;
+    if (payForm.bonus < 0 || payForm.deduction < 0) return;
+    // total = base_salary + bonus - deduction, computed client-side and sent with the update
+    const total = editPay.base_salary + payForm.bonus - payForm.deduction;
+    try {
+      await updatePay.mutateAsync({ id: editPay.id, input: { bonus: payForm.bonus, deduction: payForm.deduction, total } });
+      toast({ title: 'Slip gaji diperbarui', variant: 'success' });
+      setPayFormOpen(false);
+    } catch (err) {
+      toast({ title: 'Gagal memperbarui slip gaji', description: getErrorMessage(err), variant: 'error' });
+    }
+  }
+
+  // NOTE: deleting a paid record removes the payroll record only; the linked
+  // expense transaction stays in the ledger (updatePayroll/createPayroll create it).
+  async function handleDeletePay(id: string) {
+    try {
+      await deletePay.mutateAsync(id);
+      toast({ title: 'Slip gaji dihapus', variant: 'success' });
+    } catch (err) {
+      toast({ title: 'Gagal menghapus slip gaji', description: getErrorMessage(err), variant: 'error' });
+    }
+    setPayDeleteConfirm(null);
   }
 
   const activeEmp = employees?.filter(e => e.status === 'active') || [];
@@ -213,21 +252,32 @@ export default function PayrollPage() {
                       <td className="px-4 py-3 text-center">
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${r.paid ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{r.paid ? 'Lunas' : 'Belum'}</span>
                       </td>
-                      <td className="px-4 py-3 text-center">
-                        <button
-                          onClick={() => handleTogglePaid(r.id, r.paid)}
-                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                            r.paid
-                              ? 'bg-red-50 text-red-600 hover:bg-red-100'
-                              : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
-                          }`}
-                        >
-                          {r.paid ? (
-                            <><XCircle className="w-3.5 h-3.5" /> Batal</>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-center gap-1">
+                          <button onClick={() => openEditPay(r)} className="p-1.5 text-gray-400 hover:text-indigo-600 rounded-lg hover:bg-indigo-50"><Edit className="w-4 h-4" /></button>
+                          {payDeleteConfirm === r.id ? (
+                            <div className="flex items-center gap-1">
+                              <button onClick={() => handleDeletePay(r.id)} className="px-2 py-1 bg-red-600 text-white rounded text-xs">Ya</button>
+                              <button onClick={() => setPayDeleteConfirm(null)} className="px-2 py-1 bg-gray-100 rounded text-xs">Batal</button>
+                            </div>
                           ) : (
-                            <><CheckCircle className="w-3.5 h-3.5" /> Bayar</>
+                            <button onClick={() => setPayDeleteConfirm(r.id)} className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50"><Trash2 className="w-4 h-4" /></button>
                           )}
-                        </button>
+                          <button
+                            onClick={() => handleTogglePaid(r.id, r.paid)}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                              r.paid
+                                ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                                : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
+                            }`}
+                          >
+                            {r.paid ? (
+                              <><XCircle className="w-3.5 h-3.5" /> Batal</>
+                            ) : (
+                              <><CheckCircle className="w-3.5 h-3.5" /> Bayar</>
+                            )}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -277,6 +327,37 @@ export default function PayrollPage() {
               <button onClick={handleEmpSubmit} disabled={!empForm.name.trim()} className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 disabled:opacity-50">
                 {editEmp ? 'Simpan' : 'Tambah'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payroll Edit Modal */}
+      {payFormOpen && editPay && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md">
+            <h3 className="text-lg font-bold text-gray-900 mb-1">Edit Slip Gaji</h3>
+            <p className="text-sm text-gray-500 mb-4">{editPay.employee?.name || '-'} - {MONTHS[editPay.month - 1]} {editPay.year}</p>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Bonus (Rp)</label>
+                  <input type="number" value={payForm.bonus} onChange={e => setPayForm({ ...payForm, bonus: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm" min={0} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Potongan (Rp)</label>
+                  <input type="number" value={payForm.deduction} onChange={e => setPayForm({ ...payForm, deduction: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm" min={0} />
+                </div>
+              </div>
+              <div className="text-sm text-gray-600">
+                Gaji Pokok: {formatRp(editPay.base_salary)}
+                <div className="mt-1">Total: <span className="font-semibold text-gray-900">{formatRp(editPay.base_salary + payForm.bonus - payForm.deduction)}</span></div>
+              </div>
+              {(payForm.bonus < 0 || payForm.deduction < 0) && <p className="text-xs text-red-600">Bonus dan potongan tidak boleh negatif</p>}
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button onClick={() => setPayFormOpen(false)} className="px-4 py-2.5 text-sm text-gray-500 hover:text-gray-700">Batal</button>
+              <button onClick={handlePayEditSubmit} disabled={payForm.bonus < 0 || payForm.deduction < 0} className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 disabled:opacity-50">Simpan</button>
             </div>
           </div>
         </div>

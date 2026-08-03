@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useToast } from '@/shared/components/ui/toast';
-import type { SPPFormInput, SPPStatus } from '../types/spp.types';
+import type { SPPFormInput, SPPPayment, SPPStatus } from '../types/spp.types';
 import { getMonthName } from '../types/spp.types';
 
 interface StudentOption {
@@ -20,6 +20,7 @@ interface PaymentFormProps {
   students?: StudentOption[];
   defaultMonth?: number;
   defaultYear?: number;
+  initialData?: SPPPayment | null;
 }
 
 const METHODS = ['tunai', 'transfer', 'qris', 'lainnya'] as const;
@@ -31,8 +32,10 @@ export function PaymentForm({
   students = [],
   defaultMonth,
   defaultYear,
+  initialData,
 }: PaymentFormProps) {
   const now = new Date();
+  const isEditing = !!initialData;
   const [studentId, setStudentId] = useState('');
   const [month, setMonth] = useState(defaultMonth ?? now.getMonth() + 1);
   const [year, setYear] = useState(defaultYear ?? now.getFullYear());
@@ -45,6 +48,22 @@ export function PaymentForm({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const { toast } = useToast();
+
+  // Reset/sync form fields whenever the modal opens (create or edit)
+  useEffect(() => {
+    if (!open) return;
+    const fallback = new Date();
+    setStudentId(initialData?.student_id ?? '');
+    setMonth(initialData?.month ?? defaultMonth ?? fallback.getMonth() + 1);
+    setYear(initialData?.year ?? defaultYear ?? fallback.getFullYear());
+    setAmount(initialData ? String(initialData.amount) : '');
+    setPaidAmount(initialData ? String(initialData.paid_amount) : '');
+    setStatus(initialData?.status ?? 'paid');
+    setMethod(initialData?.method ?? 'tunai');
+    setPaymentDate(initialData?.payment_date ?? fallback.toISOString().split('T')[0]);
+    setReceiptNumber(initialData?.receipt_number ?? '');
+    setError('');
+  }, [open, initialData, defaultMonth, defaultYear]);
 
   // Sync paid amount with amount when status changes to 'paid'
   useEffect(() => {
@@ -89,7 +108,10 @@ export function PaymentForm({
     setSubmitting(true);
     try {
       await onSubmit(input);
-      toast({ title: 'Pembayaran SPP dicatat', variant: 'success' });
+      toast({
+        title: isEditing ? 'Pembayaran SPP diperbarui' : 'Pembayaran SPP dicatat',
+        variant: 'success',
+      });
       // Reset form
       setStudentId('');
       setAmount('');
@@ -117,7 +139,9 @@ export function PaymentForm({
       <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-xl border border-gray-200">
         {/* header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-900">Tambah Pembayaran SPP</h3>
+          <h3 className="text-lg font-semibold text-gray-900">
+            {isEditing ? 'Edit Pembayaran SPP' : 'Tambah Pembayaran SPP'}
+          </h3>
           <button
             onClick={onClose}
             className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
@@ -293,7 +317,7 @@ export function PaymentForm({
               disabled={submitting}
               className="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {submitting ? 'Menyimpan...' : 'Simpan'}
+              {submitting ? 'Menyimpan...' : isEditing ? 'Simpan Perubahan' : 'Simpan'}
             </button>
           </div>
         </form>

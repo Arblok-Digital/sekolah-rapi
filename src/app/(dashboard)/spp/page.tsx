@@ -6,12 +6,21 @@ import { createSupabaseClient } from '@/shared/services/supabase/client';
 import { Plus, Filter, Download } from 'lucide-react';
 import { PaymentTable } from '@/modules/spp/components/PaymentTable';
 import { PaymentForm } from '@/modules/spp/components/PaymentForm';
-import type { SPPFormInput, SPPFilter } from '@/modules/spp/types/spp.types';
-import { useSPPPayments, useCreateSPPPayment, useSPPSummary } from '@/modules/spp/hooks/useSPP';
+import type { SPPFormInput, SPPFilter, SPPPayment } from '@/modules/spp/types/spp.types';
+import {
+  useSPPPayments,
+  useCreateSPPPayment,
+  useSPPSummary,
+  useUpdateSPPPayment,
+  useDeleteSPPPayment,
+} from '@/modules/spp/hooks/useSPP';
 import { cn } from '@/shared/utils/cn';
 
 export default function SPPPage() {
   const [formOpen, setFormOpen] = useState(false);
+  const [editingPayment, setEditingPayment] = useState<SPPPayment | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [filterYear, setFilterYear] = useState(new Date().getFullYear());
   const [filterMonth, setFilterMonth] = useState<number | undefined>(undefined);
   const { schoolId, session } = useAuth();
@@ -24,6 +33,8 @@ export default function SPPPage() {
   const { data: payments, isLoading, error } = useSPPPayments(schoolId || '', filter);
   const { data: summary } = useSPPSummary(schoolId || '', filterMonth, filterYear);
   const createMutation = useCreateSPPPayment(schoolId || '', session?.user?.id || '');
+  const updateMutation = useUpdateSPPPayment();
+  const deleteMutation = useDeleteSPPPayment();
 
   // Fetch students for the dropdown
   const [studentList, setStudentList] = useState<Array<{ id: string; name: string; nis: string; class: string }>>([]);
@@ -37,6 +48,43 @@ export default function SPPPage() {
   const handleCreate = async (input: SPPFormInput) => {
     await createMutation.mutateAsync(input);
     setFormOpen(false);
+  };
+
+  const handleUpdate = async (input: SPPFormInput) => {
+    if (!editingPayment) return;
+    await updateMutation.mutateAsync({ id: editingPayment.id, updates: input });
+    setEditingPayment(null);
+    setFormOpen(false);
+  };
+
+  const openCreateForm = () => {
+    setActionMessage(null);
+    setEditingPayment(null);
+    setFormOpen(true);
+  };
+
+  const closeForm = () => {
+    setFormOpen(false);
+    setEditingPayment(null);
+  };
+
+  const handleEdit = (payment: SPPPayment) => {
+    setActionMessage(null);
+    setEditingPayment(payment);
+    setFormOpen(true);
+  };
+
+  const handleDelete = (id: string) => {
+    if (!window.confirm('Yakin ingin menghapus pembayaran SPP ini?')) return;
+    setActionMessage(null);
+    setDeletingId(id);
+    deleteMutation.mutate(id, {
+      onSuccess: () =>
+        setActionMessage({ type: 'success', text: 'Pembayaran SPP berhasil dihapus' }),
+      onError: (err) =>
+        setActionMessage({ type: 'error', text: `Gagal menghapus pembayaran: ${err.message}` }),
+      onSettled: () => setDeletingId(null),
+    });
   };
 
   const currentYear = new Date().getFullYear();
@@ -61,7 +109,7 @@ export default function SPPPage() {
           </p>
         </div>
         <button
-          onClick={() => setFormOpen(true)}
+          onClick={openCreateForm}
           className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors"
         >
           <Plus className="w-4 h-4" />
@@ -125,6 +173,22 @@ export default function SPPPage() {
         </div>
       )}
 
+      {/* Inline action feedback */}
+      {(actionMessage || deletingId) && (
+        <div
+          className={cn(
+            'p-3 rounded-lg text-sm border',
+            deletingId
+              ? 'bg-gray-50 border-gray-200 text-gray-600'
+              : actionMessage?.type === 'success'
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                : 'bg-red-50 border-red-200 text-red-700'
+          )}
+        >
+          {deletingId ? 'Menghapus pembayaran SPP...' : actionMessage?.text}
+        </div>
+      )}
+
       {/* Table */}
       {isLoading ? (
         <div className="text-center py-12">
@@ -132,15 +196,20 @@ export default function SPPPage() {
           <p className="text-sm text-white/60 mt-3">Memuat data SPP...</p>
         </div>
       ) : (
-        <PaymentTable payments={payments || []} />
+        <PaymentTable
+          payments={payments || []}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
       )}
 
-      {/* Create Form Modal */}
+      {/* Create/Edit Form Modal */}
       <PaymentForm
         open={formOpen}
-        onClose={() => setFormOpen(false)}
-        onSubmit={handleCreate}
+        onClose={closeForm}
+        onSubmit={editingPayment ? handleUpdate : handleCreate}
         students={studentList}
+        initialData={editingPayment}
       />
     </div>
   );

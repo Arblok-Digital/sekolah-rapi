@@ -90,3 +90,19 @@ export async function rejectEnrollment(
   });
   if (error) throw new Error('Gagal menolak pendaftaran: ' + error.message);
 }
+
+/**
+ * Delete an enrollment request. RLS scopes the delete to the user's own
+ * school. Deleting the request does not remove any student record that was
+ * already created when the enrollment was approved.
+ */
+export async function deleteEnrollmentRequest(
+  enrollmentId: string
+): Promise<void> {
+  const supabase = createSupabaseClient();
+  const { error } = await supabase
+    .from(TABLE)
+    .delete()
+    .eq('id', enrollmentId);
+  if (error) throw new Error('Gagal menghapus pendaftaran: ' + error.message);
+}

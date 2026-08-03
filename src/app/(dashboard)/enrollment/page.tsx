@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import { useAuth } from '@/shared/providers/AuthProvider';
 import { useToast, getErrorMessage } from '@/shared/components/ui/toast';
-import { useEnrollments, useApproveEnrollment, useRejectEnrollment } from '@/modules/enrollment/hooks/useEnrollment';
-import type { EnrollmentStatus } from '@/modules/enrollment/types/enrollment.types';
-import { CheckCircle, XCircle, Clock, UserPlus, Eye, Loader2 } from 'lucide-react';
+import { useEnrollments, useApproveEnrollment, useRejectEnrollment, useDeleteEnrollment } from '@/modules/enrollment/hooks/useEnrollment';
+import type { EnrollmentStatus, EnrollmentRequest } from '@/modules/enrollment/types/enrollment.types';
+import { CheckCircle, XCircle, Clock, UserPlus, Eye, Trash2, Loader2 } from 'lucide-react';
 
 export default function EnrollmentPage() {
   const { schoolId, session } = useAuth();
@@ -20,6 +20,20 @@ export default function EnrollmentPage() {
   );
   const approveMutation = useApproveEnrollment();
   const rejectMutation = useRejectEnrollment();
+  const deleteMutation = useDeleteEnrollment();
+
+  const handleDelete = async (enrollment: EnrollmentRequest) => {
+    const confirmed = window.confirm(
+      `Hapus pendaftaran ${enrollment.student_name}? Pendaftaran yang sudah disetujui tidak akan menghapus data siswa yang sudah dibuat.`
+    );
+    if (!confirmed) return;
+    try {
+      await deleteMutation.mutateAsync(enrollment.id);
+      toast({ title: 'Pendaftaran dihapus', variant: 'success' });
+    } catch (err) {
+      toast({ title: 'Gagal menghapus pendaftaran', description: getErrorMessage(err), variant: 'error' });
+    }
+  };
 
   const handleApprove = async (enrollmentId: string) => {
     if (!session?.user) return;
@@ -186,6 +200,19 @@ export default function EnrollmentPage() {
                       </button>
                     </>
                   )}
+
+                  <button
+                    onClick={() => handleDelete(enrollment)}
+                    disabled={deleteMutation.isPending && deleteMutation.variables === enrollment.id}
+                    className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-xs font-medium hover:bg-red-100 hover:text-red-700 disabled:opacity-50"
+                  >
+                    {deleteMutation.isPending && deleteMutation.variables === enrollment.id ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-3.5 h-3.5" />
+                    )}
+                    Hapus
+                  </button>
                 </div>
               </div>
 
