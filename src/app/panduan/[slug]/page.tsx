@@ -126,32 +126,32 @@ export default function PanduanArticlePage({
         <div className="mt-8">
           <Link
             href={`/panduan#${article.category}`}
-            className="inline-block rounded-full bg-indigo-500/15 px-3 py-1 text-xs font-bold text-indigo-300"
+            className="inline-block rounded-full bg-[#dfe99a]/45 px-3 py-1 text-xs font-bold text-[#26735d]"
           >
             {CATEGORY_LABEL[article.category]}
           </Link>
         </div>
 
-        <h1 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-4xl">
+        <h1 className="mt-4 text-3xl font-black tracking-tight text-[#17211b] sm:text-4xl">
           {article.title}
         </h1>
-        <p className="mt-4 leading-relaxed text-white/70">
+        <p className="mt-4 leading-relaxed text-[#59645d]">
           {article.description}
         </p>
-        <p className="mt-4 text-sm font-semibold text-white/50">
+        <p className="mt-4 text-sm font-semibold text-[#6f7972]">
           {formatPanduanDate(article.date)} · {article.readMinutes} menit baca ·{' '}
           {article.author}
         </p>
 
         {article.sections.map((section, index) => (
           <section key={index} className="mt-10">
-            <h2 className="text-xl font-bold text-white sm:text-2xl">
+            <h2 className="text-xl font-bold text-[#17211b] sm:text-2xl">
               {section.heading}
             </h2>
             {section.paragraphs?.map((paragraph, paragraphIndex) => (
               <p
                 key={paragraphIndex}
-                className="mt-3 leading-relaxed text-white/75"
+                className="mt-3 leading-relaxed text-[#526158]"
               >
                 {paragraph}
               </p>
@@ -161,9 +161,9 @@ export default function PanduanArticlePage({
                 {section.list.map((item, listIndex) => (
                   <li
                     key={listIndex}
-                    className="flex items-start gap-2 text-white/75"
+                    className="flex items-start gap-2 text-[#526158]"
                   >
-                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-400" />
+                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#26735d]" />
                     <span className="leading-relaxed">{item}</span>
                   </li>
                 ))}
@@ -174,9 +174,9 @@ export default function PanduanArticlePage({
                 {section.steps.map((step, stepIndex) => (
                   <li
                     key={stepIndex}
-                    className="flex items-start gap-3 text-white/75"
+                    className="flex items-start gap-3 text-[#526158]"
                   >
-                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-indigo-600 text-xs font-black text-white">
+                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#173f35] text-xs font-black text-white">
                       {stepIndex + 1}
                     </span>
                     <span className="leading-relaxed">{step}</span>
@@ -189,19 +189,19 @@ export default function PanduanArticlePage({
 
         {article.faq && article.faq.length > 0 ? (
           <section className="mt-14">
-            <h2 className="text-2xl font-black tracking-tight text-white">
+            <h2 className="text-2xl font-black tracking-tight text-[#17211b]">
               Pertanyaan Umum
             </h2>
             <div className="mt-6 space-y-3">
               {article.faq.map((item, index) => (
                 <details
                   key={index}
-                  className="group rounded-2xl border border-white/10 bg-white/[.06] px-6 py-4"
+                  className="group rounded-2xl border border-[#173f35]/10 bg-white/70 px-6 py-4"
                 >
-                  <summary className="cursor-pointer font-bold text-white">
+                  <summary className="cursor-pointer font-bold text-[#17211b]">
                     {item.q}
                   </summary>
-                  <p className="mt-3 leading-relaxed text-white/70">
+                  <p className="mt-3 leading-relaxed text-[#59645d]">
                     {item.a}
                   </p>
                 </details>

@@ -125,13 +125,13 @@ export default function SolusiMadrasahPage() {
 
       <section className="mx-auto max-w-7xl px-4 pb-14 pt-12 sm:px-6 lg:px-8">
         <div className="max-w-3xl">
-          <span className="inline-flex items-center gap-2 rounded-full border border-[#7c5cff]/30 bg-[#7c5cff]/10 px-3 py-1 text-xs font-semibold text-[#a892ff]">
+          <span className="inline-flex items-center gap-2 rounded-full border border-[#26735d]/30 bg-[#dfe99a]/45 px-3 py-1 text-xs font-semibold text-[#26735d]">
             <MoonStar className="h-3.5 w-3.5" /> Madrasah
           </span>
           <h1 className="mt-5 text-4xl font-bold tracking-tight sm:text-5xl">
             Solusi Madrasah
           </h1>
-          <p className="mt-5 text-lg leading-8 text-white/70">
+          <p className="mt-5 text-lg leading-8 text-[#59645d]">
             SekolahRapi adalah alat pencatatan yang membantu administrasi harian
             madrasah — rekap SPP dan iuran santri, data siswa, serta laporan
             keuangan yang rapi dalam satu sistem.
@@ -141,7 +141,7 @@ export default function SolusiMadrasahPage() {
 
       <section className="mx-auto max-w-7xl px-4 pb-20 sm:px-6 lg:px-8">
         <div className="max-w-2xl">
-          <p className="text-sm font-semibold uppercase tracking-wider text-[#7c5cff]">
+          <p className="text-sm font-semibold uppercase tracking-wider text-[#26735d]">
             Masalah yang sering terjadi
           </p>
           <h2 className="mt-3 text-3xl font-bold tracking-tight">
@@ -154,13 +154,13 @@ export default function SolusiMadrasahPage() {
             return (
               <div
                 key={pain.title}
-                className="rounded-2xl border border-white/10 bg-white/[.06] p-7"
+                className="rounded-2xl border border-[#173f35]/10 bg-white/70 p-7"
               >
-                <span className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-[#7c5cff] to-[#3a1fb8] text-white">
+                <span className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-[#173f35] to-[#26735d] text-white">
                   <Icon className="h-5 w-5" />
                 </span>
                 <h3 className="mt-5 text-lg font-bold">{pain.title}</h3>
-                <p className="mt-2 text-sm leading-7 text-white/70">
+                <p className="mt-2 text-sm leading-7 text-[#59645d]">
                   {pain.description}
                 </p>
               </div>
@@ -171,13 +171,13 @@ export default function SolusiMadrasahPage() {
 
       <section className="mx-auto max-w-7xl px-4 pb-20 sm:px-6 lg:px-8">
         <div className="max-w-2xl">
-          <p className="text-sm font-semibold uppercase tracking-wider text-[#7c5cff]">
+          <p className="text-sm font-semibold uppercase tracking-wider text-[#26735d]">
             Cara SekolahRapi membantu
           </p>
           <h2 className="mt-3 text-3xl font-bold tracking-tight">
             Catatan madrasah yang rapi setiap hari.
           </h2>
-          <p className="mt-3 leading-7 text-white/70">
+          <p className="mt-3 leading-7 text-[#59645d]">
             SekolahRapi merapikan alur pencatatan yang paling sering dipakai
             tim madrasah, tanpa mengubah seluruh kebiasaan sekaligus.
           </p>
@@ -188,18 +188,18 @@ export default function SolusiMadrasahPage() {
             return (
               <div
                 key={help.title}
-                className="rounded-2xl border border-white/10 bg-white/[.06] p-7"
+                className="rounded-2xl border border-[#173f35]/10 bg-white/70 p-7"
               >
-                <Icon className="h-6 w-6 text-[#a892ff]" />
+                <Icon className="h-6 w-6 text-[#26735d]" />
                 <h3 className="mt-5 text-lg font-bold">{help.title}</h3>
-                <p className="mt-2 text-sm leading-7 text-white/70">
+                <p className="mt-2 text-sm leading-7 text-[#59645d]">
                   {help.description}
                 </p>
               </div>
             );
           })}
         </div>
-        <p className="mt-6 max-w-4xl rounded-xl border border-white/10 bg-white/[.06] px-4 py-3 text-xs leading-6 text-white/70">
+        <p className="mt-6 max-w-4xl rounded-xl border border-[#173f35]/10 bg-white/70 px-4 py-3 text-xs leading-6 text-[#59645d]">
           SekolahRapi adalah alat pencatatan untuk administrasi harian madrasah
           dan tidak terhubung dengan Kemenag, EMIS, atau sistem pelaporan resmi
           lainnya.
@@ -208,7 +208,7 @@ export default function SolusiMadrasahPage() {
 
       <section className="mx-auto max-w-7xl px-4 pb-20 sm:px-6 lg:px-8">
         <div className="max-w-2xl">
-          <p className="text-sm font-semibold uppercase tracking-wider text-[#7c5cff]">
+          <p className="text-sm font-semibold uppercase tracking-wider text-[#26735d]">
             Checklist
           </p>
           <h2 className="mt-3 text-3xl font-bold tracking-tight">
@@ -219,9 +219,9 @@ export default function SolusiMadrasahPage() {
           {checklist.map((item) => (
             <li
               key={item}
-              className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/[.06] px-5 py-4 text-sm leading-6"
+              className="flex items-start gap-3 rounded-xl border border-[#173f35]/10 bg-white/70 px-5 py-4 text-sm leading-6"
             >
-              <Check className="mt-0.5 h-5 w-5 shrink-0 text-[#7c5cff]" />
+              <Check className="mt-0.5 h-5 w-5 shrink-0 text-[#26735d]" />
               {item}
             </li>
           ))}
@@ -230,7 +230,7 @@ export default function SolusiMadrasahPage() {
 
       <section className="mx-auto max-w-5xl px-4 pb-20 sm:px-6 lg:px-8">
         <div className="max-w-2xl">
-          <p className="text-sm font-semibold uppercase tracking-wider text-[#7c5cff]">
+          <p className="text-sm font-semibold uppercase tracking-wider text-[#26735d]">
             Pertanyaan umum
           </p>
           <h2 className="mt-3 text-3xl font-bold tracking-tight">
@@ -241,15 +241,15 @@ export default function SolusiMadrasahPage() {
           {faqs.map((faq) => (
             <details
               key={faq.q}
-              className="group rounded-2xl border border-white/10 bg-white/[.06]"
+              className="group rounded-2xl border border-[#173f35]/10 bg-white/70"
             >
               <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-6 py-4 font-semibold">
                 {faq.q}
-                <span className="shrink-0 text-white/40 transition-transform duration-200 group-open:rotate-180">
+                <span className="shrink-0 text-[#6f7972] transition-transform duration-200 group-open:rotate-180">
                   ▼
                 </span>
               </summary>
-              <p className="px-6 pb-5 text-sm leading-7 text-white/70">
+              <p className="px-6 pb-5 text-sm leading-7 text-[#59645d]">
                 {faq.a}
               </p>
             </details>

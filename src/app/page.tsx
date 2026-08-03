@@ -3,7 +3,7 @@ import LandingPage from "./landing-page";
 import { APP_NAME, APP_URL } from "@/shared/constants";
 
 const description =
-  "Terima pendaftaran siswa online, pantau uang masuk dan keluar tanpa menunggu rekap, lalu kelola administrasi sekolah dalam satu sistem.";
+  "Hubungkan pendaftaran siswa, SPP, kas, dan pekerjaan admin dalam satu web app agar tim tidak terus menyalin data dan owner tidak menunggu rekap.";
 
 export const metadata: Metadata = {
   title: 'Aplikasi Administrasi Sekolah',
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'id_ID',
     siteName: APP_NAME,
-    title: 'Pendaftaran Online dan Pantauan Kas Sekolah | SekolahRapi',
+    title: 'Pendaftaran, SPP, dan Kas dalam Satu Alur | SekolahRapi',
     description,
   },
   twitter: {

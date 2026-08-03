@@ -78,10 +78,11 @@ Detail dan acceptance criteria: `.ai/ORGANIC-GROWTH-ROADMAP.md`.
 
 ### Fase 1 — Technical Foundation
 
-- [ ] Tambahkan robots, sitemap, `llms.txt`, canonical/metadata defaults, dan OG image.
+- [x] Tambahkan robots, sitemap, `llms.txt`, canonical halaman utama, dan metadata route marketing.
+- [ ] Lengkapi/audit metadata defaults global, OG image, creator/publisher, dan canonical seluruh route publik.
 - [ ] Terapkan `noindex` pada auth, onboarding, dashboard, dev/admin, dan status akun.
-- [ ] Rapikan middleware agar route marketing/content baru crawlable tanpa allowlist manual per artikel.
-- [ ] Perbaiki viewport accessibility dan audit Core Web Vitals/broken links/status code.
+- [x] Pastikan route marketing/content utama crawlable tanpa autentikasi.
+- [ ] Audit Core Web Vitals, broken links menyeluruh, redirect, duplicate canonical, dan index policy private routes.
 
 ### Fase 2 — Entity dan Trust
 
@@ -91,9 +92,11 @@ Detail dan acceptance criteria: `.ai/ORGANIC-GROWTH-ROADMAP.md`.
 
 ### Fase 3 — Organic Content Architecture
 
-- [ ] Buat marketing layout serta pillar pages fitur/solusi prioritas.
-- [ ] Buat knowledge hub `/panduan` atau `/blog` dengan template artikel yang lengkap.
-- [ ] Terbitkan cluster awal 5–8 artikel berkualitas dengan internal links dan CTA kontekstual.
+- [x] Buat marketing layout serta pillar pages fitur/solusi prioritas dengan identitas cream/green yang konsisten.
+- [x] Jadikan `/` satu conversion journey terstruktur; supporting routes tetap menjadi pendalaman SEO, bukan landing terpisah.
+- [x] Buat knowledge hub `/panduan` dengan template artikel, breadcrumb, related links, dan CTA kontekstual.
+- [ ] Lengkapi cluster awal menjadi 5–8 artikel berkualitas dengan author/reviewer nyata.
+- [x] Verifikasi production build, route utama, dan crawler endpoints; semua target pemeriksaan merespons HTTP 200.
 
 ### Fase 4 — Measurement dan Distribution
 

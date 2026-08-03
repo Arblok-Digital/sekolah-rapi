@@ -31,34 +31,37 @@ Tidak ada optimasi yang menjamin ranking, citation, atau inclusion pada jawaban 
 ### `VERIFIED` — Sudah Ada
 
 - Homepage publik tersedia di `src/app/page.tsx` dengan title, description, canonical, Open Graph, Twitter card, dan schema `SoftwareApplication`.
-- Landing page di `src/app/landing-page.tsx` memakai struktur semantik dasar: navigation, main, section, satu H1, heading turunan, FAQ, footer, dan CTA WhatsApp.
-- Bahasa homepage berorientasi pada masalah pendaftaran, visibilitas kas, dan administrasi sekolah.
-- Route publik utama saat ini meliputi `/`, `/pricing`, `/login`, `/register`, dan `/register-student` melalui aturan `src/middleware.ts`.
+- Root landing di `src/app/landing-page.tsx` menjadi satu alur conversion utama: hero spesifik, masalah, solusi terhubung, cara mulai, use case, FAQ, dan CTA WhatsApp.
+- Root memakai `MarketingLayout`, header, dan footer yang sama dengan halaman pendalaman sehingga pengguna tidak berpindah ke sistem landing yang terasa terpisah.
+- Bahasa homepage berorientasi pada masalah pendaftaran, visibilitas kas, dan administrasi sekolah tanpa statistik, testimoni, atau klaim performa yang tidak terbukti.
+- Pillar dan supporting routes aktif meliputi `/fitur`, empat halaman fitur, `/solusi`, dua halaman solusi, `/panduan`, artikel panduan statis, dan `/pricing`.
+- Internal links membentuk jalur root → fitur/solusi/panduan/pricing; checkout tetap tidak ditempatkan pada root.
+- `robots.txt`, `sitemap.xml`, `llms.txt`, dan `manifest.json` aktif dan merespons HTTP 200 pada production build lokal.
+- Route marketing utama dan satu artikel panduan terverifikasi merespons HTTP 200 tanpa login.
 - Landing page tidak memuat payment widget atau checkout.
 - Entitlement plan sudah memiliki fondasi TypeScript, service guard, UI gate, dan enforcement database/RPC; aktivasi lifecycle plan tetap melalui jalur server terverifikasi.
 
 ### `PARTIAL` — Ada tetapi Belum Cukup
 
-- Metadata homepage cukup untuk fondasi awal, tetapi metadata global belum memiliki `metadataBase`, title template, OG image default, creator/publisher, dan policy robots yang lengkap.
+- Metadata homepage cukup untuk fondasi awal; kelengkapan metadata global, OG image default, creator/publisher, dan konsistensi seluruh route masih perlu diaudit berkala.
 - Schema hanya membentuk `SoftwareApplication`; entity graph Organization/WebSite, breadcrumb, article, dan halaman turunan belum tersedia.
 - FAQ ada di homepage, tetapi structured data FAQ belum didokumentasikan sebagai aktif.
-- Internal link utama masih berupa anchor dalam satu landing page serta link pricing/login; belum membentuk topic cluster.
-- Homepage conversion-first sudah baik untuk founder-led sales, tetapi belum didukung trust pages, feature pages, solution pages, atau content hub.
-- `src/middleware.ts` memakai allowlist route publik manual, sehingga route marketing baru dapat tidak sengaja diarahkan ke login jika tidak ditambahkan.
+- Topic cluster sudah memiliki fondasi pillar dan panduan, tetapi jumlah serta kedalaman konten belum cukup untuk membentuk coverage organik yang matang.
+- Homepage conversion-first sudah didukung feature pages, solution pages, dan content hub; trust pages dan bukti pilot nyata belum tersedia.
+- Verifikasi mobile visual penuh masih memerlukan viewport perangkat nyata atau browser automation yang dapat mengubah viewport; implementasi header mobile sudah memiliki menu, state aksesibel, dan breakpoint `md`.
 
 ### `PLANNED` — Belum Aktif
 
-- `robots.ts`/`robots.txt`, `sitemap.ts`/`sitemap.xml`, `llms.txt`, dan kebijakan crawler eksplisit.
 - `noindex` konsisten untuk auth, onboarding, dashboard, dev/admin, dan status akun.
 - Reusable JSON-LD entity graph dan schema halaman turunan.
-- Halaman fitur, solusi, tentang, kontak, keamanan data, privasi, dan syarat ketentuan.
-- Knowledge hub `/panduan` atau `/blog`, author/reviewer, tanggal publish/update, dan topic clusters.
+- Halaman tentang, kontak, keamanan data, privasi, dan syarat ketentuan.
+- Author/reviewer nyata, tanggal publish/update yang dikelola editorial, dan perluasan topic clusters.
 - Search Console, Bing Webmaster Tools, analytics ringan, dan conversion event tracking.
 - Automated SaaS billing/checkout, payment webhook, invoice, billing history, dan billing portal.
 
 ## 4. Target Information Architecture
 
-Struktur ini adalah target, bukan daftar route aktif.
+Struktur ini menggabungkan route aktif dan target lanjutan. Route fitur, solusi, panduan, dan pricing sudah aktif; trust/legal routes masih target.
 
 ```text
 /
@@ -193,11 +196,11 @@ Landing/content → WhatsApp demo → pilot → invoice/payment link manual → 
 
 ### Fase 1 — Technical Foundation
 
-Status: `PLANNED`, prioritas tertinggi.
+Status: `IN PROGRESS`; crawler endpoints dan route marketing utama sudah aktif, audit index policy serta metadata global masih dilanjutkan.
 
-- Tambahkan `src/app/robots.ts`.
-- Tambahkan `src/app/sitemap.ts`.
-- Tambahkan `public/llms.txt`; `llms-full.txt` hanya jika dapat dijaga akurat.
+- [x] Tambahkan `src/app/robots.ts`.
+- [x] Tambahkan `src/app/sitemap.ts`.
+- [x] Tambahkan `public/llms.txt`; `llms-full.txt` hanya jika dapat dijaga akurat.
 - Lengkapi root metadata dengan `metadataBase`, title template, publisher/creator, OG defaults, dan robots defaults.
 - Tambahkan metadata unik dan canonical untuk setiap halaman publik.
 - Terapkan `noindex` pada seluruh private/app utility surfaces.
@@ -233,13 +236,14 @@ Acceptance criteria:
 
 ### Fase 3 — Pillar Pages dan Knowledge Hub
 
-Status: `PLANNED`.
+Status: `IN PROGRESS`; layout, pillar utama, hub, template panduan, internal links, dan CTA sudah aktif. Perluasan konten dan editorial trust masih berjalan.
 
-- Buat marketing layout reusable.
-- Implementasikan halaman fitur dan solusi berdasarkan intent.
-- Implementasikan `/panduan` atau `/blog` dan template artikel.
-- Bangun cluster awal dan internal links dua arah.
-- Sediakan navigasi, related content, breadcrumb, dan CTA kontekstual.
+- [x] Buat marketing layout reusable.
+- [x] Implementasikan halaman fitur dan solusi berdasarkan intent.
+- [x] Implementasikan `/panduan` dan template artikel.
+- [x] Bangun fondasi cluster awal dan internal links dua arah.
+- [x] Sediakan navigasi, related content, breadcrumb, dan CTA kontekstual.
+- [ ] Perluas cluster menjadi 5–8 artikel berkualitas dengan author/reviewer nyata dan proses refresh.
 
 Acceptance criteria:
 

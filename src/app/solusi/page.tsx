@@ -52,13 +52,13 @@ export default function SolusiIndexPage() {
     <MarketingLayout>
       <section className="mx-auto max-w-7xl px-4 pb-14 pt-16 sm:px-6 lg:px-8">
         <div className="max-w-3xl">
-          <span className="inline-flex items-center gap-2 rounded-full border border-[#7c5cff]/30 bg-[#7c5cff]/10 px-3 py-1 text-xs font-semibold text-[#a892ff]">
+          <span className="inline-flex items-center gap-2 rounded-full border border-[#26735d]/30 bg-[#dfe99a]/45 px-3 py-1 text-xs font-semibold text-[#26735d]">
             <Sparkles className="h-3.5 w-3.5" /> Solusi
           </span>
           <h1 className="mt-5 text-4xl font-bold tracking-tight sm:text-5xl">
             Solusi untuk Sekolah Anda
           </h1>
-          <p className="mt-5 text-lg leading-8 text-white/70">
+          <p className="mt-5 text-lg leading-8 text-[#59645d]">
             SekolahRapi membantu sekolah swasta dan madrasah merapikan
             administrasi harian — data siswa, SPP, kas, sampai laporan — dalam
             satu sistem.
@@ -74,26 +74,26 @@ export default function SolusiIndexPage() {
               <Link
                 key={solution.href}
                 href={solution.href}
-                className="group rounded-2xl border border-white/10 bg-white/[.06] p-7 transition-all duration-200 hover:border-[#7c5cff]/50 hover:bg-white/[.09]"
+                className="group rounded-2xl border border-[#173f35]/10 bg-white/70 p-7 transition-all duration-200 hover:border-[#26735d]/50 hover:bg-white"
               >
                 <div className="flex items-start justify-between">
-                  <span className="grid h-12 w-12 place-items-center rounded-xl bg-gradient-to-br from-[#7c5cff] to-[#3a1fb8] text-white">
+                  <span className="grid h-12 w-12 place-items-center rounded-xl bg-gradient-to-br from-[#173f35] to-[#26735d] text-white">
                     <Icon className="h-6 w-6" />
                   </span>
-                  <ArrowRight className="h-5 w-5 text-white/40 transition-transform duration-200 group-hover:translate-x-1 group-hover:text-[#7c5cff]" />
+                  <ArrowRight className="h-5 w-5 text-[#6f7972] transition-transform duration-200 group-hover:translate-x-1 group-hover:text-[#26735d]" />
                 </div>
-                <p className="mt-6 text-xs font-semibold uppercase tracking-wider text-[#a892ff]">
+                <p className="mt-6 text-xs font-semibold uppercase tracking-wider text-[#26735d]">
                   {solution.tag}
                 </p>
                 <h2 className="mt-1 text-xl font-bold">{solution.title}</h2>
-                <p className="mt-3 text-sm leading-7 text-white/70">
+                <p className="mt-3 text-sm leading-7 text-[#59645d]">
                   {solution.description}
                 </p>
                 <ul className="mt-5 flex flex-wrap gap-2">
                   {solution.points.map((point) => (
                     <li
                       key={point}
-                      className="rounded-full border border-white/10 bg-white/[.06] px-3 py-1 text-xs text-white/70"
+                      className="rounded-full border border-[#173f35]/10 bg-white/70 px-3 py-1 text-xs text-[#59645d]"
                     >
                       {point}
                     </li>
@@ -106,21 +106,21 @@ export default function SolusiIndexPage() {
 
         <Link
           href="/fitur"
-          className="group mt-6 flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/[.06] p-6 transition-all duration-200 hover:border-[#7c5cff]/50 hover:bg-white/[.09]"
+          className="group mt-6 flex items-center justify-between gap-4 rounded-2xl border border-[#173f35]/10 bg-white/70 p-6 transition-all duration-200 hover:border-[#26735d]/50 hover:bg-white"
         >
           <span className="flex items-center gap-4">
-            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-white/10 text-[#a892ff]">
+            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-[#dfe99a]/35 text-[#26735d]">
               <LayoutDashboard className="h-6 w-6" />
             </span>
             <span>
               <span className="block font-bold">Lihat Fitur</span>
-              <span className="mt-1 block text-sm text-white/70">
+              <span className="mt-1 block text-sm text-[#59645d]">
                 Siswa, SPP, kas, laporan, inventaris, penggajian, dan
                 pendaftaran online.
               </span>
             </span>
           </span>
-          <ArrowRight className="h-5 w-5 shrink-0 text-white/40 transition-transform duration-200 group-hover:translate-x-1 group-hover:text-[#7c5cff]" />
+          <ArrowRight className="h-5 w-5 shrink-0 text-[#6f7972] transition-transform duration-200 group-hover:translate-x-1 group-hover:text-[#26735d]" />
         </Link>
       </section>
 

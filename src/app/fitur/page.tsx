@@ -66,7 +66,7 @@ export default function FiturPage() {
           <h1 className="text-4xl font-bold leading-tight sm:text-5xl">
             Fitur SekolahRapi
           </h1>
-          <p className="text-lg leading-relaxed text-white/70">
+          <p className="text-lg leading-relaxed text-[#59645d]">
             Modul administrasi sekolah yang saling terhubung: dari pencatatan kas
             dan pembayaran SPP sampai pendaftaran siswa baru dan laporan bulanan.
             Data yang sama dipakai di seluruh alur, tanpa mengetik ulang di
@@ -83,16 +83,16 @@ export default function FiturPage() {
               <Link
                 key={feature.href}
                 href={feature.href}
-                className="group rounded-xl border border-white/10 bg-white/[.06] p-8 transition-all duration-200 hover:border-[#7c5cff]/50 hover:bg-white/[.08]"
+                className="group rounded-xl border border-[#173f35]/10 bg-white/70 p-8 transition-all duration-200 hover:border-[#26735d]/50 hover:bg-white/[.08]"
               >
                 <div className="flex items-start justify-between gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#7c5cff] to-[#3a1fb8] shadow-lg shadow-[#7c5cff]/20">
-                    <Icon className="h-6 w-6 text-white" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#173f35] to-[#26735d] shadow-lg shadow-[#173f35]/15">
+                    <Icon className="h-6 w-6 text-[#17211b]" />
                   </div>
-                  <ArrowRight className="h-5 w-5 text-white/30 transition-all duration-200 group-hover:translate-x-1 group-hover:text-[#7c5cff]" />
+                  <ArrowRight className="h-5 w-5 text-[#17211b]/30 transition-all duration-200 group-hover:translate-x-1 group-hover:text-[#26735d]" />
                 </div>
                 <h2 className="mt-6 text-xl font-bold">{feature.title}</h2>
-                <p className="mt-3 text-sm leading-relaxed text-white/70">
+                <p className="mt-3 text-sm leading-relaxed text-[#59645d]">
                   {feature.description}
                 </p>
               </Link>

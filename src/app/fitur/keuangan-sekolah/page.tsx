@@ -124,7 +124,7 @@ export default function KeuanganSekolahPage() {
           <h1 className="text-4xl font-bold leading-tight sm:text-5xl">
             Keuangan Sekolah
           </h1>
-          <p className="text-lg leading-relaxed text-white/70">
+          <p className="text-lg leading-relaxed text-[#59645d]">
             Pencatatan kas sekolah tidak perlu lagi tersebar di buku catatan
             dan file yang berbeda. SekolahRapi menampung pemasukan dan
             pengeluaran per kategori, menyimpan riwayat dengan saldo berjalan,
@@ -139,15 +139,15 @@ export default function KeuanganSekolahPage() {
           return (
             <div
               key={section.title}
-              className="rounded-xl border border-white/10 bg-white/[.06] p-8"
+              className="rounded-xl border border-[#173f35]/10 bg-white/70 p-8"
             >
               <div className="flex items-start gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#7c5cff] to-[#3a1fb8] shadow-lg shadow-[#7c5cff]/20">
-                  <Icon className="h-6 w-6 text-white" />
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#173f35] to-[#26735d] shadow-lg shadow-[#173f35]/15">
+                  <Icon className="h-6 w-6 text-[#17211b]" />
                 </div>
                 <div>
                   <h2 className="text-xl font-bold">{section.title}</h2>
-                  <p className="mt-2 leading-relaxed text-white/70">
+                  <p className="mt-2 leading-relaxed text-[#59645d]">
                     {section.description}
                   </p>
                 </div>
@@ -155,8 +155,8 @@ export default function KeuanganSekolahPage() {
               <ul className="mt-6 grid gap-3 sm:grid-cols-2">
                 {section.points.map((point) => (
                   <li key={point} className="flex items-start gap-3">
-                    <Check className="mt-0.5 h-5 w-5 shrink-0 text-[#7c5cff]" />
-                    <span className="text-sm leading-relaxed text-white/80">
+                    <Check className="mt-0.5 h-5 w-5 shrink-0 text-[#26735d]" />
+                    <span className="text-sm leading-relaxed text-[#526158]">
                       {point}
                     </span>
                   </li>
@@ -173,25 +173,25 @@ export default function KeuanganSekolahPage() {
           {faqs.map((faq) => (
             <details
               key={faq.question}
-              className="group rounded-2xl border border-white/5 bg-[#12102b]"
+              className="group rounded-2xl border border-[#173f35]/10 bg-white/70"
             >
               <summary className="flex cursor-pointer items-center justify-between gap-4 px-6 py-4 font-medium">
                 {faq.question}
-                <span className="text-white/40 transition-transform group-open:rotate-180">
+                <span className="text-[#6f7972] transition-transform group-open:rotate-180">
                   ▼
                 </span>
               </summary>
-              <p className="px-6 pb-4 text-sm leading-relaxed text-white/70">
+              <p className="px-6 pb-4 text-sm leading-relaxed text-[#59645d]">
                 {faq.answer}
               </p>
             </details>
           ))}
         </div>
-        <p className="mt-6 text-sm leading-relaxed text-white/60">
+        <p className="mt-6 text-sm leading-relaxed text-[#6f7972]">
           Butuh contoh nyata? Baca{' '}
           <Link
             href="/panduan/cara-bendahara-sekolah-mencatat-kas-masuk-keluar"
-            className="text-[#7c5cff] hover:text-white"
+            className="text-[#26735d] hover:text-[#17211b]"
           >
             panduan mencatat kas masuk dan keluar
           </Link>{' '}
