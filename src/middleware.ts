@@ -1,36 +1,9 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
-
-// Route publik yang layak diindeks (crawlable + indexable).
-const indexablePublicPaths = ['/', '/pricing'];
-
-// Prefiks route marketing: artikel/halaman baru di bawah prefiks ini otomatis
-// publik tanpa perlu menambahkan allowlist manual.
-const indexablePublicPrefixes = [
-  '/fitur',
-  '/solusi',
-  '/panduan',
-  '/blog',
-  '/tentang',
-  '/kontak',
-  '/keamanan-data',
-  '/kebijakan-privasi',
-  '/syarat-ketentuan',
-];
-
-// Route publik tetapi TIDAK layak diindeks (auth/account surfaces).
-const publicNoindexPaths = ['/login', '/register', '/register-student'];
-
-function isIndexablePublic(pathname: string): boolean {
-  return (
-    indexablePublicPaths.includes(pathname) ||
-    indexablePublicPrefixes.some((p) => pathname.startsWith(p))
-  );
-}
-
-function isPublicNoindex(pathname: string): boolean {
-  return publicNoindexPaths.some((p) => pathname === p || pathname.startsWith(p + '?'));
-}
+import {
+  isIndexablePublic,
+  isPublicPath,
+} from '@/shared/constants/public-paths';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -87,7 +60,7 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isPublic = indexable || isPublicNoindex(pathname);
+  const isPublic = isPublicPath(pathname);
 
   // Not logged in + not on public page → redirect to login
   if (!user && !isPublic) {

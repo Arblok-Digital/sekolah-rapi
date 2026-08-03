@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { createSupabaseClient } from '@/shared/services/supabase/client';
 import type { Session } from '@supabase/supabase-js';
 import { hasFeature, normalizePlan, type Feature, type Plan } from '@/shared/entitlements';
+import { isPublicPath } from '@/shared/constants/public-paths';
 
 interface Profile {
   id: string;
@@ -51,9 +52,6 @@ const AuthContext = createContext<AuthContextType>({
   canUse: () => false,
 });
 
-// Pages that don't need auth
-const PUBLIC_PATHS = ['/', '/login', '/register', '/register-student'];
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -61,8 +59,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
-
-  const isPublicPage = PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + '?'));
 
   const fetchProfile = useCallback(async (userId: string) => {
     const supabase = createSupabaseClient();
@@ -146,13 +142,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, [fetchProfile]);
 
-  // Redirect logic (only for non-public pages)
-  useEffect(() => {
-    if (loading || isPublicPage) return;
+// Redirect logic (only for non-public pages) — public marketing routes
+// (/, /pricing, /fitur, /solusi, /panduan, /blog, dll) tidak boleh diarahkan
+// ke login. Daftar publik dijaga sinkron dengan middleware via
+// src/shared/constants/public-paths.ts.
+useEffect(() => {
+  if (loading) return;
 
-    if (!session) {
-      router.replace('/login');
-      return;
+  const publicPage = isPublicPath(pathname);
+  if (publicPage) return;
+
+  if (!session) {
+    router.replace('/login');
+    return;
     }
 
     if (!profile) {
@@ -185,7 +187,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
     }
-  }, [loading, session, profile, school, router, isPublicPage]);
+  }, [loading, session, profile, school, router, pathname]);
 
   const isDev = profile?.role === 'dev';
   const schoolId = profile?.school_id ?? null;
