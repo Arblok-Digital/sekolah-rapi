@@ -99,6 +99,7 @@ export async function createSPPPayment(
     await createSPPIncomeTransaction(supabase, {
       schoolId,
       userId,
+      sourceId: data.id,
       month: input.month,
       year: input.year,
       amount: input.paid_amount,
@@ -232,22 +233,34 @@ export async function updateSPPPayment(
         updates.payment_date || payment.payment_date || new Date().toISOString().split('T')[0];
       const description = `SPP Bulan ${payment.month}/${payment.year}`;
 
-      // Skip if a transaction for this payment already exists
-      const { data: existing } = await supabase
+      // Skip if a transaction for this payment already exists. source_id is the
+      // reliable key; description match is the fallback for legacy rows.
+      const { data: bySource } = await supabase
         .from('transactions')
         .select('id')
-        .eq('school_id', payment.school_id)
-        .eq('type', 'income')
-        .eq('description', description)
-        .eq('amount', amount)
-        .eq('reference_date', referenceDate)
+        .eq('source_type', 'spp')
+        .eq('source_id', id)
         .limit(1);
+      let existing = bySource;
+      if (!existing || existing.length === 0) {
+        const { data: byDesc } = await supabase
+          .from('transactions')
+          .select('id')
+          .eq('school_id', payment.school_id)
+          .eq('type', 'income')
+          .eq('description', description)
+          .eq('amount', amount)
+          .eq('reference_date', referenceDate)
+          .limit(1);
+        existing = byDesc;
+      }
 
       if (!existing || existing.length === 0) {
         const userId = await getCurrentUserId(supabase);
         await createSPPIncomeTransaction(supabase, {
           schoolId: payment.school_id,
           userId,
+          sourceId: id,
           month: payment.month,
           year: payment.year,
           amount,
@@ -262,9 +275,66 @@ export async function updateSPPPayment(
 
 /**
  * Delete an SPP payment record.
+ *
+ * Jika pembayaran pernah melunasi SPP (punya transaksi income), hapus record
+ * TIDAK menghapus transaksi aslinya (audit trail tetap utuh), melainkan
+ * membuat transaksi KOREKSI (reversal) sebesar nominal yang sama agar saldo
+ * kas kembali benar tanpa menghilangkan jejak.
  */
 export async function deleteSPPPayment(id: string): Promise<void> {
   const supabase = createSupabaseClient();
+
+  // Ambil record dulu untuk cek transaksi terkait
+  const { data: payment, error: fetchError } = await supabase
+    .from(TABLE)
+    .select('school_id, status, paid_amount, amount, month, year')
+    .eq('id', id)
+    .single();
+
+  if (fetchError) {
+    console.error('[SPP Service] deleteSPPPayment fetch error:', fetchError);
+    throw new Error(fetchError.message);
+  }
+
+  const wasPaid = payment.status === 'paid' || payment.status === 'partial';
+  const paidAmount = (payment.paid_amount ?? 0) > 0 ? payment.paid_amount : payment.amount;
+
+  if (wasPaid && paidAmount > 0) {
+    // Cari transaksi income asli dari record SPP ini
+    const { data: linked } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('source_type', 'spp')
+      .eq('source_id', id)
+      .maybeSingle();
+
+    const linkedTx = linked as unknown as {
+      id: string;
+      school_id: string;
+      category_id: string;
+      amount: number;
+      description: string;
+    } | null;
+
+    if (linkedTx) {
+      const userId = await getCurrentUserId(supabase);
+      const { error: revError } = await supabase.from('transactions').insert({
+        school_id: linkedTx.school_id,
+        type: 'expense',
+        category_id: linkedTx.category_id,
+        amount: linkedTx.amount,
+        description: `Koreksi: ${linkedTx.description}`,
+        reference_date: new Date().toISOString().split('T')[0],
+        recorded_by: userId,
+        source_type: 'reversal',
+        source_id: linkedTx.id,
+      });
+      if (revError) {
+        console.error('[SPP Service] deleteSPPPayment reversal error:', revError);
+        throw new Error(revError.message);
+      }
+    }
+  }
 
   const { error } = await supabase.from(TABLE).delete().eq('id', id);
 
@@ -300,6 +370,7 @@ async function createSPPIncomeTransaction(
   params: {
     schoolId: string;
     userId: string;
+    sourceId: string;
     month: number;
     year: number;
     amount: number;
@@ -338,6 +409,8 @@ async function createSPPIncomeTransaction(
     description: `SPP Bulan ${params.month}/${params.year}`,
     reference_date: params.referenceDate || new Date().toISOString().split('T')[0],
     recorded_by: params.userId,
+    source_type: 'spp',
+    source_id: params.sourceId,
   });
 
   if (error) {

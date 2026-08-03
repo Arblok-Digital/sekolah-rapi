@@ -87,6 +87,8 @@ export async function createPayroll(schoolId: string, input: PayrollFormInput) {
       description: `Gaji ${empName} - Bulan ${input.month}/${input.year}`,
       reference_date: new Date().toISOString().split('T')[0],
       recorded_by: userId,
+      source_type: 'payroll',
+      source_id: data.id,
     });
     if (txError) {
       console.error('[Payroll Service] createPayroll transaction error:', txError);
@@ -112,8 +114,8 @@ export async function updatePayroll(id: string, input: Partial<PayrollFormInput>
     const { data: existingTx } = await supabase
       .from('transactions')
       .select('id')
-      .eq('school_id', data.school_id)
-      .eq('description', `Gaji ${empName} - Bulan ${data.month}/${data.year}`)
+      .eq('source_type', 'payroll')
+      .eq('source_id', id)
       .limit(1);
     if (!existingTx || existingTx.length === 0) {
       let { data: cats } = await supabase.from('categories').select('id').eq('school_id', data.school_id).eq('name', 'Gaji Guru').limit(1);
@@ -130,6 +132,8 @@ export async function updatePayroll(id: string, input: Partial<PayrollFormInput>
         description: `Gaji ${empName} - Bulan ${data.month}/${data.year}`,
         reference_date: new Date().toISOString().split('T')[0],
         recorded_by: userId,
+        source_type: 'payroll',
+        source_id: id,
       });
       if (txError) {
         console.error('[Payroll Service] updatePayroll transaction error:', txError);
@@ -145,6 +149,43 @@ export async function deletePayroll(id: string) {
   const supabase = createSupabaseClient();
   const { data: current } = await supabase.from('payroll_records').select('school_id').eq('id', id).single();
   if (current?.school_id) await assertSchoolFeature(current.school_id, 'payroll');
+
+  // Kalau slip sudah dibayar (punya transaksi expense), buat transaksi KOREKSI
+  // (income) agar saldo kas kembali benar tanpa menghapus jejak aslinya.
+  const { data: linked } = await supabase
+    .from('transactions')
+    .select('id, school_id, category_id, amount, description')
+    .eq('source_type', 'payroll')
+    .eq('source_id', id)
+    .limit(1);
+
+  const linkedTx = linked?.[0] as unknown as {
+    id: string;
+    school_id: string;
+    category_id: string;
+    amount: number;
+    description: string;
+  } | undefined;
+
+  if (linkedTx) {
+    const userId = await getCurrentUserId(supabase);
+    const { error: revError } = await supabase.from('transactions').insert({
+      school_id: linkedTx.school_id,
+      type: 'income',
+      category_id: linkedTx.category_id,
+      amount: linkedTx.amount,
+      description: `Koreksi: ${linkedTx.description}`,
+      reference_date: new Date().toISOString().split('T')[0],
+      recorded_by: userId,
+      source_type: 'reversal',
+      source_id: linkedTx.id,
+    });
+    if (revError) {
+      console.error('[Payroll Service] deletePayroll reversal error:', revError);
+      throw new Error(revError.message);
+    }
+  }
+
   const { error } = await supabase.from('payroll_records').delete().eq('id', id);
   if (error) throw error;
 }

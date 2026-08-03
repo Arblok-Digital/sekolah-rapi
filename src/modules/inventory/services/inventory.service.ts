@@ -58,6 +58,8 @@ export async function createInventory(schoolId: string, input: InventoryFormInpu
       description: `Beli ${itemName}${qty > 1 ? ` x${qty}` : ''}`,
       reference_date: new Date().toISOString().split('T')[0],
       recorded_by: resolvedUserId,
+      source_type: 'inventory',
+      source_id: data.id,
     });
     if (txError) {
       console.error('[Inventory Service] transaction error:', txError);
