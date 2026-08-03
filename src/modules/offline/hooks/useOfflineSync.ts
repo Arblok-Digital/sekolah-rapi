@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { db } from '@/modules/offline/db';
 import { syncToSupabase, getPendingSyncCount } from '@/modules/offline/services/sync.service';
 
@@ -11,6 +11,19 @@ export interface SyncStatusState {
 
 export function useOfflineSync() {
   const [status, setStatus] = useState<SyncStatusState>({ pending: 0, lastSync: null, isSyncing: false, error: null });
+  const [isOnline, setIsOnline] = useState(() => typeof navigator === 'undefined' || navigator.onLine);
+
+  useEffect(() => {
+    setIsOnline(navigator.onLine);
+    const goOnline = () => setIsOnline(true);
+    const goOffline = () => setIsOnline(false);
+    window.addEventListener('online', goOnline);
+    window.addEventListener('offline', goOffline);
+    return () => {
+      window.removeEventListener('online', goOnline);
+      window.removeEventListener('offline', goOffline);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -25,9 +38,9 @@ export function useOfflineSync() {
     return () => { cancelled = true; clearInterval(interval); };
   }, []);
 
-  const triggerSync = async () => {
+  const triggerSync = useCallback(async () => {
     if (status.pending === 0 || status.isSyncing) return;
-    if (!navigator.onLine) return;
+    if (!isOnline) return;
 
     setStatus(prev => ({ ...prev, isSyncing: true, error: null }));
     try {
@@ -37,16 +50,15 @@ export function useOfflineSync() {
     } catch (err) {
       setStatus(prev => ({ ...prev, isSyncing: false, error: err instanceof Error ? err.message : 'Sync failed' }));
     }
-  };
+  }, [status.pending, status.isSyncing, isOnline]);
 
   useEffect(() => {
-    if (status.pending === 0 || status.isSyncing) return;
-    if (!navigator.onLine) return;
+    if (status.pending === 0 || status.isSyncing || !isOnline) return;
 
     triggerSync();
     const interval = setInterval(triggerSync, 10000);
     return () => clearInterval(interval);
-  }, [status.pending, status.isSyncing]);
+  }, [triggerSync, status.pending, status.isSyncing, isOnline]);
 
   return {
     pending: status.pending,

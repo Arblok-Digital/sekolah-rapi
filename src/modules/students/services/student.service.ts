@@ -1,6 +1,7 @@
 import { createSupabaseClient } from '@/shared/services/supabase/client';
 import type { Student, StudentFormData } from '../types/student.types';
 import { assertSchoolFeature } from '@/shared/services/plan-guard';
+import { isOfflineError } from '@/modules/offline/services/network';
 
 export async function getStudents(
   schoolId: string,
@@ -55,10 +56,18 @@ export async function createStudent(
     .single();
 
   if (error) {
-    // Offline fallback: store locally and queue (lazy import to avoid Node detection)
+    // Only fall back to offline queueing on genuine network errors. Duplicate NIS,
+    // RLS denials, and validation errors must be thrown to the caller instead.
+    if (!isOfflineError(error)) throw error;
+
     const { db } = await import('@/modules/offline/db');
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session?.user) throw error;
+
     const localId = crypto.randomUUID();
-    await db.students.add({
+    const localStudent: Student = {
       id: localId,
       school_id: student.school_id,
       nis: student.nis,
@@ -70,21 +79,33 @@ export async function createStudent(
       parent_phone: student.parent_phone,
       status: student.status || 'active',
       created_at: new Date().toISOString(),
-    });
+    };
+    await db.students.add(localStudent);
 
     await db.sync_queue.add({
       school_id: student.school_id,
-      user_id: crypto.randomUUID(), // placeholder UUID for FK constraint
+      user_id: session.user.id,
       entity: 'student',
       entity_id: localId,
       action: 'INSERT',
-      payload: student,
+      payload: {
+        id: localId,
+        school_id: student.school_id,
+        nis: student.nis,
+        name: student.name,
+        class: student.class,
+        gender: student.gender || null,
+        address: student.address || null,
+        parent_name: student.parent_name || null,
+        parent_phone: student.parent_phone || null,
+        status: student.status || 'active',
+      },
       attempts: 0,
       status: 'pending',
       created_at: new Date(),
     });
 
-    return db.students.get(localId) as Promise<Student>;
+    return localStudent;
   }
 
   return data;

@@ -1,6 +1,22 @@
 import { createSupabaseClient } from '@/shared/services/supabase/client';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Employee, PayrollRecord, EmployeeFormInput, PayrollFormInput } from '../types/payroll.types';
 import { assertSchoolFeature } from '@/shared/services/plan-guard';
+
+async function getCurrentUserId(supabase: SupabaseClient): Promise<string> {
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+  if (error) {
+    console.error('[Payroll Service] getCurrentUser error:', error);
+    throw new Error(error.message);
+  }
+  if (!user) {
+    throw new Error('Not authenticated');
+  }
+  return user.id;
+}
 
 // ── Employees ──
 export async function getEmployees(schoolId: string) {
@@ -55,21 +71,27 @@ export async function createPayroll(schoolId: string, input: PayrollFormInput) {
 
   // Auto-create transaction if paid
   if (input.paid) {
+    const userId = await getCurrentUserId(supabase);
     const empName = (data as any)?.employee?.name || 'Guru';
-    let { data: cat } = await supabase.from('categories').select('id').eq('school_id', schoolId).eq('name', 'Gaji Guru').single();
+    let { data: cats } = await supabase.from('categories').select('id').eq('school_id', schoolId).eq('name', 'Gaji Guru').limit(1);
+    let cat: { id: string } | undefined = cats?.[0];
     if (!cat) {
       const { data: newCat } = await supabase.from('categories').insert({ name: 'Gaji Guru', type: 'expense', school_id: schoolId }).select('id').single();
-      cat = newCat;
+      cat = newCat ?? undefined;
     }
-    await supabase.from('transactions').insert({
+    const { error: txError } = await supabase.from('transactions').insert({
       school_id: schoolId,
       type: 'expense',
       category_id: cat!.id,
       amount: input.total || 0,
       description: `Gaji ${empName} - Bulan ${input.month}/${input.year}`,
       reference_date: new Date().toISOString().split('T')[0],
-      recorded_by: null,
+      recorded_by: userId,
     });
+    if (txError) {
+      console.error('[Payroll Service] createPayroll transaction error:', txError);
+      throw new Error(txError.message);
+    }
   }
 
   return data as PayrollRecord;
@@ -84,6 +106,7 @@ export async function updatePayroll(id: string, input: Partial<PayrollFormInput>
 
   // Auto-create transaction when status changes to paid
   if (input.paid === true && data) {
+    const userId = await getCurrentUserId(supabase);
     const empName = (data as any)?.employee?.name || 'Guru';
     // Check if transaction already exists for this payroll
     const { data: existingTx } = await supabase
@@ -93,20 +116,25 @@ export async function updatePayroll(id: string, input: Partial<PayrollFormInput>
       .eq('description', `Gaji ${empName} - Bulan ${data.month}/${data.year}`)
       .limit(1);
     if (!existingTx || existingTx.length === 0) {
-      let { data: cat } = await supabase.from('categories').select('id').eq('school_id', data.school_id).eq('name', 'Gaji Guru').single();
+      let { data: cats } = await supabase.from('categories').select('id').eq('school_id', data.school_id).eq('name', 'Gaji Guru').limit(1);
+      let cat: { id: string } | undefined = cats?.[0];
       if (!cat) {
         const { data: newCat } = await supabase.from('categories').insert({ name: 'Gaji Guru', type: 'expense', school_id: data.school_id }).select('id').single();
-        cat = newCat;
+        cat = newCat ?? undefined;
       }
-      await supabase.from('transactions').insert({
+      const { error: txError } = await supabase.from('transactions').insert({
         school_id: data.school_id,
         type: 'expense',
         category_id: cat!.id,
         amount: data.total,
         description: `Gaji ${empName} - Bulan ${data.month}/${data.year}`,
         reference_date: new Date().toISOString().split('T')[0],
-        recorded_by: null,
+        recorded_by: userId,
       });
+      if (txError) {
+        console.error('[Payroll Service] updatePayroll transaction error:', txError);
+        throw new Error(txError.message);
+      }
     }
   }
 

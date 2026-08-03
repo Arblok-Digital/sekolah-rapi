@@ -24,6 +24,7 @@ public/worker-*.js
 # Misc
 .DS_Store
 *.log
+*.tsbuildinfo
 .turbo/
 
 .vercel

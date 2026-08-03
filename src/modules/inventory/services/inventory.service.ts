@@ -1,8 +1,24 @@
 import { createSupabaseClient } from '@/shared/services/supabase/client';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type { InventoryItem, InventoryFormInput } from '../types/inventory.types';
 import { assertSchoolFeature } from '@/shared/services/plan-guard';
 
 const TABLE = 'inventory_items';
+
+async function getCurrentUserId(supabase: SupabaseClient): Promise<string> {
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+  if (error) {
+    console.error('[Inventory Service] getCurrentUser error:', error);
+    throw new Error(error.message);
+  }
+  if (!user) {
+    throw new Error('Not authenticated');
+  }
+  return user.id;
+}
 
 export async function getInventory(schoolId: string, category?: string) {
   const supabase = createSupabaseClient();
@@ -25,22 +41,28 @@ export async function createInventory(schoolId: string, input: InventoryFormInpu
 
   // Auto-create transaction for purchase cost
   if (input.purchase_price && input.purchase_price > 0) {
-    let { data: cat } = await supabase.from('categories').select('id').eq('school_id', schoolId).eq('name', 'ATK').single();
+    const resolvedUserId = userId || (await getCurrentUserId(supabase));
+    let { data: cats } = await supabase.from('categories').select('id').eq('school_id', schoolId).eq('name', 'ATK').limit(1);
+    let cat: { id: string } | undefined = cats?.[0];
     if (!cat) {
       const { data: newCat } = await supabase.from('categories').insert({ name: 'ATK', type: 'expense', school_id: schoolId }).select('id').single();
-      cat = newCat;
+      cat = newCat ?? undefined;
     }
     const itemName = data?.name || input.name;
     const qty = input.quantity || 1;
-    await supabase.from('transactions').insert({
+    const { error: txError } = await supabase.from('transactions').insert({
       school_id: schoolId,
       type: 'expense',
       category_id: cat!.id,
       amount: input.purchase_price * qty,
       description: `Beli ${itemName}${qty > 1 ? ` x${qty}` : ''}`,
       reference_date: new Date().toISOString().split('T')[0],
-      recorded_by: userId || null,
+      recorded_by: resolvedUserId,
     });
+    if (txError) {
+      console.error('[Inventory Service] transaction error:', txError);
+      throw new Error(txError.message);
+    }
   }
 
   return data as InventoryItem;

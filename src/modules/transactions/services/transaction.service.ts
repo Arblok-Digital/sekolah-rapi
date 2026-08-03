@@ -1,6 +1,7 @@
 import { createSupabaseClient } from '@/shared/services/supabase/client';
 import { db } from '@/modules/offline/db';
 import type { Transaction, TransactionFormData } from '../types/transaction.types';
+import { isOfflineError } from '@/modules/offline/services/network';
 
 const supabase = createSupabaseClient();
 
@@ -56,9 +57,12 @@ export async function createTransaction(
     .single();
 
   if (error) {
-    // If offline, queue for sync
+    // Only fall back to offline queueing on genuine network errors. RLS denials
+    // and validation errors must be thrown to the caller instead.
+    if (!isOfflineError(error)) throw error;
+
     const localId = crypto.randomUUID();
-    await db.transactions.add({
+    const localTransaction: Transaction = {
       id: localId,
       school_id: transaction.school_id,
       type: transaction.type,
@@ -68,21 +72,37 @@ export async function createTransaction(
       reference_date: transaction.reference_date,
       recorded_by: transaction.recorded_by,
       created_at: new Date().toISOString(),
-    });
+    };
+    await db.transactions.add(localTransaction);
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    const userId = session?.user?.id ?? transaction.recorded_by;
+    if (!userId) throw error;
 
     await db.sync_queue.add({
       school_id: transaction.school_id,
-      user_id: transaction.recorded_by,
+      user_id: userId,
       entity: 'transaction',
       entity_id: localId,
       action: 'INSERT',
-      payload: transaction,
+      payload: {
+        id: localId,
+        school_id: transaction.school_id,
+        type: transaction.type,
+        category_id: transaction.category_id,
+        amount: transaction.amount,
+        description: transaction.description || null,
+        reference_date: transaction.reference_date,
+        recorded_by: transaction.recorded_by,
+      },
       attempts: 0,
       status: 'pending',
       created_at: new Date(),
     });
 
-    return db.transactions.get(localId) as Promise<Transaction>;
+    return localTransaction;
   }
 
   return data;

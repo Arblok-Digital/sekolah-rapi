@@ -1,4 +1,5 @@
 import { createSupabaseClient } from '@/shared/services/supabase/client';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type { SPPPayment, SPPFilter, SPPFormInput, SPSSummary } from '../types/spp.types';
 
 const TABLE = 'spp_payments';
@@ -95,24 +96,14 @@ export async function createSPPPayment(
 
   // Auto-create transaction when SPP is paid
   if (input.status === 'paid' && input.paid_amount && input.paid_amount > 0) {
-    const { data: cat } = await supabase
-      .from('categories')
-      .select('id')
-      .eq('school_id', schoolId)
-      .eq('name', 'SPP')
-      .single();
-
-    if (cat?.id) {
-      await supabase.from('transactions').insert({
-        school_id: schoolId,
-        type: 'income',
-        category_id: cat.id,
-        amount: input.paid_amount,
-        description: `SPP Bulan ${input.month}/${input.year}`,
-        reference_date: input.payment_date || new Date().toISOString().split('T')[0],
-        recorded_by: userId,
-      });
-    }
+    await createSPPIncomeTransaction(supabase, {
+      schoolId,
+      userId,
+      month: input.month,
+      year: input.year,
+      amount: input.paid_amount,
+      referenceDate: input.payment_date,
+    });
   }
 
   return data as SPPPayment;
@@ -229,6 +220,43 @@ export async function updateSPPPayment(
     throw new Error(error.message);
   }
 
+  const payment = data as SPPPayment;
+  const status = updates.status ?? payment.status;
+  const paidAmount = updates.paid_amount ?? payment.paid_amount;
+
+  // Auto-create transaction when the payment becomes paid
+  if (status === 'paid') {
+    const amount = paidAmount > 0 ? paidAmount : payment.amount;
+    if (amount > 0) {
+      const referenceDate =
+        updates.payment_date || payment.payment_date || new Date().toISOString().split('T')[0];
+      const description = `SPP Bulan ${payment.month}/${payment.year}`;
+
+      // Skip if a transaction for this payment already exists
+      const { data: existing } = await supabase
+        .from('transactions')
+        .select('id')
+        .eq('school_id', payment.school_id)
+        .eq('type', 'income')
+        .eq('description', description)
+        .eq('amount', amount)
+        .eq('reference_date', referenceDate)
+        .limit(1);
+
+      if (!existing || existing.length === 0) {
+        const userId = await getCurrentUserId(supabase);
+        await createSPPIncomeTransaction(supabase, {
+          schoolId: payment.school_id,
+          userId,
+          month: payment.month,
+          year: payment.year,
+          amount,
+          referenceDate,
+        });
+      }
+    }
+  }
+
   return data as SPPPayment;
 }
 
@@ -247,6 +275,76 @@ export async function deleteSPPPayment(id: string): Promise<void> {
 }
 
 // ── Internal helpers ──
+
+async function getCurrentUserId(supabase: SupabaseClient): Promise<string> {
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+  if (error) {
+    console.error('[SPP Service] getCurrentUser error:', error);
+    throw new Error(error.message);
+  }
+  if (!user) {
+    throw new Error('Not authenticated');
+  }
+  return user.id;
+}
+
+/**
+ * Auto-create the income transaction for a paid SPP record.
+ * Finds the school's 'SPP' category, then inserts the ledger entry.
+ */
+async function createSPPIncomeTransaction(
+  supabase: SupabaseClient,
+  params: {
+    schoolId: string;
+    userId: string;
+    month: number;
+    year: number;
+    amount: number;
+    referenceDate?: string;
+  }
+): Promise<void> {
+  // Prefer the first matching SPP category; duplicate rows must not break the
+  // lookup (a .single() call errors when more than one row matches).
+  let { data: cats } = await supabase
+    .from('categories')
+    .select('id')
+    .eq('school_id', params.schoolId)
+    .eq('name', 'SPP')
+    .limit(1);
+  let cat = cats?.[0];
+
+  // Auto-create the SPP category when missing so income is never silently skipped.
+  if (!cat) {
+    const { data: newCat, error: catError } = await supabase
+      .from('categories')
+      .insert({ name: 'SPP', type: 'income', school_id: params.schoolId })
+      .select('id')
+      .maybeSingle();
+    if (catError || !newCat?.id) {
+      console.error('[SPP Service] create SPP category error:', catError);
+      throw new Error(catError?.message || 'Kategori SPP tidak ditemukan');
+    }
+    cat = newCat;
+  }
+
+  const { error } = await supabase.from('transactions').insert({
+    school_id: params.schoolId,
+    type: 'income',
+    category_id: cat.id,
+    amount: params.amount,
+    description: `SPP Bulan ${params.month}/${params.year}`,
+    reference_date: params.referenceDate || new Date().toISOString().split('T')[0],
+    recorded_by: params.userId,
+  });
+
+  if (error) {
+    console.error('[SPP Service] create transaction error:', error);
+    throw new Error(error.message);
+  }
+}
 
 function mapPayment(item: any): SPPPayment {
   const students = item.students as { name?: string; nis?: string; class?: string } | undefined;
