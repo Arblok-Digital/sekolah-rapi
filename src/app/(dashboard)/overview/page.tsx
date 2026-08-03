@@ -17,6 +17,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { cn } from '@/shared/utils/cn';
+import { TransactionHistory } from '@/modules/transactions/components/TransactionHistory';
 
 function formatRp(n: number) {
   return new Intl.NumberFormat('id-ID', {
@@ -27,12 +28,6 @@ function formatRp(n: number) {
   }).format(n);
 }
 
-function formatRpShort(n: number) {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}jt`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}rb`;
-  return formatRp(n);
-}
-
 interface DashboardData {
   saldo: number;
   incomeBulanIni: number;
@@ -40,13 +35,6 @@ interface DashboardData {
   totalSiswa: number;
   outstandingSiswa: number;
   collectionRate: number;
-  recentTransactions: Array<{
-    id: string;
-    desc: string;
-    amount: number;
-    type: 'income' | 'expense';
-    date: string;
-  }>;
   alerts: Array<{
     id: string;
     severity: 'warning' | 'info' | 'success';
@@ -57,7 +45,6 @@ interface DashboardData {
 
 export default function OverviewPage() {
   const { schoolId, canUse, isDev } = useAuth();
-  const [showAllTx, setShowAllTx] = useState(false);
   const [hideSaldo, setHideSaldo] = useState(false);
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -115,14 +102,7 @@ export default function OverviewPage() {
       const outstandingSiswa = totalSiswa - paidCount;
       const collectionRate = totalSiswa > 0 ? Math.round((paidCount / totalSiswa) * 100) : 0;
 
-      // Recent transactions (last 7)
-      const recentTransactions = (txData || []).slice(0, 7).map(t => ({
-        id: t.id,
-        desc: t.description,
-        amount: t.amount,
-        type: t.type as 'income' | 'expense',
-        date: new Date(t.reference_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
-      }));
+      // Recent transactions (last 7) — now handled by TransactionHistory component
 
       // Alerts
       const alerts: DashboardData['alerts'] = [];
@@ -140,7 +120,7 @@ export default function OverviewPage() {
         alerts.push({ id: '3', severity: 'info', title: 'Belum ada siswa', detail: 'Gunakan Dev Panel untuk seed data test' });
       }
 
-      setData({ saldo, incomeBulanIni, expenseBulanIni, totalSiswa, outstandingSiswa, collectionRate, recentTransactions, alerts });
+      setData({ saldo, incomeBulanIni, expenseBulanIni, totalSiswa, outstandingSiswa, collectionRate, alerts });
       setLoading(false);
     }
 
@@ -179,8 +159,6 @@ export default function OverviewPage() {
       </div>
     );
   }
-
-  const displayedTx = showAllTx ? data.recentTransactions : data.recentTransactions.slice(0, 4);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -292,59 +270,8 @@ export default function OverviewPage() {
           </div>
         </div>
 
-        <div className="card-premium border-white/10 bg-white/[.07] p-5 lg:col-span-2">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-black text-white">Transaksi Terbaru</h3>
-            <a href="/transactions" className="flex items-center gap-1 text-xs font-black text-[#dfe99a] transition-colors hover:text-white">
-              Lihat Semua <ArrowRight className="w-3 h-3" />
-            </a>
-          </div>
-
-          {displayedTx.length === 0 ? (
-            <p className="text-sm text-white/70 py-4 text-center">Belum ada transaksi.</p>
-          ) : (
-            <div className="divide-y divide-white/[0.04]">
-              {displayedTx.map((tx) => (
-                <div key={tx.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
-                  <div className="flex items-start gap-3 min-w-0">
-                    <div
-                      className={cn(
-                        'w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5',
-                        tx.type === 'income' ? 'bg-emerald-500/10 border border-emerald-500/10' : 'bg-red-500/10 border border-red-500/10'
-                      )}
-                    >
-                      {tx.type === 'income' ? (
-                        <TrendingUp className="w-4 h-4 text-emerald-400" />
-                      ) : (
-                        <TrendingDown className="w-4 h-4 text-red-400" />
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-white/80 truncate">{tx.desc}</p>
-                      <p className="text-xs text-white/70">{tx.date}</p>
-                    </div>
-                  </div>
-                  <span
-                    className={cn(
-                      'text-sm font-semibold shrink-0 ml-3 tabular-nums',
-                      tx.type === 'income' ? 'text-emerald-400' : 'text-red-400'
-                    )}
-                  >
-                    {tx.type === 'income' ? '+' : '-'}{formatRpShort(tx.amount)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {data.recentTransactions.length > 4 && (
-            <button
-              onClick={() => setShowAllTx((prev) => !prev)}
-              className="mt-3 text-xs text-white/70 hover:text-white/70 transition-colors font-medium"
-            >
-              {showAllTx ? 'Tampilkan lebih sedikit' : `Tampilkan ${data.recentTransactions.length - 4} transaksi lainnya`}
-            </button>
-          )}
+        <div className="lg:col-span-2">
+          <TransactionHistory schoolId={schoolId!} limit={8} />
         </div>
       </div>
 

@@ -6,46 +6,14 @@ import { assertSchoolFeature } from '@/shared/services/plan-guard';
 import { createSupabaseClient } from '@/shared/services/supabase/client';
 import { Download, Loader2, TrendingUp, TrendingDown, Scale, History, Receipt, ScrollText } from 'lucide-react';
 import type { Transaction } from '@/shared/types';
+import {
+  type Timeframe,
+  TIMEFRAME_LABELS,
+  timeframeRange,
+} from '@/modules/transactions/utils/timeframe';
 
 function formatRp(n: number) { return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n); }
 function formatDate(d: string) { return d ? d.slice(0, 10) : '-'; }
-function localIso(d: Date) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
-
-type Timeframe = 'today' | '7d' | 'month' | 'lastmonth' | 'year' | 'all' | 'custom';
-
-const TIMEFRAME_LABELS: Record<Exclude<Timeframe, 'custom'>, string> = {
-  today: 'Hari Ini',
-  '7d': '7 Hari',
-  month: 'Bulan Ini',
-  lastmonth: 'Bulan Lalu',
-  year: 'Tahun Ini',
-  all: 'Semua',
-};
-
-function timeframeRange(tf: Exclude<Timeframe, 'custom'>): { start: string; end: string } {
-  const now = new Date();
-  switch (tf) {
-    case 'today': return { start: localIso(now), end: localIso(now) };
-    case '7d': {
-      const s = new Date(now);
-      s.setDate(s.getDate() - 6);
-      return { start: localIso(s), end: localIso(now) };
-    }
-    case 'month': return { start: localIso(new Date(now.getFullYear(), now.getMonth(), 1)), end: localIso(now) };
-    case 'lastmonth': {
-      const s = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const e = new Date(now.getFullYear(), now.getMonth(), 0);
-      return { start: localIso(s), end: localIso(e) };
-    }
-    case 'year': return { start: `${now.getFullYear()}-01-01`, end: localIso(now) };
-    case 'all': return { start: '', end: '' };
-  }
-}
 
 interface SourceMeta {
   label: string;
