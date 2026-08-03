@@ -8,11 +8,17 @@ interface TransactionTableProps {
   transactions: Transaction[];
   loading?: boolean;
   onSort?: (field: string) => void;
+  onEdit?: (transaction: Transaction) => void;
+  onDelete?: (transaction: Transaction) => void;
+  deletingId?: string | null;
 }
 
 export function TransactionTable({
   transactions,
   loading,
+  onEdit,
+  onDelete,
+  deletingId,
 }: TransactionTableProps) {
   if (loading) {
     return (
@@ -48,6 +54,9 @@ export function TransactionTable({
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Keterangan
             </th>
+            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Aksi
+            </th>
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
@@ -81,6 +90,27 @@ export function TransactionTable({
               </td>
               <td className="px-4 py-3 text-sm text-gray-500 max-w-xs truncate">
                 {tx.description || '-'}
+              </td>
+              <td className="px-4 py-3 whitespace-nowrap text-right text-sm">
+                <div className="flex justify-end gap-2">
+                  <button
+                    onClick={() => onEdit?.(tx)}
+                    className="px-3 py-1 text-xs font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (window.confirm('Hapus transaksi ini?')) {
+                        onDelete?.(tx);
+                      }
+                    }}
+                    disabled={deletingId === tx.id}
+                    className="px-3 py-1 text-xs font-medium text-red-600 bg-red-50 rounded-md hover:bg-red-100 disabled:opacity-50"
+                  >
+                    {deletingId === tx.id ? 'Menghapus...' : 'Hapus'}
+                  </button>
+                </div>
               </td>
             </tr>
           ))}

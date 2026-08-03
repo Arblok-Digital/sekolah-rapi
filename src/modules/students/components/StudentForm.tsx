@@ -3,6 +3,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useToast, getErrorMessage } from '@/shared/components/ui/toast';
 import type { StudentFormData } from '../types/student.types';
 
 const studentSchema = z.object({
@@ -25,6 +26,7 @@ interface StudentFormProps {
 }
 
 export function StudentForm({ onSubmit, onCancel, initialData }: StudentFormProps) {
+  const { toast } = useToast();
   const {
     register,
     handleSubmit,
@@ -37,8 +39,20 @@ export function StudentForm({ onSubmit, onCancel, initialData }: StudentFormProp
     },
   });
 
+  const onFormSubmit = async (values: FormValues) => {
+    try {
+      await onSubmit(values);
+      toast({ title: initialData ? 'Siswa diperbarui' : 'Siswa ditambahkan', description: values.name, variant: 'success' });
+    } catch (err) {
+      toast({ title: 'Gagal menyimpan siswa', description: getErrorMessage(err), variant: 'error' });
+    }
+  };
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
+      <h3 className="text-lg font-semibold mb-4">
+        {initialData ? 'Edit Siswa' : 'Tambah Siswa Baru'}
+      </h3>
       {/* NIS */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">NIS</label>
@@ -156,7 +170,11 @@ export function StudentForm({ onSubmit, onCancel, initialData }: StudentFormProp
           disabled={isSubmitting}
           className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
         >
-          {isSubmitting ? 'Menyimpan...' : 'Simpan'}
+          {isSubmitting
+            ? 'Menyimpan...'
+            : initialData
+            ? 'Simpan Perubahan'
+            : 'Simpan'}
         </button>
       </div>
     </form>

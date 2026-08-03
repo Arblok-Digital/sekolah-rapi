@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
+import { useToast } from '@/shared/components/ui/toast';
 import type { SPPFormInput, SPPStatus } from '../types/spp.types';
 import { getMonthName } from '../types/spp.types';
 
@@ -43,6 +44,7 @@ export function PaymentForm({
   const [receiptNumber, setReceiptNumber] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const { toast } = useToast();
 
   // Sync paid amount with amount when status changes to 'paid'
   useEffect(() => {
@@ -87,6 +89,7 @@ export function PaymentForm({
     setSubmitting(true);
     try {
       await onSubmit(input);
+      toast({ title: 'Pembayaran SPP dicatat', variant: 'success' });
       // Reset form
       setStudentId('');
       setAmount('');

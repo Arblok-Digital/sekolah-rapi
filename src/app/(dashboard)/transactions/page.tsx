@@ -5,14 +5,27 @@ import { useAuth } from '@/shared/providers/AuthProvider';
 import { TransactionTable } from '@/modules/transactions/components/TransactionTable';
 import { TransactionForm } from '@/modules/transactions/components/TransactionForm';
 import { useTransactions } from '@/modules/transactions/hooks/useTransactions';
-import type { TransactionFormData } from '@/modules/transactions/types/transaction.types';
+import type {
+  Transaction,
+  TransactionFormData,
+} from '@/modules/transactions/types/transaction.types';
 
 export default function TransactionsPage() {
   const [showForm, setShowForm] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<'all' | 'income' | 'expense'>('all');
   const { schoolId } = useAuth();
 
-  const { transactions, loading, error, addTransaction } = useTransactions({
+  const {
+    transactions,
+    loading,
+    error,
+    addTransaction,
+    editTransaction,
+    removeTransaction,
+  } = useTransactions({
     schoolId: schoolId || '',
     typeFilter: typeFilter === 'all' ? undefined : typeFilter,
   });
@@ -20,6 +33,30 @@ export default function TransactionsPage() {
   const handleAddTransaction = async (data: TransactionFormData) => {
     await addTransaction(data);
     setShowForm(false);
+    setMessage('Transaksi berhasil ditambahkan');
+  };
+
+  const handleUpdateTransaction = async (data: TransactionFormData) => {
+    if (!editingTransaction) return;
+    await editTransaction(editingTransaction.id, data);
+    setShowForm(false);
+    setEditingTransaction(null);
+    setMessage('Transaksi berhasil diperbarui');
+  };
+
+  const handleDeleteTransaction = async (transaction: Transaction) => {
+    setDeletingId(transaction.id);
+    try {
+      await removeTransaction(transaction.id);
+      setMessage('Transaksi berhasil dihapus');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingTransaction(null);
   };
 
   if (!schoolId) {
@@ -38,12 +75,21 @@ export default function TransactionsPage() {
           <p className="text-sm text-gray-500 mt-1">Kelola pemasukan dan pengeluaran sekolah</p>
         </div>
         <button
-          onClick={() => setShowForm(true)}
+          onClick={() => {
+            setEditingTransaction(null);
+            setShowForm(true);
+          }}
           className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
         >
           + Tambah Transaksi
         </button>
       </div>
+
+      {message && (
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md text-sm text-green-700">
+          {message}
+        </div>
+      )}
 
       {error && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
@@ -75,17 +121,29 @@ export default function TransactionsPage() {
           <p className="text-sm text-gray-500 mt-3">Memuat data transaksi...</p>
         </div>
       ) : (
-        <TransactionTable transactions={transactions || []} />
+        <TransactionTable
+          transactions={transactions || []}
+          onEdit={(transaction) => {
+            setEditingTransaction(transaction);
+            setShowForm(true);
+          }}
+          onDelete={handleDeleteTransaction}
+          deletingId={deletingId}
+        />
       )}
 
-      {/* Add Form Modal */}
+      {/* Add/Edit Form Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">Tambah Transaksi Baru</h3>
+            <h3 className="text-lg font-semibold mb-4">
+              {editingTransaction ? 'Edit Transaksi' : 'Tambah Transaksi Baru'}
+            </h3>
             <TransactionForm
-              onSubmit={handleAddTransaction}
-              onCancel={() => setShowForm(false)}
+              key={editingTransaction?.id ?? 'create'}
+              initialData={editingTransaction}
+              onSubmit={editingTransaction ? handleUpdateTransaction : handleAddTransaction}
+              onCancel={closeForm}
               schoolId={schoolId}
             />
           </div>

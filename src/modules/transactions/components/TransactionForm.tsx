@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { getCategories } from '@/modules/transactions/services/category.service';
+import { useToast, getErrorMessage } from '@/shared/components/ui/toast';
 import type { TransactionFormData } from '../types/transaction.types';
 
 const transactionSchema = z.object({
@@ -21,11 +22,18 @@ interface TransactionFormProps {
   schoolId: string;
   onSubmit: (data: TransactionFormData) => Promise<void>;
   onCancel?: () => void;
+  initialData?: TransactionFormData | null;
 }
 
-export function TransactionForm({ schoolId, onSubmit, onCancel }: TransactionFormProps) {
+export function TransactionForm({
+  schoolId,
+  onSubmit,
+  onCancel,
+  initialData,
+}: TransactionFormProps) {
   const [categories, setCategories] = useState<{ id: string; name: string; type: string }[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const { toast } = useToast();
 
   const {
     register,
@@ -35,8 +43,12 @@ export function TransactionForm({ schoolId, onSubmit, onCancel }: TransactionFor
   } = useForm<FormValues>({
     resolver: zodResolver(transactionSchema),
     defaultValues: {
-      type: 'income',
-      reference_date: new Date().toISOString().split('T')[0],
+      type: initialData?.type ?? 'income',
+      category_id: initialData?.category_id ?? '',
+      amount: initialData?.amount ?? 0,
+      description: initialData?.description ?? '',
+      reference_date:
+        initialData?.reference_date ?? new Date().toISOString().split('T')[0],
     },
   });
 
@@ -50,6 +62,9 @@ export function TransactionForm({ schoolId, onSubmit, onCancel }: TransactionFor
     setSubmitting(true);
     try {
       await onSubmit(values);
+      toast({ title: 'Transaksi ditambahkan', variant: 'success' });
+    } catch (err) {
+      toast({ title: 'Gagal menyimpan transaksi', description: getErrorMessage(err), variant: 'error' });
     } finally {
       setSubmitting(false);
     }
@@ -182,7 +197,7 @@ export function TransactionForm({ schoolId, onSubmit, onCancel }: TransactionFor
           disabled={submitting}
           className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
         >
-          {submitting ? 'Menyimpan...' : 'Simpan'}
+          {submitting ? 'Menyimpan...' : initialData ? 'Perbarui' : 'Simpan'}
         </button>
       </div>
     </form>

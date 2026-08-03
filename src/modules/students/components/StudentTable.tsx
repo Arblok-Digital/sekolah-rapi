@@ -1,13 +1,17 @@
 'use client';
 
+import { Edit, Trash2, Loader2 } from 'lucide-react';
 import type { Student } from '../types/student.types';
 
 interface StudentTableProps {
   students: Student[];
   loading?: boolean;
+  onEdit?: (student: Student) => void;
+  onDelete?: (student: Student) => void;
+  deletingId?: string | null;
 }
 
-export function StudentTable({ students, loading }: StudentTableProps) {
+export function StudentTable({ students, loading, onEdit, onDelete, deletingId }: StudentTableProps) {
   if (loading) {
     return (
       <div className="text-center py-8 text-gray-500">Memuat data...</div>
@@ -45,6 +49,9 @@ export function StudentTable({ students, loading }: StudentTableProps) {
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               No. HP
             </th>
+            <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Aksi
+            </th>
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
@@ -81,6 +88,33 @@ export function StudentTable({ students, loading }: StudentTableProps) {
               </td>
               <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
                 {student.parent_phone || '-'}
+              </td>
+              <td className="px-4 py-3 whitespace-nowrap text-center">
+                <div className="flex items-center justify-center gap-1">
+                  {onEdit && (
+                    <button
+                      onClick={() => onEdit(student)}
+                      className="p-1.5 text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50"
+                      title="Edit siswa"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                  )}
+                  {onDelete && (
+                    <button
+                      onClick={() => onDelete(student)}
+                      disabled={deletingId === student.id}
+                      className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 disabled:opacity-50"
+                      title="Hapus siswa"
+                    >
+                      {deletingId === student.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4" />
+                      )}
+                    </button>
+                  )}
+                </div>
               </td>
             </tr>
           ))}

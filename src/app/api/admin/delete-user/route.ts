@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { getClientIp, rateLimit } from '@/shared/services/rate-limit';
 
 const supabaseAuth = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -22,6 +23,14 @@ async function requireDev(request: NextRequest) {
 
 // DELETE /api/admin/delete-user?id=xxx
 export async function DELETE(request: NextRequest) {
+  const limit = rateLimit(getClientIp(request), 10, 60_000);
+  if (!limit.ok) {
+    return NextResponse.json({ error: 'Terlalu banyak permintaan' }, {
+      status: 429,
+      headers: { 'Retry-After': String(limit.retryAfter) },
+    });
+  }
+
   if (!(await requireDev(request))) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
@@ -64,7 +73,8 @@ export async function DELETE(request: NextRequest) {
     if (error) throw error;
 
     return NextResponse.json({ ok: true });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err) {
+    console.error('Admin delete-user failed', err);
+    return NextResponse.json({ error: 'Gagal menghapus pengguna' }, { status: 500 });
   }
 }

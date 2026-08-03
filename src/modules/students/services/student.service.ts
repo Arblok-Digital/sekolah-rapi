@@ -111,6 +111,39 @@ export async function createStudent(
   return data;
 }
 
+export async function updateStudent(
+  id: string,
+  updates: Partial<StudentFormData>
+): Promise<Student> {
+  const supabase = createSupabaseClient();
+  const { data: current } = await supabase
+    .from('students')
+    .select('school_id')
+    .eq('id', id)
+    .single();
+  if (current?.school_id) await assertSchoolFeature(current.school_id, 'students');
+  const { data, error } = await supabase
+    .from('students')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteStudent(id: string): Promise<void> {
+  const supabase = createSupabaseClient();
+  const { data: current } = await supabase
+    .from('students')
+    .select('school_id')
+    .eq('id', id)
+    .single();
+  if (current?.school_id) await assertSchoolFeature(current.school_id, 'students');
+  const { error } = await supabase.from('students').delete().eq('id', id);
+  if (error) throw error;
+}
+
 export async function importFromCSV(
   schoolId: string,
   records: StudentFormData[]

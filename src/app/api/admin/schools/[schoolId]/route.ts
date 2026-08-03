@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import { PLAN_DEFINITIONS, type Plan } from '@/shared/entitlements';
+import { getClientIp, rateLimit } from '@/shared/services/rate-limit';
 
 const ALLOWED_STATUSES = ['pending', 'active', 'rejected'] as const;
 type ManagedSchoolStatus = (typeof ALLOWED_STATUSES)[number];
@@ -17,6 +18,14 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: { schoolId: string } }
 ) {
+  const limit = rateLimit(getClientIp(request), 30, 60_000);
+  if (!limit.ok) {
+    return NextResponse.json({ error: 'Terlalu banyak permintaan' }, {
+      status: 429,
+      headers: { 'Retry-After': String(limit.retryAfter) },
+    });
+  }
+
   const token = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
   if (!token) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -95,7 +104,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     console.error('Admin school update failed', updateError);
-    return NextResponse.json({ error: updateError.message }, { status: 500 });
+    return NextResponse.json({ error: 'Gagal memperbarui akses sekolah' }, { status: 500 });
   }
 
   if (!school) {

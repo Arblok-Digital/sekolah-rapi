@@ -2,12 +2,14 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/shared/providers/AuthProvider';
+import { useToast, getErrorMessage } from '@/shared/components/ui/toast';
 import { useEnrollments, useApproveEnrollment, useRejectEnrollment } from '@/modules/enrollment/hooks/useEnrollment';
 import type { EnrollmentStatus } from '@/modules/enrollment/types/enrollment.types';
 import { CheckCircle, XCircle, Clock, UserPlus, Eye, Loader2 } from 'lucide-react';
 
 export default function EnrollmentPage() {
   const { schoolId, session } = useAuth();
+  const { toast } = useToast();
   const [filter, setFilter] = useState<EnrollmentStatus | 'all'>('all');
   const [selectedEnrollment, setSelectedEnrollment] = useState<string | null>(null);
   const [rejectNotes, setRejectNotes] = useState('');
@@ -21,23 +23,32 @@ export default function EnrollmentPage() {
 
   const handleApprove = async (enrollmentId: string) => {
     if (!session?.user) return;
-    if (!confirm('Approve pendaftaran ini? Siswa akan otomatis ditambahkan.')) return;
-    await approveMutation.mutateAsync({
-      enrollmentId,
-      adminId: session.user.id,
-    });
-    setSelectedEnrollment(null);
+    try {
+      await approveMutation.mutateAsync({
+        enrollmentId,
+        adminId: session.user.id,
+      });
+      toast({ title: 'Pendaftaran disetujui', description: 'Siswa berhasil ditambahkan ke data siswa', variant: 'success' });
+      setSelectedEnrollment(null);
+    } catch (err) {
+      toast({ title: 'Gagal menyetujui pendaftaran', description: getErrorMessage(err), variant: 'error' });
+    }
   };
 
   const handleReject = async (enrollmentId: string) => {
     if (!session?.user) return;
-    await rejectMutation.mutateAsync({
-      enrollmentId,
-      adminId: session.user.id,
-      notes: rejectNotes || undefined,
-    });
-    setSelectedEnrollment(null);
-    setRejectNotes('');
+    try {
+      await rejectMutation.mutateAsync({
+        enrollmentId,
+        adminId: session.user.id,
+        notes: rejectNotes || undefined,
+      });
+      toast({ title: 'Pendaftaran ditolak', variant: 'success' });
+      setSelectedEnrollment(null);
+      setRejectNotes('');
+    } catch (err) {
+      toast({ title: 'Gagal menolak pendaftaran', description: getErrorMessage(err), variant: 'error' });
+    }
   };
 
   if (!schoolId) {

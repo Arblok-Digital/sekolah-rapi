@@ -6,27 +6,70 @@ import { StudentTable } from '@/modules/students/components/StudentTable';
 import { StudentForm } from '@/modules/students/components/StudentForm';
 import { StudentImport } from '@/modules/students/components/StudentImport';
 import { useStudents } from '@/modules/students/hooks/useStudents';
-import type { StudentFormData } from '@/modules/students/types/student.types';
+import type { Student, StudentFormData } from '@/modules/students/types/student.types';
 import { FileSpreadsheet } from 'lucide-react';
 
 export default function StudentsPage() {
   const [showForm, setShowForm] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [classFilter, setClassFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const { schoolId, canUse } = useAuth();
 
-  const { students, loading, error, addStudent } = useStudents({
+  const { students, loading, error, addStudent, editStudent, removeStudent } = useStudents({
     schoolId: schoolId || '',
     classFilter: classFilter || undefined,
     statusFilter: statusFilter || undefined,
     searchQuery: searchQuery || undefined,
   });
 
-  const handleAddStudent = async (data: StudentFormData) => {
-    await addStudent(data);
-    setShowForm(false);
+  const handleFormSubmit = async (data: StudentFormData) => {
+    try {
+      if (editingStudent) {
+        await editStudent(editingStudent.id, data);
+        setActionMessage({ type: 'success', text: 'Data siswa berhasil diperbarui' });
+      } else {
+        await addStudent(data);
+        setActionMessage({ type: 'success', text: 'Siswa berhasil ditambahkan' });
+      }
+      setShowForm(false);
+      setEditingStudent(null);
+    } catch (err) {
+      setActionMessage({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Gagal menyimpan data siswa',
+      });
+    }
+  };
+
+  const openEditStudent = (student: Student) => {
+    setEditingStudent(student);
+    setShowForm(true);
+  };
+
+  const openAddStudent = () => {
+    setEditingStudent(null);
+    setShowForm(true);
+  };
+
+  const handleDeleteStudent = async (student: Student) => {
+    if (!window.confirm(`Yakin ingin menghapus siswa "${student.name}"?`)) return;
+    setDeletingId(student.id);
+    try {
+      await removeStudent(student.id);
+      setActionMessage({ type: 'success', text: `Siswa "${student.name}" berhasil dihapus` });
+    } catch (err) {
+      setActionMessage({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Gagal menghapus siswa',
+      });
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   if (!schoolId) {
@@ -55,7 +98,7 @@ export default function StudentsPage() {
             Import
           </button>
           <button
-            onClick={() => setShowForm(true)}
+            onClick={openAddStudent}
             className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
           >
             + Tambah Siswa
@@ -66,6 +109,18 @@ export default function StudentsPage() {
       {error && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
           {error}
+        </div>
+      )}
+
+      {actionMessage && (
+        <div
+          className={`mb-4 p-3 border rounded-md text-sm ${
+            actionMessage.type === 'success'
+              ? 'bg-green-50 border-green-200 text-green-700'
+              : 'bg-red-50 border-red-200 text-red-700'
+          }`}
+        >
+          {actionMessage.text}
         </div>
       )}
 
@@ -110,17 +165,39 @@ export default function StudentsPage() {
           <p className="text-sm text-white/60 mt-3">Memuat data siswa...</p>
         </div>
       ) : (
-        <StudentTable students={students || []} />
+        <StudentTable
+          students={students || []}
+          onEdit={openEditStudent}
+          onDelete={handleDeleteStudent}
+          deletingId={deletingId}
+        />
       )}
 
-      {/* Add Form Modal */}
+      {/* Add/Edit Form Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">Tambah Siswa Baru</h3>
             <StudentForm
-              onSubmit={handleAddStudent}
-              onCancel={() => setShowForm(false)}
+              key={editingStudent?.id ?? 'create'}
+              onSubmit={handleFormSubmit}
+              onCancel={() => {
+                setShowForm(false);
+                setEditingStudent(null);
+              }}
+              initialData={
+                editingStudent
+                  ? {
+                      nis: editingStudent.nis,
+                      name: editingStudent.name,
+                      class: editingStudent.class,
+                      gender: editingStudent.gender,
+                      address: editingStudent.address,
+                      parent_name: editingStudent.parent_name,
+                      parent_phone: editingStudent.parent_phone,
+                      status: editingStudent.status,
+                    }
+                  : undefined
+              }
             />
           </div>
         </div>

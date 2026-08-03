@@ -1,27 +1,30 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
-import { getPlanFeatures, getRouteFeature, hasFeature, normalizePlan } from '../../src/shared/entitlements/index.ts';
+import { describe, it, expect } from 'vitest';
+import { getPlanFeatures, getRouteFeature, hasFeature, normalizePlan } from '@/shared/entitlements';
 
-test('normalizePlan defaults unknown and empty values to free', () => {
-  assert.equal(normalizePlan(null), 'free');
-  assert.equal(normalizePlan('enterprise'), 'free');
-  assert.equal(normalizePlan('lifetime'), 'lifetime');
+describe('normalizePlan', () => {
+  it('defaults unknown and empty values to free', () => {
+    expect(normalizePlan(null)).toBe('free');
+    expect(normalizePlan('enterprise')).toBe('free');
+    expect(normalizePlan('lifetime')).toBe('lifetime');
+  });
 });
 
-test('plan matrix grants the intended cumulative features', () => {
-  assert.deepEqual(getPlanFeatures('free'), ['dashboard', 'students', 'spp', 'transactions']);
-  assert.equal(hasFeature('basic', 'reports'), true);
-  assert.equal(hasFeature('basic', 'student_import'), true);
-  assert.equal(hasFeature('basic', 'enrollment'), false);
-  for (const feature of ['enrollment', 'realtime_dashboard', 'payroll', 'inventory'] as const) {
-    assert.equal(hasFeature('pro', feature), true);
-    assert.equal(hasFeature('lifetime', feature), true);
-  }
-});
+describe('plan matrix', () => {
+  it('grants the intended cumulative features', () => {
+    expect(getPlanFeatures('free')).toEqual(['dashboard', 'students', 'spp', 'transactions']);
+    expect(hasFeature('basic', 'reports')).toBe(true);
+    expect(hasFeature('basic', 'student_import')).toBe(true);
+    expect(hasFeature('basic', 'enrollment')).toBe(false);
+    for (const feature of ['enrollment', 'realtime_dashboard', 'payroll', 'inventory'] as const) {
+      expect(hasFeature('pro', feature)).toBe(true);
+      expect(hasFeature('lifetime', feature)).toBe(true);
+    }
+  });
 
-test('downgrade removes mutation entitlement while route matching includes nested paths', () => {
-  assert.equal(hasFeature('free', 'payroll'), false);
-  assert.equal(hasFeature('basic', 'inventory'), false);
-  assert.equal(getRouteFeature('/payroll/history/2026'), 'payroll');
-  assert.equal(getRouteFeature('/reports?year=2026'), 'reports');
+  it('downgrade removes mutation entitlement while route matching includes nested paths', () => {
+    expect(hasFeature('free', 'payroll')).toBe(false);
+    expect(hasFeature('basic', 'inventory')).toBe(false);
+    expect(getRouteFeature('/payroll/history/2026')).toBe('payroll');
+    expect(getRouteFeature('/reports?year=2026')).toBe('reports');
+  });
 });

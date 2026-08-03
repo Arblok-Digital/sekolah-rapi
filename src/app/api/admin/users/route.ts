@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { getClientIp, rateLimit } from '@/shared/services/rate-limit';
 
 const supabaseAuth = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -29,6 +30,14 @@ async function requireDev(request: NextRequest) {
 
 // GET /api/admin/users
 export async function GET(request: NextRequest) {
+  const limit = rateLimit(getClientIp(request), 60, 60_000);
+  if (!limit.ok) {
+    return NextResponse.json({ error: 'Terlalu banyak permintaan' }, {
+      status: 429,
+      headers: { 'Retry-After': String(limit.retryAfter) },
+    });
+  }
+
   if (!(await requireDev(request))) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
@@ -60,7 +69,8 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json({ users });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err) {
+    console.error('Admin users: failed to list users', err);
+    return NextResponse.json({ error: 'Gagal memuat daftar pengguna' }, { status: 500 });
   }
 }

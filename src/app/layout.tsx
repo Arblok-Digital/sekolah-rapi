@@ -4,6 +4,7 @@ import { QueryProvider } from '@/shared/components/QueryProvider';
 import { AuthProvider } from '@/shared/providers/AuthProvider';
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary';
 import { Toaster } from '@/shared/components/ui/toaster';
+import { ToastProvider } from '@/shared/components/ui/toast';
 import { APP_NAME } from '@/shared/constants';
 import './globals.css';
 
@@ -41,14 +42,16 @@ export default function RootLayout({
   return (
     <html lang="id">
       <body className={inter.className}>
-        <QueryProvider>
-          <AuthProvider>
-            <ErrorBoundary>
-              {children}
-            </ErrorBoundary>
-            <Toaster />
-          </AuthProvider>
-        </QueryProvider>
+        <ToastProvider>
+          <QueryProvider>
+            <AuthProvider>
+              <ErrorBoundary>
+                {children}
+              </ErrorBoundary>
+            </AuthProvider>
+          </QueryProvider>
+          <Toaster />
+        </ToastProvider>
       </body>
     </html>
   );

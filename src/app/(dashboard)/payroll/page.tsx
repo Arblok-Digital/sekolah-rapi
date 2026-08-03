@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/shared/providers/AuthProvider';
+import { useToast, getErrorMessage } from '@/shared/components/ui/toast';
 import { useEmployees, useCreateEmployee, useUpdateEmployee, useDeleteEmployee, usePayroll, useGeneratePayroll, useUpdatePayroll } from '@/modules/payroll/hooks/usePayroll';
 import { MONTHS } from '@/modules/payroll/types/payroll.types';
 import type { Employee, EmployeeFormInput } from '@/modules/payroll/types/payroll.types';
@@ -15,6 +16,7 @@ type Tab = 'employees' | 'payroll';
 
 export default function PayrollPage() {
   const { schoolId } = useAuth();
+  const { toast } = useToast();
   const [tab, setTab] = useState<Tab>('employees');
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -40,20 +42,42 @@ export default function PayrollPage() {
 
   async function handleEmpSubmit() {
     if (!empForm.name.trim()) return;
-    if (editEmp) await updateEmp.mutateAsync({ id: editEmp.id, input: empForm });
-    else await createEmp.mutateAsync(empForm);
-    setEmpFormOpen(false);
+    try {
+      if (editEmp) await updateEmp.mutateAsync({ id: editEmp.id, input: empForm });
+      else await createEmp.mutateAsync(empForm);
+      toast({ title: editEmp ? 'Karyawan diperbarui' : 'Karyawan ditambahkan', description: empForm.name, variant: 'success' });
+      setEmpFormOpen(false);
+    } catch (err) {
+      toast({ title: 'Gagal menyimpan karyawan', description: getErrorMessage(err), variant: 'error' });
+    }
   }
 
-  async function handleDeleteEmp(id: string) { await deleteEmp.mutateAsync(id); setDeleteConfirm(null); }
+  async function handleDeleteEmp(id: string) {
+    try {
+      await deleteEmp.mutateAsync(id);
+      toast({ title: 'Karyawan dihapus', variant: 'success' });
+    } catch (err) {
+      toast({ title: 'Gagal menghapus karyawan', description: getErrorMessage(err), variant: 'error' });
+    }
+    setDeleteConfirm(null);
+  }
 
   async function handleGenerate() {
-    const result = await generateMut.mutateAsync({ month, year });
-    alert(`Berhasil generate ${result.created} slip gaji baru`);
+    try {
+      const result = await generateMut.mutateAsync({ month, year });
+      toast({ title: 'Slip gaji berhasil digenerate', description: `${result.created} slip gaji baru dibuat`, variant: 'success' });
+    } catch (err) {
+      toast({ title: 'Gagal generate slip gaji', description: getErrorMessage(err), variant: 'error' });
+    }
   }
 
   async function handleTogglePaid(recordId: string, currentPaid: boolean) {
-    await updatePay.mutateAsync({ id: recordId, input: { paid: !currentPaid, paid_date: !currentPaid ? new Date().toISOString().split('T')[0] : undefined } });
+    try {
+      await updatePay.mutateAsync({ id: recordId, input: { paid: !currentPaid, paid_date: !currentPaid ? new Date().toISOString().split('T')[0] : undefined } });
+      toast({ title: currentPaid ? 'Status pembayaran dibatalkan' : 'Pembayaran dicatat', variant: 'success' });
+    } catch (err) {
+      toast({ title: 'Gagal memperbarui status pembayaran', description: getErrorMessage(err), variant: 'error' });
+    }
   }
 
   const activeEmp = employees?.filter(e => e.status === 'active') || [];

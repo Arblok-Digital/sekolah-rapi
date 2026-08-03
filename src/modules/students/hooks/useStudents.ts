@@ -3,7 +3,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createSupabaseClient } from '@/shared/services/supabase/client';
 import type { Student, StudentFormData } from '../types/student.types';
-import { getStudents, createStudent } from '../services/student.service';
+import {
+  getStudents,
+  createStudent,
+  updateStudent,
+  deleteStudent,
+} from '../services/student.service';
 
 const supabase = createSupabaseClient();
 
@@ -54,11 +59,24 @@ export function useStudents({
     return created;
   };
 
+  const editStudent = async (id: string, formData: StudentFormData) => {
+    const updated = await updateStudent(id, formData);
+    await fetchStudents();
+    return updated;
+  };
+
+  const removeStudent = async (id: string) => {
+    await deleteStudent(id);
+    await fetchStudents();
+  };
+
   return {
     students,
     loading,
     error,
     addStudent,
+    editStudent,
+    removeStudent,
     refresh: fetchStudents,
   };
 }

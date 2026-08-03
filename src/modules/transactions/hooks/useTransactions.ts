@@ -4,7 +4,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { createSupabaseClient } from '@/shared/services/supabase/client';
 import { getSession } from '@/shared/services/supabase/auth';
 import type { Transaction, TransactionFormData } from '../types/transaction.types';
-import { getTransactions, createTransaction } from '../services/transaction.service';
+import {
+  getTransactions,
+  createTransaction,
+  updateTransaction,
+  deleteTransaction,
+} from '../services/transaction.service';
 import { getCategories } from '../services/category.service';
 
 const supabase = createSupabaseClient();
@@ -62,12 +67,25 @@ export function useTransactions({ schoolId, typeFilter }: UseTransactionsOptions
     return created;
   };
 
+  const editTransaction = async (id: string, formData: TransactionFormData) => {
+    const updated = await updateTransaction(id, formData);
+    await fetchTransactions();
+    return updated;
+  };
+
+  const removeTransaction = async (id: string) => {
+    await deleteTransaction(id);
+    await fetchTransactions();
+  };
+
   return {
     transactions,
     categories,
     loading,
     error,
     addTransaction,
+    editTransaction,
+    removeTransaction,
     refresh: fetchTransactions,
   };
 }
