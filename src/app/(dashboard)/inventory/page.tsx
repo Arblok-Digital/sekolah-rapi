@@ -5,6 +5,7 @@ import { useAuth } from '@/shared/providers/AuthProvider';
 import { useInventory, useCreateInventory, useUpdateInventory, useDeleteInventory } from '@/modules/inventory/hooks/useInventory';
 import type { InventoryItem, InventoryFormInput, INVENTORY_CATEGORIES, INVENTORY_CONDITIONS } from '@/modules/inventory/types/inventory.types';
 import { Plus, Edit, Trash2, Package, Search, Loader2 } from 'lucide-react';
+import { useSchoolRealtime } from '@/shared/hooks/useSchoolRealtime';
 
 const CATS: string[] = ['Semua', 'Furniture', 'Elektronik', 'ATK', 'Olahraga', 'Laboratorium', 'Perpustakaan', 'Umum'];
 const CONDS = ['Baik', 'Rusak Ringan', 'Rusak Berat', 'Hilang'];
@@ -16,7 +17,7 @@ function formatRp(n: number) {
 }
 
 export default function InventoryPage() {
-  const { schoolId, session } = useAuth();
+  const { schoolId, session, canUse } = useAuth();
   const [catFilter, setCatFilter] = useState('Semua');
   const [search, setSearch] = useState('');
   const [formOpen, setFormOpen] = useState(false);
@@ -28,6 +29,8 @@ export default function InventoryPage() {
   const createMut = useCreateInventory(schoolId || '', session?.user?.id);
   const updateMut = useUpdateInventory(schoolId || '');
   const deleteMut = useDeleteInventory(schoolId || '');
+
+  useSchoolRealtime(schoolId, { tables: ['inventory_items'], enabled: canUse('realtime_dashboard') });
 
   const filtered = (items || []).filter(i => !search || i.name.toLowerCase().includes(search.toLowerCase()) || i.location?.toLowerCase().includes(search.toLowerCase()));
 

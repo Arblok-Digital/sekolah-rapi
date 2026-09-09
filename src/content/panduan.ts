@@ -1045,7 +1045,7 @@ export const PANDUAN_ARTICLES: PanduanArticle[] = [
       {
         heading: 'Jawaban singkat',
         paragraphs: [
-          'Biaya aplikasi administrasi sekolah di Indonesia bervariasi dari Rp 0 (gratis dengan fitur dasar) sampai jutaan rupiah per tahun untuk paket lengkap. Sebagai gambaran, SekolahRapi menawarkan paket Gratis, Basic Rp 490.000/tahun, dan Pro Rp 990.000/tahun. Yang menentukan nilai bukan harga, tetapi fitur yang benar-benar dipakai sekolah.',
+          'Biaya aplikasi administrasi sekolah di Indonesia bervariasi dari Rp 0 (gratis dengan fitur dasar) sampai jutaan rupiah per tahun untuk paket lengkap. Sebagai gambaran, SekolahRapi menawarkan paket Gratis, Basic Rp 790.000/tahun, dan Pro Rp 1.490.000/tahun. Yang menentukan nilai bukan harga, tetapi fitur yang benar-benar dipakai sekolah.',
         ],
       },
       {

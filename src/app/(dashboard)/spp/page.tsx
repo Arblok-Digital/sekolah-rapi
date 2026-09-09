@@ -15,6 +15,7 @@ import {
   useDeleteSPPPayment,
 } from '@/modules/spp/hooks/useSPP';
 import { cn } from '@/shared/utils/cn';
+import { useSchoolRealtime } from '@/shared/hooks/useSchoolRealtime';
 
 export default function SPPPage() {
   const [formOpen, setFormOpen] = useState(false);
@@ -23,7 +24,7 @@ export default function SPPPage() {
   const [actionMessage, setActionMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [filterYear, setFilterYear] = useState(new Date().getFullYear());
   const [filterMonth, setFilterMonth] = useState<number | undefined>(undefined);
-  const { schoolId, session } = useAuth();
+  const { schoolId, session, canUse } = useAuth();
 
   const filter: SPPFilter = {
     year: filterYear,
@@ -35,6 +36,8 @@ export default function SPPPage() {
   const createMutation = useCreateSPPPayment(schoolId || '', session?.user?.id || '');
   const updateMutation = useUpdateSPPPayment();
   const deleteMutation = useDeleteSPPPayment();
+
+  useSchoolRealtime(schoolId, { tables: ['spp_payments', 'students'], enabled: canUse('realtime_dashboard') });
 
   // Fetch students for the dropdown
   const [studentList, setStudentList] = useState<Array<{ id: string; name: string; nis: string; class: string }>>([]);

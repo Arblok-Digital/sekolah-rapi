@@ -5,6 +5,7 @@ import { useAuth } from '@/shared/providers/AuthProvider';
 import { TransactionTable } from '@/modules/transactions/components/TransactionTable';
 import { TransactionForm } from '@/modules/transactions/components/TransactionForm';
 import { useTransactions } from '@/modules/transactions/hooks/useTransactions';
+import { useSchoolRealtime } from '@/shared/hooks/useSchoolRealtime';
 import type {
   Transaction,
   TransactionFormData,
@@ -16,7 +17,7 @@ export default function TransactionsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<'all' | 'income' | 'expense'>('all');
-  const { schoolId } = useAuth();
+  const { schoolId, canUse } = useAuth();
 
   const {
     transactions,
@@ -25,10 +26,13 @@ export default function TransactionsPage() {
     addTransaction,
     editTransaction,
     removeTransaction,
+    refresh,
   } = useTransactions({
     schoolId: schoolId || '',
     typeFilter: typeFilter === 'all' ? undefined : typeFilter,
   });
+
+  useSchoolRealtime(schoolId, { tables: ['transactions'], enabled: canUse('realtime_dashboard'), onEvent: refresh });
 
   const handleAddTransaction = async (data: TransactionFormData) => {
     await addTransaction(data);

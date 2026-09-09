@@ -6,6 +6,7 @@ import { StudentTable } from '@/modules/students/components/StudentTable';
 import { StudentForm } from '@/modules/students/components/StudentForm';
 import { StudentImport } from '@/modules/students/components/StudentImport';
 import { useStudents } from '@/modules/students/hooks/useStudents';
+import { useSchoolRealtime } from '@/shared/hooks/useSchoolRealtime';
 import type { Student, StudentFormData } from '@/modules/students/types/student.types';
 import { CLASS_OPTIONS } from '@/shared/constants';
 import { FileSpreadsheet } from 'lucide-react';
@@ -21,12 +22,14 @@ export default function StudentsPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const { schoolId, canUse } = useAuth();
 
-  const { students, loading, error, addStudent, editStudent, removeStudent } = useStudents({
+  const { students, loading, error, addStudent, editStudent, removeStudent, refresh } = useStudents({
     schoolId: schoolId || '',
     classFilter: classFilter || undefined,
     statusFilter: statusFilter || undefined,
     searchQuery: searchQuery || undefined,
   });
+
+  useSchoolRealtime(schoolId, { tables: ['students'], enabled: canUse('realtime_dashboard'), onEvent: refresh });
 
   const handleFormSubmit = async (data: StudentFormData) => {
     try {

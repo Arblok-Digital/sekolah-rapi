@@ -6,6 +6,7 @@ import { assertSchoolFeature } from '@/shared/services/plan-guard';
 import { createSupabaseClient } from '@/shared/services/supabase/client';
 import { MONTHS } from '@/modules/payroll/types/payroll.types';
 import { BarChart3, FileSpreadsheet, Download, Loader2, TrendingUp, TrendingDown, Receipt, Users } from 'lucide-react';
+import { useSchoolRealtime } from '@/shared/hooks/useSchoolRealtime';
 
 function formatRp(n: number) { return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n); }
 
@@ -28,10 +29,11 @@ interface SppRecap {
 type ReportType = 'financial' | 'spp';
 
 export default function ReportsPage() {
-  const { schoolId } = useAuth();
+  const { schoolId, canUse } = useAuth();
   const [reportType, setReportType] = useState<ReportType>('financial');
   const [year, setYear] = useState(new Date().getFullYear());
   const [loading, setLoading] = useState(true);
+  const [refreshNonce, setRefreshNonce] = useState(0);
 
   const [financialData, setFinancialData] = useState<MonthlyReport[]>([]);
   const [sppData, setSppData] = useState<SppRecap[]>([]);
@@ -106,7 +108,13 @@ export default function ReportsPage() {
     }
 
     fetchData();
-  }, [schoolId, year]);
+  }, [schoolId, year, refreshNonce]);
+
+  useSchoolRealtime(schoolId, {
+    tables: ['transactions', 'spp_payments'],
+    enabled: canUse('realtime_dashboard'),
+    onEvent: () => setRefreshNonce(n => n + 1),
+  });
 
   function exportCSV(type: 'financial' | 'spp') {
     let csv = '';

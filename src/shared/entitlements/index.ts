@@ -34,11 +34,11 @@ export const PLAN_DEFINITIONS = {
   },
   basic: {
     label: 'Basic',
-    price: 490000,
+    price: 790000,
   },
   pro: {
     label: 'Pro',
-    price: 990000,
+    price: 1490000,
   },
   lifetime: {
     label: 'Lifetime',
@@ -48,8 +48,8 @@ export const PLAN_DEFINITIONS = {
 
 export const PRICING_PLANS = [
   { plan: 'free', name: 'Gratis', priceLabel: 'Rp 0', billingLabel: '/selamanya', description: 'Coba dulu, cocok untuk sekolah kecil yang baru mulai digital.', cta: 'Mulai Gratis', href: '/register', features: ['Manajemen siswa & SPP', 'Pencatatan kas dasar', '1 pengguna aktif', 'Kas digital 2 kategori'], missing: ['Pendaftaran siswa online', 'Dashboard owner realtime', 'Laporan operasional lengkap', 'Penggajian guru', 'Inventaris barang', 'Import Excel', 'Support prioritas'] },
-  { plan: 'basic', name: 'Basic', priceLabel: '490.000', billingLabel: '/tahun', description: 'Fitur operasional lengkap untuk sekolah swasta dan madrasah.', cta: 'Hubungi untuk Aktivasi Basic', href: 'https://wa.me/6289508053795?text=Saya%20ingin%20aktivasi%20SekolahRapi%20Basic', features: ['Semua fitur Free plan', 'Laporan operasional & keuangan', 'Ekspor Excel (semua data)', 'Import siswa via Excel', 'Kategori kas unlimited'], missing: ['Pendaftaran siswa online', 'Dashboard owner realtime', 'Penggajian guru', 'Inventaris barang', 'Dukungan prioritas'] },
-  { plan: 'pro', name: 'Pro', priceLabel: '990.000', billingLabel: '/tahun', description: 'Solusi lengkap untuk sekolah yang membutuhkan semua fitur.', cta: 'Hubungi untuk Aktivasi Pro', href: 'https://wa.me/6289508053795?text=Saya%20ingin%20aktivasi%20SekolahRapi%20Pro', features: ['Semua fitur Basic', 'Pendaftaran siswa online yang ringkas', 'Dashboard owner realtime, nyaman di mobile', 'Penggajian guru (payroll)', 'Inventaris barang & aset', 'Impor data massal (Excel)', 'Dukungan prioritas via WA', 'Bantuan pelatihan staff (1x zoom)'], missing: [] },
+  { plan: 'basic', name: 'Basic', priceLabel: '790.000', billingLabel: '/tahun', description: 'Fitur operasional lengkap untuk sekolah swasta dan madrasah.', cta: 'Hubungi untuk Aktivasi Basic', href: 'https://wa.me/6289508053795?text=Saya%20ingin%20aktivasi%20SekolahRapi%20Basic', features: ['Semua fitur Free plan', 'Laporan operasional & keuangan', 'Ekspor Excel (semua data)', 'Import siswa via Excel', 'Kategori kas unlimited'], missing: ['Pendaftaran siswa online', 'Dashboard owner realtime', 'Penggajian guru', 'Inventaris barang', 'Dukungan prioritas'] },
+  { plan: 'pro', name: 'Pro', priceLabel: '1.490.000', billingLabel: '/tahun', description: 'Solusi lengkap untuk sekolah yang membutuhkan semua fitur.', cta: 'Hubungi untuk Aktivasi Pro', href: 'https://wa.me/6289508053795?text=Saya%20ingin%20aktivasi%20SekolahRapi%20Pro', features: ['Semua fitur Basic', 'Pendaftaran siswa online yang ringkas', 'Dashboard owner realtime, nyaman di mobile', 'Penggajian guru (payroll)', 'Inventaris barang & aset', 'Impor data massal (Excel)', 'Dukungan prioritas via WA', 'Bantuan pelatihan staff (1x zoom)'], missing: [] },
 ] as const;
 
 export function normalizePlan(plan?: string | null): Plan {

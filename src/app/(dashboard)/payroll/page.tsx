@@ -7,6 +7,7 @@ import { useEmployees, useCreateEmployee, useUpdateEmployee, useDeleteEmployee, 
 import { MONTHS } from '@/modules/payroll/types/payroll.types';
 import type { Employee, EmployeeFormInput, PayrollRecord } from '@/modules/payroll/types/payroll.types';
 import { Plus, Edit, Trash2, Users, Loader2, Zap, CheckCircle, XCircle } from 'lucide-react';
+import { useSchoolRealtime } from '@/shared/hooks/useSchoolRealtime';
 
 const emptyEmp: EmployeeFormInput = { name: '', position: 'Guru', phone: '', base_salary: 0, status: 'active' };
 
@@ -15,7 +16,7 @@ function formatRp(n: number) { return new Intl.NumberFormat('id-ID', { style: 'c
 type Tab = 'employees' | 'payroll';
 
 export default function PayrollPage() {
-  const { schoolId } = useAuth();
+  const { schoolId, canUse } = useAuth();
   const { toast } = useToast();
   const [tab, setTab] = useState<Tab>('employees');
   const now = new Date();
@@ -43,6 +44,8 @@ export default function PayrollPage() {
   const generateMut = useGeneratePayroll(schoolId || '');
   const updatePay = useUpdatePayroll(schoolId || '');
   const deletePay = useDeletePayroll(schoolId || '');
+
+  useSchoolRealtime(schoolId, { tables: ['employees', 'payroll_records'], enabled: canUse('realtime_dashboard') });
 
   function openCreateEmp() { setEditEmp(null); setEmpForm(emptyEmp); setEmpFormOpen(true); }
   function openEditEmp(e: Employee) { setEditEmp(e); setEmpForm({ name: e.name, position: e.position, phone: e.phone || '', base_salary: e.base_salary, status: e.status }); setEmpFormOpen(true); }

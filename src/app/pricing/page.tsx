@@ -138,7 +138,7 @@ export default function PricingPage() {
             { q: 'Kenapa pendaftaran online dan dashboard realtime ada di Pro?', a: 'Keduanya menyelesaikan bottleneck lintas pihak: orang tua mendaftar dari luar sekolah, operator memproses data, dan owner memantau hasil dari mana saja. Karena membutuhkan alur publik, kontrol akses, serta sinkronisasi realtime, fitur ini ditempatkan sebagai nilai utama Pro.' },
             { q: 'Bagaimana cara upgrade?', a: 'Klik tombol Upgrade di dashboard atau hubungi kami via WA di +6289508053795. Kami akan proses dan aktifkan plan dalam 1x24 jam.' },
             { q: 'Apakah ada biaya tersembunyi?', a: 'Tidak ada. Harga yang tertera adalah langganan per tahun penuh. Tidak ada biaya setup, biaya per pengguna, atau biaya tambahan lainnya.' },
-            { q: 'Bisa ganti plan setelah bayar?', a: 'Ya. Bisa upgrade kapan saja dengan bayar selisih. Misalnya dari Basic ke Pro bayar Rp 500.000 di tengah tahun.' },
+            { q: 'Bisa ganti plan setelah bayar?', a: 'Ya. Bisa upgrade kapan saja dengan bayar selisih. Misalnya dari Basic ke Pro bayar Rp 700.000 (selisih paket) di tengah tahun.' },
             { q: 'Apakah database harus disimpan di komputer sekolah?', a: 'Tidak. Database cloud Supabase membuat dashboard bisa dipantau owner dari HP di mana saja. Data dipisahkan per sekolah dengan school_id dan Row Level Security; backup lokal berkala dapat ditambahkan untuk kebutuhan operasional, tetapi bukan database utama.' },
           ].map((faq, i) => (
             <details key={i} className="bg-white/75 rounded-2xl border border-[#17211b]/10 group">

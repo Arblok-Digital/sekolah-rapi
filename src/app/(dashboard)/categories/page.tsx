@@ -21,6 +21,7 @@ import {
   X,
 } from 'lucide-react';
 import { cn } from '@/shared/utils/cn';
+import { useSchoolRealtime } from '@/shared/hooks/useSchoolRealtime';
 
 interface CategoryForm {
   name: string;
@@ -31,7 +32,7 @@ interface CategoryForm {
 const emptyForm: CategoryForm = { name: '', type: 'income', description: '' };
 
 export default function CategoriesPage() {
-  const { schoolId } = useAuth();
+  const { schoolId, canUse } = useAuth();
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Category | null>(null);
   const [form, setForm] = useState<CategoryForm>(emptyForm);
@@ -43,6 +44,8 @@ export default function CategoriesPage() {
   const createMut = useCreateCategory(schoolId || '');
   const updateMut = useUpdateCategory(schoolId || '');
   const deleteMut = useDeleteCategory(schoolId || '');
+
+  useSchoolRealtime(schoolId, { tables: ['categories'], enabled: canUse('realtime_dashboard') });
 
   const income = (categories || []).filter((c) => c.type === 'income');
   const expense = (categories || []).filter((c) => c.type === 'expense');
