@@ -35,6 +35,7 @@ interface UserData {
 
 export default function DevAdminPage() {
   const { isDev, profile } = useAuth();
+  const isProduction = process.env.NODE_ENV === 'production';
   const router = useRouter();
   const [tab, setTab] = useState<'schools' | 'users'>('schools');
   const [schools, setSchools] = useState<SchoolData[]>([]);
@@ -214,16 +215,23 @@ export default function DevAdminPage() {
           <p className="text-sm text-white/70">
             Logged in as: {profile?.name} ({profile?.role}) • ID: {profile?.id?.slice(0, 8)}...
           </p>
+          {isProduction && (
+            <p className="text-xs text-amber-400/80 mt-1">
+              Mode production: aksi destruktif disembunyikan. Hanya approval & plan.
+            </p>
+          )}
         </div>
         <div className="flex gap-2">
           <button onClick={() => tab === 'schools' ? fetchSchools() : fetchUsers()} disabled={loading}
             className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/15 text-white rounded-lg text-sm transition-colors">
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
           </button>
-          <button onClick={() => handleAction('nuclear', '', 'HAPUS SEMUA DATA')}
-            className="flex items-center gap-2 px-4 py-2 bg-red-600/80 hover:bg-red-600 text-white rounded-lg text-sm transition-colors">
-            <Zap className="w-4 h-4" /> Nuclear Delete
-          </button>
+          {!isProduction && (
+            <button onClick={() => handleAction('nuclear', '', 'HAPUS SEMUA DATA')}
+              className="flex items-center gap-2 px-4 py-2 bg-red-600/80 hover:bg-red-600 text-white rounded-lg text-sm transition-colors">
+              <Zap className="w-4 h-4" /> Nuclear Delete
+            </button>
+          )}
         </div>
       </div>
 
@@ -233,10 +241,12 @@ export default function DevAdminPage() {
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === 'schools' ? 'bg-indigo-500/20 text-indigo-400' : 'text-white/70 hover:text-white/70'}`}>
           <School className="w-4 h-4" /> Schools ({schools.length})
         </button>
-        <button onClick={() => setTab('users')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === 'users' ? 'bg-indigo-500/20 text-indigo-400' : 'text-white/70 hover:text-white/70'}`}>
-          <Users className="w-4 h-4" /> Users ({users.length})
-        </button>
+        {!isProduction && (
+          <button onClick={() => setTab('users')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === 'users' ? 'bg-indigo-500/20 text-indigo-400' : 'text-white/70 hover:text-white/70'}`}>
+            <Users className="w-4 h-4" /> Users ({users.length})
+          </button>
+        )}
       </div>
 
       {/* Message */}
@@ -323,14 +333,18 @@ export default function DevAdminPage() {
                         <p className="text-xs text-white/50">Aktivasi dilakukan server setelah pembayaran diverifikasi.</p>
                       </div>
                       <div className="flex flex-wrap gap-2">
-                        <button onClick={() => handleAction('seed', school.id, school.name)} disabled={actionLoading === school.id + 'seed'}
-                          className="flex items-center gap-2 px-3 py-2 bg-emerald-600/80 hover:bg-emerald-600 text-white rounded-lg text-sm transition-colors disabled:opacity-50">
-                          {actionLoading === school.id + 'seed' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />} Seed Test Data
-                        </button>
-                        <button onClick={() => handleAction('delete', school.id, school.name)} disabled={actionLoading === school.id + 'delete'}
-                          className="flex items-center gap-2 px-3 py-2 bg-red-600/80 hover:bg-red-600 text-white rounded-lg text-sm transition-colors disabled:opacity-50">
-                          {actionLoading === school.id + 'delete' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Hapus Data
-                        </button>
+                        {!isProduction && (
+                          <button onClick={() => handleAction('seed', school.id, school.name)} disabled={actionLoading === school.id + 'seed'}
+                            className="flex items-center gap-2 px-3 py-2 bg-emerald-600/80 hover:bg-emerald-600 text-white rounded-lg text-sm transition-colors disabled:opacity-50">
+                            {actionLoading === school.id + 'seed' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />} Seed Test Data
+                          </button>
+                        )}
+                        {!isProduction && (
+                          <button onClick={() => handleAction('delete', school.id, school.name)} disabled={actionLoading === school.id + 'delete'}
+                            className="flex items-center gap-2 px-3 py-2 bg-red-600/80 hover:bg-red-600 text-white rounded-lg text-sm transition-colors disabled:opacity-50">
+                            {actionLoading === school.id + 'delete' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Hapus Data
+                          </button>
+                        )}
                         {school.status === 'active' ? (
                           <button onClick={() => handleAction('pending', school.id, school.name)} disabled={actionLoading === school.id + 'pending'}
                             className="flex items-center gap-2 px-3 py-2 bg-amber-600/80 hover:bg-amber-600 text-white rounded-lg text-sm transition-colors disabled:opacity-50">
@@ -360,7 +374,7 @@ export default function DevAdminPage() {
       )}
 
       {/* Users Tab */}
-      {tab === 'users' && (
+      {tab === 'users' && !isProduction && (
         <>
           {loading ? (
             <div className="text-center py-12">

@@ -75,18 +75,7 @@ export default function OnboardingPage() {
       });
       if (profileError) throw new Error('Gagal membuat profil: ' + profileError.message);
 
-      // 3. Create default categories
-      const defaultCategories = [
-        { name: 'SPP', type: 'income', school_id: school.id },
-        { name: 'Sumbangan', type: 'income', school_id: school.id },
-        { name: 'Gaji Guru', type: 'expense', school_id: school.id },
-        { name: 'ATK', type: 'expense', school_id: school.id },
-        { name: 'Listrik', type: 'expense', school_id: school.id },
-        { name: 'Lainnya', type: 'income', school_id: school.id },
-      ];
-      await supabase.from('categories').insert(defaultCategories);
-
-      // 4. Done
+      // 3. Done (kategori default otomatis dibuat oleh trigger after_school_create)
       setStep('done');
       setTimeout(() => {
         router.refresh();

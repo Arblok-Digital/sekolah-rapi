@@ -90,9 +90,9 @@ export default function ReportsPage() {
       const monthlySpp: SppRecap[] = MONTHS.map((m, i) => {
         const monthSpp = (sppData || []).filter(s => s.month === i + 1);
         const paidCount = monthSpp.filter(s => s.status === 'paid' || s.status === 'partial').length;
-        const totalExpected = activeStudents * 350000; // Default SPP amount
+        const totalExpected = monthSpp.reduce((sum, r) => sum + r.amount, 0);
         const totalCollected = monthSpp.reduce((s, r) => s + r.paid_amount, 0);
-        return { month: m, totalStudents: activeStudents, paidCount, totalExpected, totalCollected, collectionRate: activeStudents > 0 ? Math.round((paidCount / activeStudents) * 100) : 0 };
+        return { month: m, totalStudents: activeStudents, paidCount, totalExpected, totalCollected, collectionRate: totalExpected > 0 ? Math.round((totalCollected / totalExpected) * 100) : 0 };
       });
 
       setFinancialData(monthlyFin);
