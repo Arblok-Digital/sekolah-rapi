@@ -2,6 +2,17 @@
 
 Tuliskan entri terbaru di atas. Maksimal ringkas: hasil, file, validasi, blocker, next step.
 
+## 2026-09-22 - Mobile/PWA Bug Fixes (Laporan, Kas, Logout, SPP sync Overview)
+
+- Hasil: 4 bug laporan user PWA diperbaiki; semua perbaikan disamakan basis datanya dengan dashboard Overview.
+- Laporan (`src/app/(dashboard)/reports/page.tsx`): kartu stat jadi `grid-cols-1 sm:grid-cols-3` (tidak overflow di layar sempit), tabel Laporan Bulanan & Rekap SPP dibungkus `overflow-x-auto` + `whitespace-nowrap` sehingga angka masuk/keluar tidak lagi terpotong dan bisa scroll horizontal.
+- Kas (`src/app/(dashboard)/transactions/page.tsx`, `TransactionTable.tsx`): modal tambah/edit transaksi kini `overflow-y-auto` + `max-w-md my-auto` sehingga tombol Simpan (utamanya Pengeluaran) dapat dijangkau di PWA; kolom Kategori menampilkan nama kategori asli, bukan UUID terpotong.
+- Logout (`DashboardShell.tsx`): tombol Keluar (ikon LogOut) ditambahkan di header sticky, tampil pada layar `<lg`, sehingga opsi logout selalu terlihat di PWA tanpa harus scroll.
+- SPP sync Overview (`spp.service.ts`, `useSPP.ts`, `spp/page.tsx`, `TunggakanTable.tsx`, `spp.types.ts`): `getSPPSummary` sekarang menghitung outstanding = total siswa aktif − siswa bayar/angsuran bulan ini (identik formula Overview); tab Tunggakan kini berbasis bulan (mengikuti filter halaman, default bulan ini) dan menyertakan siswa aktif tanpa tagihan (`no_bill`) supaya tidak 'hilang'.
+- WIP user yang belum di-commit (bulk billing SPP, TunggakanTable, filter klas, migration unique bill, import siswa) dipertahankan dan dibangun di atasnya.
+- Validasi: `npm run lint`, `npm run typecheck`, 7/7 `npm run test`, dan `npm run build` (49 halaman) lulus.
+- Next: QA visual PWA pada viewport/perangkat nyata; offline-first terbatas masih relevan — createTransaction saat offline menulis ke Dexie dan baru muncul di list setelah sinkron Supabase (belum digabung saat baca).
+
 ## 2026-08-03 - Unified Root Landing and Organic Route Validation
 
 - Hasil: `/` dikonsolidasikan menjadi satu conversion journey berbasis panduan CRO Kai—hero spesifik → pain → solusi terhubung → cara mulai → use case → FAQ → final CTA—dengan supporting routes tetap menjadi pendalaman SEO.

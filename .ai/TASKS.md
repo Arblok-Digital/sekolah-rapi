@@ -1,5 +1,16 @@
 # Task Tracker
 
+## Completed: Mobile/PWA Bug Fixes (Laporan, Kas, Logout, SPP sync Overview)
+
+Goal: memperbaiki 4 bug laporan user PWA dan menyamakan semua agregasi SPP dengan dashboard Overview sebagai sumber kebenaran.
+
+- [x] Laporan: kartu statistik responsif dan tabel bisa scroll horizontal tanpa angka masuk/keluar terpotong.
+- [x] Kas: modal transaksi scrollable di HP, tombol Simpan terjangkau; kolom kategori menampilkan nama, bukan UUID.
+- [x] Logout: tombol Keluar di header sticky untuk layar <lg (selalu terlihat di PWA).
+- [x] SPP summary: outstanding = siswa aktif − bayar/angsuran bulan ini (identik Overview); collection rate mengikuti.
+- [x] Tab Tunggakan: basis bulan (ikuti filter halaman), siswa tanpa tagihan ikut tampil sebagai belum bayar.
+- [x] WIP user yang belum di-commit dipertahankan; lint, typecheck, 7/7 test, dan build lulus.
+
 ## Completed: Pro Positioning and Full-stack README
 
 Goal: menempatkan bottleneck pendaftaran online dan visibilitas owner sebagai nilai inti Pro, sekaligus mendokumentasikan arsitektur aktual SekolahRapi.
