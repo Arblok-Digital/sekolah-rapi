@@ -167,29 +167,30 @@ export default function ReportsPage() {
           {/* ── Financial Report ── */}
           {reportType === 'financial' && (
             <>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="bg-white rounded-xl border border-white/10 p-4">
                   <div className="flex items-center gap-2 mb-2"><TrendingUp className="w-4 h-4 text-emerald-500" /><span className="text-xs text-gray-500">Total Pemasukan</span></div>
-                  <p className="text-xl font-bold text-emerald-600">{formatRp(totalIncome)}</p>
+                  <p className="text-xl font-bold text-emerald-600 whitespace-nowrap">{formatRp(totalIncome)}</p>
                 </div>
                 <div className="bg-white rounded-xl border border-white/10 p-4">
                   <div className="flex items-center gap-2 mb-2"><TrendingDown className="w-4 h-4 text-red-500" /><span className="text-xs text-gray-500">Total Pengeluaran</span></div>
-                  <p className="text-xl font-bold text-red-600">{formatRp(totalExpense)}</p>
+                  <p className="text-xl font-bold text-red-600 whitespace-nowrap">{formatRp(totalExpense)}</p>
                 </div>
                 <div className="bg-white rounded-xl border border-white/10 p-4">
                   <div className="flex items-center gap-2 mb-2"><BarChart3 className="w-4 h-4 text-indigo-500" /><span className="text-xs text-gray-500">Net</span></div>
-                  <p className={`text-xl font-bold ${totalNet >= 0 ? 'text-indigo-600' : 'text-red-600'}`}>{formatRp(totalNet)}</p>
+                  <p className={`text-xl font-bold whitespace-nowrap ${totalNet >= 0 ? 'text-indigo-600' : 'text-red-600'}`}>{formatRp(totalNet)}</p>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl border border-white/10 overflow-hidden">
+              <div className="bg-white rounded-xl border border-white/10">
                 <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
                   <h3 className="text-sm font-semibold text-gray-900">Laporan Bulanan</h3>
                   <button onClick={() => exportCSV('financial')} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100">
                     <Download className="w-3.5 h-3.5" /> Export CSV
                   </button>
                 </div>
-                <table className="w-full text-sm">
+                <div className="overflow-x-auto">
+                <table className="w-full text-sm whitespace-nowrap">
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="text-left px-4 py-2.5 font-medium text-gray-500">Bulan</th>
@@ -215,6 +216,7 @@ export default function ReportsPage() {
                     </tr>
                   </tbody>
                 </table>
+                </div>
               </div>
             </>
           )}
@@ -222,14 +224,15 @@ export default function ReportsPage() {
           {/* ── SPP Recap ── */}
           {reportType === 'spp' && (
             <>
-              <div className="bg-white rounded-xl border border-white/10 overflow-hidden">
+              <div className="bg-white rounded-xl border border-white/10">
                 <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
                   <h3 className="text-sm font-semibold text-gray-900">Rekap SPP {year}</h3>
                   <button onClick={() => exportCSV('spp')} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100">
                     <Download className="w-3.5 h-3.5" /> Export CSV
                   </button>
                 </div>
-                <table className="w-full text-sm">
+                <div className="overflow-x-auto">
+                <table className="w-full text-sm whitespace-nowrap">
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="text-left px-4 py-2.5 font-medium text-gray-500">Bulan</th>
@@ -253,6 +256,7 @@ export default function ReportsPage() {
                     ))}
                   </tbody>
                 </table>
+                </div>
               </div>
             </>
           )}

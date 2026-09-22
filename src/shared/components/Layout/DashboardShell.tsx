@@ -1,7 +1,8 @@
 'use client';
 
 import { Sidebar } from '@/shared/components/Layout/Sidebar';
-import { Wifi, WifiOff } from 'lucide-react';
+import { useAuth } from '@/shared/providers/AuthProvider';
+import { Wifi, WifiOff, LogOut } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface DashboardShellProps {
@@ -13,6 +14,7 @@ interface DashboardShellProps {
 
 export function DashboardShell({ children, schoolName, userName, userRole }: DashboardShellProps) {
   const [isOnline, setIsOnline] = useState(true);
+  const { signOut } = useAuth();
 
   useEffect(() => {
     setIsOnline(navigator.onLine);
@@ -50,6 +52,15 @@ export function DashboardShell({ children, schoolName, userName, userRole }: Das
                 {isOnline ? 'Online' : 'Offline'}
               </span>
             </div>
+
+            <button
+              onClick={signOut}
+              title="Keluar"
+              aria-label="Keluar"
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/10 text-white/70 transition-colors hover:bg-red-500/20 hover:text-red-300 lg:hidden"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
 
             <div className="flex items-center gap-2 border-l border-white/10 pl-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#dfe99a] text-sm font-black text-[#173f35]">

@@ -6,6 +6,7 @@ import type { Transaction } from '../types/transaction.types';
 
 interface TransactionTableProps {
   transactions: Transaction[];
+  categories?: { id: string; name: string; type: string }[];
   loading?: boolean;
   onSort?: (field: string) => void;
   onEdit?: (transaction: Transaction) => void;
@@ -15,11 +16,14 @@ interface TransactionTableProps {
 
 export function TransactionTable({
   transactions,
+  categories = [],
   loading,
   onEdit,
   onDelete,
   deletingId,
 }: TransactionTableProps) {
+  const categoryName = (id: string | null | undefined) =>
+    categories.find((c) => c.id === id)?.name ?? (id ? `${id.substring(0, 8)}…` : '-');
   if (loading) {
     return (
       <div className="text-center py-8 text-gray-500">Memuat data...</div>
@@ -74,7 +78,7 @@ export function TransactionTable({
                 </span>
               </td>
               <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
-                {tx.category_id?.substring(0, 8)}...
+                {categoryName(tx.category_id)}
               </td>
               <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-medium">
                 <span

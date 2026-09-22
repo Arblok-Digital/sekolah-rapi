@@ -21,6 +21,7 @@ export default function TransactionsPage() {
 
   const {
     transactions,
+    categories,
     loading,
     error,
     addTransaction,
@@ -127,6 +128,7 @@ export default function TransactionsPage() {
       ) : (
         <TransactionTable
           transactions={transactions || []}
+          categories={categories}
           onEdit={(transaction) => {
             setEditingTransaction(transaction);
             setShowForm(true);
@@ -138,8 +140,8 @@ export default function TransactionsPage() {
 
       {/* Add/Edit Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4">
+          <div className="my-auto w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
             <h3 className="text-lg font-semibold mb-4">
               {editingTransaction ? 'Edit Transaksi' : 'Tambah Transaksi Baru'}
             </h3>

@@ -155,8 +155,8 @@ export function Sidebar() {
           })}
         </nav>
 
-        {/* User info + logout */}
-        <div className="border-t border-white/5 p-3 space-y-2">
+        {/* User info + logout — beri ruang di atas bottom nav mobile */}
+        <div className="border-t border-white/5 p-3 pb-24 lg:pb-3 space-y-2">
           <div className="px-3 py-2">
             <p className="text-xs text-white/70">Login sebagai</p>
             <p className="text-sm text-white/70 font-medium">{profile?.name || 'User'}</p>
