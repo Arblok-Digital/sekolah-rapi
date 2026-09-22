@@ -1,14 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/shared/providers/AuthProvider';
+import { createSupabaseClient } from '@/shared/services/supabase/client';
 import { StudentTable } from '@/modules/students/components/StudentTable';
 import { StudentForm } from '@/modules/students/components/StudentForm';
 import { StudentImport } from '@/modules/students/components/StudentImport';
 import { useStudents } from '@/modules/students/hooks/useStudents';
 import { useSchoolRealtime } from '@/shared/hooks/useSchoolRealtime';
 import type { Student, StudentFormData } from '@/modules/students/types/student.types';
-import { CLASS_OPTIONS } from '@/shared/constants';
 import { FileSpreadsheet } from 'lucide-react';
 
 export default function StudentsPage() {
@@ -20,7 +20,30 @@ export default function StudentsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [classFilter, setClassFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [availableClasses, setAvailableClasses] = useState<string[]>([]);
   const { schoolId, canUse } = useAuth();
+
+  const loadClasses = useCallback(() => {
+    if (!schoolId) return;
+    const supabase = createSupabaseClient();
+    supabase
+      .from('students')
+      .select('class')
+      .eq('school_id', schoolId)
+      .then(({ data }) => {
+        const list: string[] = [];
+        (data ?? []).forEach((row) => {
+          const c = (row as { class: string }).class;
+          if (c && !list.includes(c)) list.push(c);
+        });
+        list.sort((a, b) => a.localeCompare(b, 'id', { numeric: true }));
+        setAvailableClasses(list);
+      });
+  }, [schoolId]);
+
+  useEffect(() => {
+    loadClasses();
+  }, [loadClasses]);
 
   const { students, loading, error, addStudent, editStudent, removeStudent, refresh } = useStudents({
     schoolId: schoolId || '',
@@ -29,7 +52,14 @@ export default function StudentsPage() {
     searchQuery: searchQuery || undefined,
   });
 
-  useSchoolRealtime(schoolId, { tables: ['students'], enabled: canUse('realtime_dashboard'), onEvent: refresh });
+  useSchoolRealtime(schoolId, {
+    tables: ['students'],
+    enabled: canUse('realtime_dashboard'),
+    onEvent: () => {
+      refresh();
+      loadClasses();
+    },
+  });
 
   const handleFormSubmit = async (data: StudentFormData) => {
     try {
@@ -143,7 +173,7 @@ export default function StudentsPage() {
           className="px-3 py-2 border border-white/15 rounded-md text-sm"
         >
           <option value="">Semua Kelas</option>
-          {CLASS_OPTIONS.map((c) => (
+          {availableClasses.map((c) => (
             <option key={c} value={c}>{c}</option>
           ))}
         </select>

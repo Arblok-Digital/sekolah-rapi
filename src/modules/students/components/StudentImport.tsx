@@ -23,7 +23,7 @@ const HEADER_MAP: Record<string, string> = {
   nis: 'nis', 'NIS': 'nis', 'nomor_induk': 'nis',
   name: 'name', 'nama': 'name', 'nama_lengkap': 'name',
   class: 'class', 'kelas': 'class',
-  gender: 'gender', 'jenis_kelamin': 'gender', 'jk': 'gender',
+  gender: 'gender', 'jenis_kelamin': 'gender', 'jenis_kelamin_(l/p)': 'gender', 'jenis_kelamin_l_p': 'gender', 'jk': 'gender',
   address: 'address', 'alamat': 'address',
   parent_name: 'parent_name', 'nama_orang_tua': 'parent_name', 'ortu': 'parent_name',
   parent_phone: 'parent_phone', 'no_hp': 'parent_phone', 'telepon': 'parent_phone', 'wa': 'parent_phone',
@@ -52,7 +52,7 @@ function parseFile(file: File): Promise<ParsedRow[]> {
           // Map headers (case-insensitive, flexible)
           const mapped: Record<string, string> = {};
           for (const [key, val] of Object.entries(row)) {
-            const normalized = key.toLowerCase().trim().replace(/[\s_]+/g, '_');
+            const normalized = key.toLowerCase().trim().replace(/[()/\\]+/g, ' ').replace(/[\s_]+/g, '_');
             const field = HEADER_MAP[key] || HEADER_MAP[normalized];
             if (field) mapped[field] = String(val).trim();
           }
