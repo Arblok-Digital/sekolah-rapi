@@ -25,6 +25,13 @@ interface TransactionFormProps {
   initialData?: TransactionFormData | null;
 }
 
+function todayLocalISO(): string {
+  const d = new Date();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
+
 export function TransactionForm({
   schoolId,
   onSubmit,
@@ -34,6 +41,7 @@ export function TransactionForm({
   const [categories, setCategories] = useState<{ id: string; name: string; type: string }[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
+  const today = todayLocalISO();
 
   const {
     register,
@@ -47,12 +55,13 @@ export function TransactionForm({
       category_id: initialData?.category_id ?? '',
       amount: initialData?.amount ?? 0,
       description: initialData?.description ?? '',
-      reference_date:
-        initialData?.reference_date ?? new Date().toISOString().split('T')[0],
+      reference_date: initialData?.reference_date ?? today,
     },
   });
 
   const selectedType = watch('type');
+  const selectedDate = watch('reference_date');
+  const isFutureDate = selectedDate > today;
 
   useEffect(() => {
     getCategories(schoolId, selectedType).then(setCategories).catch(console.error);
@@ -137,9 +146,16 @@ export function TransactionForm({
         <label className="block text-sm font-medium text-gray-700 mb-1">Tanggal</label>
         <input
           type="date"
+          max={today}
           {...register('reference_date')}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
         />
+        {isFutureDate && (
+          <p className="mt-1 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2.5 py-1.5">
+            Tanggal di masa depan (setelah {today}). Transaksi tidak akan muncul di Riwayat Kas/
+            laporan sebelum tanggal tersebut. Jika ini tidak disengaja, perbaiki tanggalnya.
+          </p>
+        )}
         {errors.reference_date && (
           <p className="mt-1 text-sm text-red-600">{errors.reference_date.message}</p>
         )}
