@@ -8,6 +8,8 @@ export interface SPPPayment extends SharedSPPPayment {
   student_name?: string;
   student_nis?: string;
   student_class?: string;
+  /** True when the bulan-payment (tagihan) belum dibuat — siswa dianggap belum bayar (konsisten dengan Overview). */
+  no_bill?: boolean;
 }
 
 /** SPP payment summary record */

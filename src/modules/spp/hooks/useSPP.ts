@@ -5,9 +5,12 @@ import {
   getSPPPayments,
   createSPPPayment,
   getOutstanding,
+  getUnpaidPayments,
   getSPPSummary,
   updateSPPPayment,
   deleteSPPPayment,
+  bulkCreateSPPPayments,
+  backfillMissingSPPTransactions,
 } from '../services/spp.service';
 import type { SPPFilter, SPPFormInput, SPPPayment } from '../types/spp.types';
 
@@ -39,6 +42,20 @@ export function useOutstandingSPP(schoolId: string, month?: number, year?: numbe
   return useQuery({
     queryKey: SPP_KEYS.outstanding(schoolId, month, year),
     queryFn: () => getOutstanding(schoolId, month, year),
+    enabled: !!schoolId,
+  });
+}
+
+/**
+ * Hook: fetch siswa yang belum bayar untuk suatu bulan (konsisten Overview).
+ */
+export function useUnpaidSPP(
+  schoolId: string,
+  options?: { month?: number; year?: number; classFilter?: string }
+) {
+  return useQuery({
+    queryKey: ['spp', 'unpaid', schoolId, options?.month, options?.year, options?.classFilter] as const,
+    queryFn: () => getUnpaidPayments(schoolId, options),
     enabled: !!schoolId,
   });
 }
@@ -93,6 +110,48 @@ export function useDeleteSPPPayment() {
 
   return useMutation({
     mutationFn: (id: string) => deleteSPPPayment(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: SPP_KEYS.all });
+    },
+  });
+}
+
+/**
+ * Hook: sinkronkan pembayaran lunas yang belum tercatat ke Kas.
+ */
+export function useBackfillSPPTransactions() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      schoolId,
+      userId,
+    }: {
+      schoolId: string;
+      userId: string;
+    }) => backfillMissingSPPTransactions(schoolId, userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: SPP_KEYS.all });
+    },
+  });
+}
+
+/**
+ * Hook: bulk-generate unpaid bills for all active students in a period.
+ */
+export function useBulkCreateSPPPayments() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      schoolId,
+      userId,
+      params,
+    }: {
+      schoolId: string;
+      userId: string;
+      params: { month: number; year: number; amount: number };
+    }) => bulkCreateSPPPayments(schoolId, userId, params),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: SPP_KEYS.all });
     },

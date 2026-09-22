@@ -147,6 +147,137 @@ export async function getOutstanding(
 }
 
 /**
+ * Bulk-generate unpaid SPP bills for all active students of a month/year.
+ * Skips students who already have a bill for that period.
+ */
+export async function bulkCreateSPPPayments(
+  schoolId: string,
+  userId: string,
+  params: { month: number; year: number; amount: number }
+): Promise<{ created: number; existing: number; students: number }> {
+  const supabase = createSupabaseClient();
+
+  const { data: students, error: studentError } = await supabase
+    .from('students')
+    .select('id')
+    .eq('school_id', schoolId)
+    .eq('status', 'active');
+  if (studentError) throw new Error(studentError.message);
+
+  const { data: existing, error: existingError } = await supabase
+    .from(TABLE)
+    .select('student_id')
+    .eq('school_id', schoolId)
+    .eq('month', params.month)
+    .eq('year', params.year);
+  if (existingError) throw new Error(existingError.message);
+
+  const billedIds = new Set(existing?.map((e) => e.student_id));
+  const newStudents = (students ?? []).filter((s) => !billedIds.has(s.id));
+
+  if (newStudents.length > 0) {
+    const rows = newStudents.map((s) => ({
+      school_id: schoolId,
+      student_id: s.id,
+      month: params.month,
+      year: params.year,
+      amount: params.amount,
+      paid_amount: 0,
+      status: 'unpaid',
+      recorded_by: userId,
+    }));
+
+    const { error } = await supabase.from(TABLE).insert(rows);
+    if (error) throw new Error(error.message);
+  }
+
+  return {
+    created: newStudents.length,
+    existing: billedIds.size,
+    students: students?.length ?? 0,
+  };
+}
+
+/**
+ * Ambil daftar siswa yang BELUM bayar untuk suatu bulan — konsisten dengan
+ * Overview (total siswa aktif − siswa yang sudah bayar/angsuran). Siswa aktif
+ * yang belum punya tagihan sama sekali ikut tampil (no_bill) supaya tidak
+ * 'hilang' dari pantauan tunggakan.
+ */
+export async function getUnpaidPayments(
+  schoolId: string,
+  options?: { month?: number; year?: number; classFilter?: string }
+): Promise<SPPPayment[]> {
+  const supabase = createSupabaseClient();
+
+  const now = new Date();
+  const filterMonth = options?.month ?? now.getMonth() + 1;
+  const filterYear = options?.year ?? now.getFullYear();
+
+  let studentQuery = supabase
+    .from('students')
+    .select('id, name, nis, class')
+    .eq('school_id', schoolId)
+    .eq('status', 'active');
+  if (options?.classFilter) {
+    studentQuery = studentQuery.eq('class', options.classFilter);
+  }
+  const { data: students, error: studentError } = await studentQuery.order('name');
+  if (studentError) throw new Error(studentError.message);
+
+  let billQuery = supabase
+    .from(TABLE)
+    .select(
+      `
+      *,
+      students!inner(name, nis, class)
+    `
+    )
+    .eq('school_id', schoolId)
+    .eq('month', filterMonth)
+    .eq('year', filterYear);
+  if (options?.classFilter) {
+    billQuery = billQuery.eq('students.class', options.classFilter);
+  }
+  const { data: bills, error: billError } = await billQuery;
+  if (billError) throw new Error(billError.message);
+
+  const paidIds = new Set(
+    (bills ?? [])
+      .filter((b) => b.status === 'paid' || b.status === 'partial')
+      .map((b) => b.student_id)
+  );
+
+  const result: SPPPayment[] = [];
+  (students ?? []).forEach((student) => {
+    if (paidIds.has(student.id)) return;
+    const bill = (bills ?? []).find((b) => b.student_id === student.id);
+    if (bill) {
+      result.push(mapPayment(bill));
+    } else {
+      // Siswa belum punya tagihan bulan ini — tetap tampil sebagai belum bayar.
+      result.push({
+        id: `nobill-${student.id}`,
+        school_id: schoolId,
+        student_id: student.id,
+        month: filterMonth,
+        year: filterYear,
+        amount: 0,
+        paid_amount: 0,
+        status: 'unpaid',
+        recorded_by: '',
+        no_bill: true,
+        student_name: student.name,
+        student_nis: student.nis,
+        student_class: student.class,
+      });
+    }
+  });
+
+  return result;
+}
+
+/**
  * Get SPP summary (collection rate, counts).
  */
 export async function getSPPSummary(
@@ -185,10 +316,14 @@ export async function getSPPSummary(
 
   const totalBulanIni = payments?.length ?? 0;
   const terkumpul = payments?.reduce((sum, p) => sum + (p.paid_amount || 0), 0) ?? 0;
-  const outstanding = payments?.filter((p) => p.status !== 'paid').length ?? 0;
   const totalSiswaActive = totalSiswa ?? 0;
+
+  // Konsisten dengan dashboard Overview: outstanding = total siswa aktif −
+  // siswa yang sudah bayar/angsuran bulan ini (tagihan unik per siswa+bulan).
+  const paidCount = payments?.filter((p) => p.status === 'paid' || p.status === 'partial').length ?? 0;
+  const outstanding = Math.max(0, totalSiswaActive - paidCount);
   const collectionRate = totalSiswaActive > 0
-    ? Math.round(((totalSiswaActive - outstanding) / totalSiswaActive) * 100)
+    ? Math.round((paidCount / totalSiswaActive) * 100)
     : 0;
 
   return {
@@ -209,6 +344,19 @@ export async function updateSPPPayment(
 ): Promise<SPPPayment> {
   const supabase = createSupabaseClient();
 
+  // Ambil status sebelumnya — transaksi Kas hanya dibuat saat TRANSISI ke lunas,
+  // bukan setiap kali record yang sudah lunas diedit.
+  const { data: previous, error: prevError } = await supabase
+    .from(TABLE)
+    .select('status')
+    .eq('id', id)
+    .single();
+  if (prevError) {
+    console.error('[SPP Service] updateSPPPayment prev-status error:', prevError);
+    throw new Error(prevError.message);
+  }
+  const wasPaid = previous?.status === 'paid';
+
   const { data, error } = await supabase
     .from(TABLE)
     .update(updates)
@@ -225,37 +373,15 @@ export async function updateSPPPayment(
   const status = updates.status ?? payment.status;
   const paidAmount = updates.paid_amount ?? payment.paid_amount;
 
-  // Auto-create transaction when the payment becomes paid
-  if (status === 'paid') {
+  // Auto-create transaction saat pembayaran BERUBAH menjadi lunas.
+  if (status === 'paid' && !wasPaid) {
     const amount = paidAmount > 0 ? paidAmount : payment.amount;
     if (amount > 0) {
       const referenceDate =
         updates.payment_date || payment.payment_date || new Date().toISOString().split('T')[0];
       const description = `SPP Bulan ${payment.month}/${payment.year}`;
 
-      // Skip if a transaction for this payment already exists. source_id is the
-      // reliable key; description match is the fallback for legacy rows.
-      const { data: bySource } = await supabase
-        .from('transactions')
-        .select('id')
-        .eq('source_type', 'spp')
-        .eq('source_id', id)
-        .limit(1);
-      let existing = bySource;
-      if (!existing || existing.length === 0) {
-        const { data: byDesc } = await supabase
-          .from('transactions')
-          .select('id')
-          .eq('school_id', payment.school_id)
-          .eq('type', 'income')
-          .eq('description', description)
-          .eq('amount', amount)
-          .eq('reference_date', referenceDate)
-          .limit(1);
-        existing = byDesc;
-      }
-
-      if (!existing || existing.length === 0) {
+      if (!(await hasSPPIncomeTransaction(supabase, payment.school_id, id, description, amount, referenceDate))) {
         const userId = await getCurrentUserId(supabase);
         await createSPPIncomeTransaction(supabase, {
           schoolId: payment.school_id,
@@ -271,6 +397,83 @@ export async function updateSPPPayment(
   }
 
   return data as SPPPayment;
+}
+
+/**
+ * Cek apakah pembayaran SPP sudah tercatat sebagai pemasukan di Kas.
+ * Kunci utama: source_id (= spp_payments.id). Fallback: baris legacy/manual
+ * tanpa source_id yang deskripsi+nominal+tanggalnya sama. Baris yang sudah
+ * ter-link ke pembayaran LAIN tidak dihitung (siswa berbeda, bulan sama).
+ */
+async function hasSPPIncomeTransaction(
+  supabase: SupabaseClient,
+  schoolId: string,
+  paymentId: string,
+  description: string,
+  amount: number,
+  referenceDate: string
+): Promise<boolean> {
+  const { data: bySource } = await supabase
+    .from('transactions')
+    .select('id')
+    .eq('source_type', 'spp')
+    .eq('source_id', paymentId)
+    .limit(1);
+  if (bySource && bySource.length > 0) return true;
+
+  const { data: sameDesc } = await supabase
+    .from('transactions')
+    .select('id, source_id')
+    .eq('school_id', schoolId)
+    .eq('type', 'income')
+    .eq('description', description)
+    .eq('amount', amount)
+    .eq('reference_date', referenceDate);
+  return (sameDesc ?? []).some((t) => !t.source_id || t.source_id === paymentId);
+}
+
+/**
+ * Perbaikan data: buatkan transaksi pemasukan untuk SEMUA pembayaran SPP
+ * berstatus lunas yang belum tercatat di Kas (mis. lolos karena bug dedup
+ * lama). Aman dijalankan ulang — baris yang sudah tercatat akan dilewati.
+ */
+export async function backfillMissingSPPTransactions(
+  schoolId: string,
+  userId: string
+): Promise<{ created: number; checked: number }> {
+  const supabase = createSupabaseClient();
+
+  const { data: paid, error } = await supabase
+    .from(TABLE)
+    .select('id, month, year, amount, paid_amount, payment_date')
+    .eq('school_id', schoolId)
+    .eq('status', 'paid');
+  if (error) throw new Error(error.message);
+
+  const withMoney = (paid ?? []).filter((p) => (p.paid_amount ?? 0) > 0 || (p.amount ?? 0) > 0);
+  let created = 0;
+
+  for (const p of withMoney) {
+    const amount = (p.paid_amount ?? 0) > 0 ? p.paid_amount : p.amount;
+    const description = `SPP Bulan ${p.month}/${p.year}`;
+    const referenceDate = p.payment_date || new Date().toISOString().split('T')[0];
+
+    if (await hasSPPIncomeTransaction(supabase, schoolId, p.id, description, amount, referenceDate)) {
+      continue;
+    }
+    await createSPPIncomeTransaction(supabase, {
+      schoolId,
+      userId,
+      sourceId: p.id,
+      month: p.month,
+      year: p.year,
+      amount,
+      referenceDate,
+    });
+    created++;
+  }
+
+  return { created, checked: withMoney.length };
 }
 
 /**
