@@ -6,6 +6,7 @@ import { useInventory, useCreateInventory, useUpdateInventory, useDeleteInventor
 import type { InventoryItem, InventoryFormInput, INVENTORY_CATEGORIES, INVENTORY_CONDITIONS } from '@/modules/inventory/types/inventory.types';
 import { Plus, Edit, Trash2, Package, Search, Loader2 } from 'lucide-react';
 import { useSchoolRealtime } from '@/shared/hooks/useSchoolRealtime';
+import { ReceiptModal, inventoryReceipt, type ReceiptData } from '@/modules/receipt';
 
 const CATS: string[] = ['Semua', 'Furniture', 'Elektronik', 'ATK', 'Olahraga', 'Laboratorium', 'Perpustakaan', 'Umum'];
 const CONDS = ['Baik', 'Rusak Ringan', 'Rusak Berat', 'Hilang'];
@@ -17,13 +18,14 @@ function formatRp(n: number) {
 }
 
 export default function InventoryPage() {
-  const { schoolId, session, canUse } = useAuth();
+  const { schoolId, session, canUse, school, profile } = useAuth();
   const [catFilter, setCatFilter] = useState('Semua');
   const [search, setSearch] = useState('');
   const [formOpen, setFormOpen] = useState(false);
   const [editItem, setEditItem] = useState<InventoryItem | null>(null);
   const [form, setForm] = useState<InventoryFormInput>(emptyForm);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [receipt, setReceipt] = useState<ReceiptData | null>(null);
 
   const { data: items, isLoading } = useInventory(schoolId || '', catFilter === 'Semua' ? undefined : catFilter);
   const createMut = useCreateInventory(schoolId || '', session?.user?.id);
@@ -45,6 +47,22 @@ export default function InventoryPage() {
   }
 
   async function handleDelete(id: string) { await deleteMut.mutateAsync(id); setDeleteConfirm(null); }
+
+  function openReceipt(item: InventoryItem) {
+    if (!(item.purchase_price > 0)) return;
+    setReceipt(
+      inventoryReceipt({
+        id: item.id,
+        itemName: item.name,
+        quantity: item.quantity,
+        unitPrice: item.purchase_price,
+        category: item.category,
+        location: item.location || undefined,
+        date: item.purchase_date || undefined,
+        cashierName: profile?.name,
+      })
+    );
+  }
 
   const totalValue = filtered.reduce((s, i) => s + i.purchase_price * i.quantity, 0);
   const totalCount = filtered.reduce((s, i) => s + i.quantity, 0);
@@ -110,6 +128,15 @@ export default function InventoryPage() {
                   <td className="px-4 py-3 text-right text-gray-900">{formatRp(item.purchase_price)}</td>
                   <td className="px-4 py-3 text-center">
                     <div className="flex items-center justify-center gap-1">
+                      {item.purchase_price > 0 && (
+                        <button
+                          onClick={() => openReceipt(item)}
+                          title="Lihat / bagikan kuitansi pembelian"
+                          className="px-2 py-1 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors"
+                        >
+                          Kuitansi
+                        </button>
+                      )}
                       <button onClick={() => openEdit(item)} className="p-1.5 text-gray-400 hover:text-indigo-600 rounded-lg hover:bg-indigo-50"><Edit className="w-4 h-4" /></button>
                       {deleteConfirm === item.id ? (
                         <div className="flex items-center gap-1">
@@ -185,6 +212,15 @@ export default function InventoryPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Receipt Preview Modal */}
+      {receipt && school && (
+        <ReceiptModal
+          data={receipt}
+          school={{ name: school.name }}
+          onClose={() => setReceipt(null)}
+        />
       )}
     </div>
   );

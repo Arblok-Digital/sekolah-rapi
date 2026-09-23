@@ -10,6 +10,7 @@ import type {
   Transaction,
   TransactionFormData,
 } from '@/modules/transactions/types/transaction.types';
+import { ReceiptModal, kasReceipt, type ReceiptData } from '@/modules/receipt';
 
 export default function TransactionsPage() {
   const [showForm, setShowForm] = useState(false);
@@ -17,7 +18,8 @@ export default function TransactionsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<'all' | 'income' | 'expense'>('all');
-  const { schoolId, canUse } = useAuth();
+  const [receipt, setReceipt] = useState<ReceiptData | null>(null);
+  const { schoolId, canUse, school, profile } = useAuth();
 
   const {
     transactions,
@@ -62,6 +64,21 @@ export default function TransactionsPage() {
   const closeForm = () => {
     setShowForm(false);
     setEditingTransaction(null);
+  };
+
+  const openReceipt = (tx: Transaction) => {
+    const categoryName = categories?.find((c) => c.id === tx.category_id)?.name;
+    setReceipt(
+      kasReceipt({
+        id: tx.id,
+        type: tx.type,
+        amount: tx.amount,
+        date: tx.reference_date?.slice(0, 10) || new Date().toISOString().slice(0, 10),
+        description: tx.description ?? undefined,
+        categoryName,
+        cashierName: profile?.name,
+      })
+    );
   };
 
   if (!schoolId) {
@@ -134,6 +151,7 @@ export default function TransactionsPage() {
             setShowForm(true);
           }}
           onDelete={handleDeleteTransaction}
+          onReceipt={openReceipt}
           deletingId={deletingId}
         />
       )}
@@ -154,6 +172,15 @@ export default function TransactionsPage() {
             />
           </div>
         </div>
+      )}
+
+      {/* Receipt Preview Modal */}
+      {receipt && school && (
+        <ReceiptModal
+          data={receipt}
+          school={{ name: school.name }}
+          onClose={() => setReceipt(null)}
+        />
       )}
     </div>
   );

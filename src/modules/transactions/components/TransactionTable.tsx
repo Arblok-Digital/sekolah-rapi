@@ -11,6 +11,7 @@ interface TransactionTableProps {
   onSort?: (field: string) => void;
   onEdit?: (transaction: Transaction) => void;
   onDelete?: (transaction: Transaction) => void;
+  onReceipt?: (transaction: Transaction) => void;
   deletingId?: string | null;
 }
 
@@ -20,6 +21,7 @@ export function TransactionTable({
   loading,
   onEdit,
   onDelete,
+  onReceipt,
   deletingId,
 }: TransactionTableProps) {
   const categoryName = (id: string | null | undefined) =>
@@ -97,6 +99,15 @@ export function TransactionTable({
               </td>
               <td className="px-4 py-3 whitespace-nowrap text-right text-sm">
                 <div className="flex justify-end gap-2">
+                  {onReceipt && (
+                    <button
+                      onClick={() => onReceipt(tx)}
+                      title="Lihat / bagikan kuitansi"
+                      className="px-3 py-1 text-xs font-medium text-emerald-700 bg-emerald-50 rounded-md hover:bg-emerald-100"
+                    >
+                      Kuitansi
+                    </button>
+                  )}
                   <button
                     onClick={() => onEdit?.(tx)}
                     className="px-3 py-1 text-xs font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100"

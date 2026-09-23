@@ -22,6 +22,7 @@ import {
 } from '@/modules/spp/hooks/useSPP';
 import { cn } from '@/shared/utils/cn';
 import { useSchoolRealtime } from '@/shared/hooks/useSchoolRealtime';
+import { ReceiptModal, sppReceipt, type ReceiptData } from '@/modules/receipt';
 
 type ViewMode = 'all' | 'tunggakan';
 
@@ -42,7 +43,8 @@ export default function SPPPage() {
   const [bulkAmount, setBulkAmount] = useState(350000);
   const [bulkMessage, setBulkMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [syncMessage, setSyncMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const { schoolId, session, canUse } = useAuth();
+  const [receipt, setReceipt] = useState<ReceiptData | null>(null);
+  const { schoolId, session, canUse, school, profile } = useAuth();
 
   const filter: SPPFilter = {
     year: filterYear,
@@ -150,6 +152,27 @@ export default function SPPPage() {
         setActionMessage({ type: 'error', text: `Gagal menghapus pembayaran: ${err.message}` }),
       onSettled: () => setDeletingId(null),
     });
+  };
+
+  const openReceipt = (payment: SPPPayment) => {
+    if (payment.status !== 'paid' && payment.status !== 'partial') return;
+    const detail = [payment.student_nis ? `NIS: ${payment.student_nis}` : undefined, payment.student_class ? `Kelas: ${payment.student_class}` : undefined].filter(Boolean).join(' • ');
+    setReceipt(
+      sppReceipt({
+        id: payment.id,
+        studentName: payment.student_name || 'Siswa',
+        studentDetail: detail || undefined,
+        month: payment.month,
+        year: payment.year,
+        amount: payment.amount,
+        paidAmount: payment.paid_amount,
+        status: payment.status,
+        date: payment.payment_date || undefined,
+        method: payment.method || undefined,
+        existingNumber: payment.receipt_number || undefined,
+        cashierName: profile?.name,
+      })
+    );
   };
 
   const currentYear = new Date().getFullYear();
@@ -447,6 +470,7 @@ export default function SPPPage() {
             payments={payments || []}
             onEdit={handleEdit}
             onDelete={handleDelete}
+            onReceipt={openReceipt}
           />
         )
       ) : (
@@ -461,6 +485,15 @@ export default function SPPPage() {
         students={studentList}
         initialData={editingPayment}
       />
+
+      {/* Receipt Preview Modal */}
+      {receipt && school && (
+        <ReceiptModal
+          data={receipt}
+          school={{ name: school.name }}
+          onClose={() => setReceipt(null)}
+        />
+      )}
     </div>
   );
 }

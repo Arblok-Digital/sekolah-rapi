@@ -9,6 +9,7 @@ interface PaymentTableProps {
   loading?: boolean;
   onEdit?: (payment: SPPPayment) => void;
   onDelete?: (id: string) => void;
+  onReceipt?: (payment: SPPPayment) => void;
 }
 
 const statusBadge: Record<string, { class: string; label: string }> = {
@@ -17,7 +18,7 @@ const statusBadge: Record<string, { class: string; label: string }> = {
   unpaid: { class: 'bg-red-100 text-red-700 border-red-200', label: 'Belum Bayar' },
 };
 
-export function PaymentTable({ payments, loading, onEdit, onDelete }: PaymentTableProps) {
+export function PaymentTable({ payments, loading, onEdit, onDelete, onReceipt }: PaymentTableProps) {
   if (loading) {
     return (
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -93,6 +94,15 @@ export function PaymentTable({ payments, loading, onEdit, onDelete }: PaymentTab
                   {(onEdit || onDelete) && (
                     <td className="px-4 py-3 text-center">
                       <div className="flex items-center justify-center gap-1">
+                        {onReceipt && (payment.status === 'paid' || payment.status === 'partial') && (
+                          <button
+                            onClick={() => onReceipt(payment)}
+                            className="px-2 py-1 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors"
+                            title="Lihat / bagikan kuitansi"
+                          >
+                            Kuitansi
+                          </button>
+                        )}
                         {onEdit && (
                           <button
                             onClick={() => onEdit(payment)}
