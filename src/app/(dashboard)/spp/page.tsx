@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/shared/providers/AuthProvider';
 import { CLASS_OPTIONS } from '@/shared/constants';
 import { createSupabaseClient } from '@/shared/services/supabase/client';
-import { Plus, RefreshCw } from 'lucide-react';
+import { Plus, RefreshCw, Search, X } from 'lucide-react';
 import { PaymentTable } from '@/modules/spp/components/PaymentTable';
 import { PaymentForm } from '@/modules/spp/components/PaymentForm';
 import { TunggakanTable } from '@/modules/spp/components/TunggakanTable';
@@ -37,6 +37,7 @@ export default function SPPPage() {
   const [classFilterSPP, setClassFilterSPP] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('all');
   const [tunggakanClass, setTunggakanClass] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [bulkOpen, setBulkOpen] = useState(false);
   const [bulkMonth, setBulkMonth] = useState(new Date().getMonth() + 1);
   const [bulkYear, setBulkYear] = useState(new Date().getFullYear());
@@ -190,6 +191,15 @@ export default function SPPPage() {
   const tunggakanFiltered = tunggakanClass
     ? tunggakanPayments.filter((p) => p.student_class === tunggakanClass)
     : tunggakanPayments;
+
+  const q = searchQuery.trim().toLowerCase();
+  const matchesSearch = (p: SPPPayment) =>
+    !q ||
+    (p.student_name || '').toLowerCase().includes(q) ||
+    (p.student_nis || '').toLowerCase().includes(q) ||
+    (p.student_class || '').toLowerCase().includes(q);
+  const filteredPayments = (payments || []).filter(matchesSearch);
+  const tunggakanSearchFiltered = tunggakanFiltered.filter(matchesSearch);
 
   if (!schoolId) {
     return (
@@ -347,6 +357,34 @@ export default function SPPPage() {
         </div>
       )}
 
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+        <input
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Cari nama siswa, NIS, atau kelas..."
+          className="w-full pl-9 pr-9 py-2.5 bg-white/10 border border-white/15 rounded-xl text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+        />
+        {searchQuery && (
+          <button
+            onClick={() => setSearchQuery('')}
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 text-white/40 hover:text-white"
+            aria-label="Hapus pencarian"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+      {q && (
+        <p className="text-xs text-white/60">
+          {viewMode === 'all'
+            ? `${filteredPayments.length} dari ${payments?.length || 0} pembayaran`
+            : `${tunggakanSearchFiltered.length} dari ${tunggakanFiltered.length} tunggakan`}
+          {` • kata kunci: "${searchQuery}"`}
+        </p>
+      )}
+
       {/* Filters */}
       <div className="flex items-center gap-3">
         <div className="inline-flex p-1 bg-white/10 rounded-xl">
@@ -467,14 +505,14 @@ export default function SPPPage() {
           </div>
         ) : (
           <PaymentTable
-            payments={payments || []}
+            payments={filteredPayments}
             onEdit={handleEdit}
             onDelete={handleDelete}
             onReceipt={openReceipt}
           />
         )
       ) : (
-        <TunggakanTable payments={tunggakanFiltered} loading={!unpaid} />
+        <TunggakanTable payments={tunggakanSearchFiltered} loading={!unpaid} />
       )}
 
       {/* Create/Edit Form Modal */}
