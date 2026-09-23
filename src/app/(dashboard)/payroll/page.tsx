@@ -293,7 +293,7 @@ export default function PayrollPage() {
                 {MONTHS.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
               </select>
               <select value={year} onChange={e => setYear(Number(e.target.value))} className="px-3 py-2 border border-white/15 rounded-xl text-sm">
-                {[2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+                {Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - 2 + i).map(y => <option key={y} value={y}>{y}</option>)}
               </select>
               <div className="text-sm text-white/60">
                 Total: <span className="font-semibold text-white">{formatRp(totalPayroll)}</span>

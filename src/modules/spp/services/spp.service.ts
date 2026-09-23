@@ -433,6 +433,53 @@ async function hasSPPIncomeTransaction(
 }
 
 /**
+ * Tandai SEMUA tagihan unpaid/partial di 1 bulan jadi lunas sekaligus.
+ * Dipakai setelah "Buat Tagihan Agustus" → 1 klik lunasi, lalu edit manual
+ * yang masih nunggak. Sekalian bikin transaksi Kas per siswa.
+ */
+export async function bulkMarkPaidSPP(
+  schoolId: string,
+  userId: string,
+  params: { month: number; year: number }
+): Promise<{ updated: number; total: number }> {
+  const supabase = createSupabaseClient();
+  const { data: rows, error } = await supabase
+    .from(TABLE)
+    .select('id, status, amount, paid_amount')
+    .eq('school_id', schoolId)
+    .eq('month', params.month)
+    .eq('year', params.year)
+    .neq('status', 'paid');
+  if (error) throw new Error(error.message);
+  const targets = rows ?? [];
+  let updated = 0;
+  const today = new Date().toISOString().split('T')[0];
+  for (const r of targets) {
+    const amount = r.amount || 0;
+    if (amount <= 0) continue;
+    const { error: updError } = await supabase
+      .from(TABLE)
+      .update({ status: 'paid', paid_amount: amount, payment_date: today } as never)
+      .eq('id', r.id);
+    if (updError) throw new Error(updError.message);
+    const description = `SPP Bulan ${params.month}/${params.year}`;
+    if (!(await hasSPPIncomeTransaction(supabase, schoolId, r.id, description, amount, today))) {
+      await createSPPIncomeTransaction(supabase, {
+        schoolId,
+        userId,
+        sourceId: r.id,
+        month: params.month,
+        year: params.year,
+        amount,
+        referenceDate: today,
+      });
+    }
+    updated++;
+  }
+  return { updated, total: targets.length };
+}
+
+/**
  * Perbaikan data: buatkan transaksi pemasukan untuk SEMUA pembayaran SPP
  * berstatus lunas yang belum tercatat di Kas (mis. lolos karena bug dedup
  * lama). Aman dijalankan ulang — baris yang sudah tercatat akan dilewati.

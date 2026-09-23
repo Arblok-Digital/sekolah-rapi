@@ -10,6 +10,7 @@ import {
   updateSPPPayment,
   deleteSPPPayment,
   bulkCreateSPPPayments,
+  bulkMarkPaidSPP,
   backfillMissingSPPTransactions,
 } from '../services/spp.service';
 import type { SPPFilter, SPPFormInput, SPPPayment } from '../types/spp.types';
@@ -155,5 +156,23 @@ export function useBulkCreateSPPPayments() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: SPP_KEYS.all });
     },
+  });
+}
+
+export function useBulkMarkPaidSPP() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      schoolId,
+      userId,
+      month,
+      year,
+    }: {
+      schoolId: string;
+      userId: string;
+      month: number;
+      year: number;
+    }) => bulkMarkPaidSPP(schoolId, userId, { month, year }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: SPP_KEYS.all }),
   });
 }

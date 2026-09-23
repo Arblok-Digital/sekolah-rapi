@@ -18,6 +18,7 @@ import {
   useDeleteSPPPayment,
   useUnpaidSPP,
   useBulkCreateSPPPayments,
+  useBulkMarkPaidSPP,
   useBackfillSPPTransactions,
 } from '@/modules/spp/hooks/useSPP';
 import { cn } from '@/shared/utils/cn';
@@ -59,6 +60,7 @@ export default function SPPPage() {
   const { data: unpaid } = useUnpaidSPP(schoolId || '', { month: filterMonth, year: filterYear });
   const createMutation = useCreateSPPPayment(schoolId || '', session?.user?.id || '');
   const bulkCreateMutation = useBulkCreateSPPPayments();
+  const bulkPaidMutation = useBulkMarkPaidSPP();
   const backfillMutation = useBackfillSPPTransactions();
   const updateMutation = useUpdateSPPPayment();
   const deleteMutation = useDeleteSPPPayment();
@@ -125,6 +127,21 @@ export default function SPPPage() {
     }
   };
 
+  const handleBulkPaid = async () => {
+    if (!schoolId || !session?.user?.id) return;
+    const targetMonth = filterMonth ?? new Date().getMonth() + 1;
+    const targetYear = filterYear;
+    const label = `${getMonthName(targetMonth)} ${targetYear}`;
+    if (!window.confirm(`Tandai LUNAS semua tagihan ${label} yang belum bayar/angsuran? Nanti edit manual yang masih nunggak.`)) return;
+    setActionMessage(null);
+    try {
+      const res = await bulkPaidMutation.mutateAsync({ schoolId, userId: session.user.id, month: targetMonth, year: targetYear });
+      setActionMessage({ type: 'success', text: `${res.updated} dari ${res.total} tagihan ${label} ditandai lunas + tercatat ke Kas. Edit manual siswa yang masih nunggak.` });
+    } catch (err) {
+      setActionMessage({ type: 'error', text: `Gagal melunasi massal: ${(err as Error).message}` });
+    }
+  };
+
   const openCreateForm = () => {
     setActionMessage(null);
     setEditingPayment(null);
@@ -177,7 +194,7 @@ export default function SPPPage() {
   };
 
   const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
+  const years = Array.from({ length: 6 }, (_, i) => currentYear - 2 + i);
 
   const tunggakanPayments = unpaid || [];
   const tunggakanStudentCount = new Set(tunggakanPayments.map((p) => p.student_id)).size;
@@ -233,6 +250,15 @@ export default function SPPPage() {
           >
             <Plus className="w-4 h-4" />
             Buat Tagihan
+          </button>
+          <button
+            onClick={handleBulkPaid}
+            disabled={bulkPaidMutation.isPending || !filterMonth}
+            title={filterMonth ? 'Tandai lunas semua yang belum bayar di bulan ini' : 'Pilih bulan dulu'}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={cn('w-4 h-4', bulkPaidMutation.isPending && 'animate-spin')} />
+            {bulkPaidMutation.isPending ? 'Melunasi...' : 'Lunasi Semua'}
           </button>
           <button
             onClick={handleSyncKas}
