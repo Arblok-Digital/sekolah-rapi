@@ -3,11 +3,12 @@
 import { useState } from 'react';
 import { useAuth } from '@/shared/providers/AuthProvider';
 import { useToast, getErrorMessage } from '@/shared/components/ui/toast';
-import { useEmployees, useCreateEmployee, useUpdateEmployee, useDeleteEmployee, usePayroll, useGeneratePayroll, useUpdatePayroll, useDeletePayroll } from '@/modules/payroll/hooks/usePayroll';
-import { MONTHS } from '@/modules/payroll/types/payroll.types';
-import type { Employee, EmployeeFormInput, PayrollRecord } from '@/modules/payroll/types/payroll.types';
-import { Plus, Edit, Trash2, Users, Loader2, Zap, CheckCircle, XCircle } from 'lucide-react';
+import { useEmployees, useCreateEmployee, useUpdateEmployee, useDeleteEmployee, usePayroll, useGeneratePayroll, useUpdatePayroll, useDeletePayroll, useSavePayrollItems } from '@/modules/payroll/hooks/usePayroll';
+import { MONTHS, PAYROLL_ALLOWANCE_CATEGORIES, PAYROLL_DEDUCTION_CATEGORIES, payrollSums } from '@/modules/payroll/types/payroll.types';
+import type { Employee, EmployeeFormInput, PayrollRecord, PayrollItemInput, PayrollItemKind } from '@/modules/payroll/types/payroll.types';
+import { Plus, Edit, Trash2, Users, Loader2, Zap, CheckCircle, XCircle, MinusCircle } from 'lucide-react';
 import { useSchoolRealtime } from '@/shared/hooks/useSchoolRealtime';
+import { ReceiptModal, payrollReceipt, type ReceiptData } from '@/modules/receipt';
 
 const emptyEmp: EmployeeFormInput = { name: '', position: 'Guru', phone: '', base_salary: 0, status: 'active' };
 
@@ -16,12 +17,13 @@ function formatRp(n: number) { return new Intl.NumberFormat('id-ID', { style: 'c
 type Tab = 'employees' | 'payroll';
 
 export default function PayrollPage() {
-  const { schoolId, canUse } = useAuth();
+  const { schoolId, canUse, school, profile } = useAuth();
   const { toast } = useToast();
   const [tab, setTab] = useState<Tab>('employees');
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [year, setYear] = useState(now.getFullYear());
+  const [receipt, setReceipt] = useState<ReceiptData | null>(null);
 
   // Employee form
   const [empFormOpen, setEmpFormOpen] = useState(false);
@@ -29,10 +31,10 @@ export default function PayrollPage() {
   const [empForm, setEmpForm] = useState<EmployeeFormInput>(emptyEmp);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  // Payroll form
+  // Payroll form (rincian items)
   const [payFormOpen, setPayFormOpen] = useState(false);
   const [editPay, setEditPay] = useState<PayrollRecord | null>(null);
-  const [payForm, setPayForm] = useState({ bonus: 0, deduction: 0 });
+  const [payItems, setPayItems] = useState<PayrollItemInput[]>([]);
   const [payDeleteConfirm, setPayDeleteConfirm] = useState<string | null>(null);
 
   const { data: employees, isLoading: empLoading } = useEmployees(schoolId || '');
@@ -44,8 +46,9 @@ export default function PayrollPage() {
   const generateMut = useGeneratePayroll(schoolId || '');
   const updatePay = useUpdatePayroll(schoolId || '');
   const deletePay = useDeletePayroll(schoolId || '');
+  const saveItemsMut = useSavePayrollItems(schoolId || '');
 
-  useSchoolRealtime(schoolId, { tables: ['employees', 'payroll_records'], enabled: canUse('realtime_dashboard') });
+  useSchoolRealtime(schoolId, { tables: ['employees', 'payroll_records', 'payroll_items'], enabled: canUse('realtime_dashboard') });
 
   function openCreateEmp() { setEditEmp(null); setEmpForm(emptyEmp); setEmpFormOpen(true); }
   function openEditEmp(e: Employee) { setEditEmp(e); setEmpForm({ name: e.name, position: e.position, phone: e.phone || '', base_salary: e.base_salary, status: e.status }); setEmpFormOpen(true); }
@@ -90,23 +93,75 @@ export default function PayrollPage() {
     }
   }
 
+  function itemsFromRecord(r: PayrollRecord): PayrollItemInput[] {
+    if (r.items && r.items.length > 0) {
+      return r.items.map((i) => ({ kind: i.kind, category: i.category, description: i.description || '', amount: i.amount }));
+    }
+    // Fallback pra-migrasi: pecah kolom lama jadi item
+    const out: PayrollItemInput[] = [];
+    if ((r.bonus || 0) > 0) out.push({ kind: 'allowance', category: 'Bonus', description: '', amount: r.bonus });
+    if ((r.deduction || 0) > 0) out.push({ kind: 'deduction', category: 'Potongan', description: '', amount: r.deduction });
+    return out;
+  }
+
   function openEditPay(r: PayrollRecord) {
     setEditPay(r);
-    setPayForm({ bonus: r.bonus, deduction: r.deduction });
+    setPayItems(itemsFromRecord(r));
     setPayFormOpen(true);
+  }
+
+  function addPayItem(kind: PayrollItemKind) {
+    setPayItems((prev) => [...prev, { kind, category: kind === 'allowance' ? 'Insentif' : 'BPJS', description: '', amount: 0 }]);
+  }
+
+  function updatePayItem(index: number, patch: Partial<PayrollItemInput>) {
+    setPayItems((prev) => prev.map((it, i) => (i === index ? { ...it, ...patch } : it)));
+  }
+
+  function removePayItem(index: number) {
+    setPayItems((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function previewTotals(base: number, items: PayrollItemInput[]) {
+    const allow = items.filter((i) => i.kind === 'allowance').reduce((s, i) => s + (Number(i.amount) || 0), 0);
+    const deduct = items.filter((i) => i.kind === 'deduction').reduce((s, i) => s + (Number(i.amount) || 0), 0);
+    return { allow, deduct, total: base + allow - deduct };
+  }
+
+  function openReceipt(r: PayrollRecord) {
+    if (!r.paid) return;
+    const sums = payrollSums(r);
+    const breakdown = (r.items || []).map((i) => ({
+      label: `${i.category}${i.description ? ` — ${i.description}` : ''}`,
+      amount: i.kind === 'allowance' ? i.amount : -i.amount,
+    }));
+    setReceipt(
+      payrollReceipt({
+        id: r.id,
+        employeeName: r.employee?.name || 'Karyawan',
+        position: r.employee?.position,
+        month: r.month,
+        year: r.year,
+        baseSalary: r.base_salary,
+        bonus: sums.allowance,
+        deduction: sums.deduction,
+        total: r.total,
+        date: r.paid_date || undefined,
+        cashierName: profile?.name,
+        breakdown,
+      })
+    );
   }
 
   async function handlePayEditSubmit() {
     if (!editPay) return;
-    if (payForm.bonus < 0 || payForm.deduction < 0) return;
-    // total = base_salary + bonus - deduction, computed client-side and sent with the update
-    const total = editPay.base_salary + payForm.bonus - payForm.deduction;
+    if (payItems.some((i) => (Number(i.amount) || 0) < 0)) return;
     try {
-      await updatePay.mutateAsync({ id: editPay.id, input: { bonus: payForm.bonus, deduction: payForm.deduction, total } });
-      toast({ title: 'Slip gaji diperbarui', variant: 'success' });
+      await saveItemsMut.mutateAsync({ recordId: editPay.id, baseSalary: editPay.base_salary, items: payItems });
+      toast({ title: 'Rincian gaji diperbarui', variant: 'success' });
       setPayFormOpen(false);
     } catch (err) {
-      toast({ title: 'Gagal memperbarui slip gaji', description: getErrorMessage(err), variant: 'error' });
+      toast({ title: 'Gagal memperbarui rincian gaji', description: getErrorMessage(err), variant: 'error' });
     }
   }
 
@@ -157,7 +212,8 @@ export default function PayrollPage() {
               <p className="text-gray-500">Belum ada karyawan</p>
             </div>
           ) : (
-            <div className="bg-white rounded-xl border border-white/10 overflow-hidden">
+            <>
+            <div className="hidden md:block bg-white rounded-xl border border-white/10 overflow-hidden">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 border-b border-white/10">
                   <tr>
@@ -197,6 +253,33 @@ export default function PayrollPage() {
                 </tbody>
               </table>
             </div>
+            {/* Kartu HP */}
+            <div className="md:hidden space-y-3">
+              {employees.map(e => (
+                <div key={e.id} className="bg-white rounded-xl border border-white/10 p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-gray-900 truncate">{e.name}</p>
+                      <p className="text-xs text-gray-500">{e.position}{e.phone ? ` • ${e.phone}` : ''}</p>
+                    </div>
+                    <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${e.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>{e.status === 'active' ? 'Aktif' : 'Nonaktif'}</span>
+                  </div>
+                  <p className="text-sm text-gray-600 mt-2">Gaji pokok: <span className="font-semibold text-gray-900">{formatRp(e.base_salary)}</span></p>
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    <button onClick={() => openEditEmp(e)} className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg"><Edit className="w-3.5 h-3.5" /> Edit</button>
+                    {deleteConfirm === e.id ? (
+                      <span className="inline-flex items-center gap-1">
+                        <button onClick={() => handleDeleteEmp(e.id)} className="px-3 py-2 bg-red-600 text-white rounded-lg text-xs">Ya, hapus</button>
+                        <button onClick={() => setDeleteConfirm(null)} className="px-3 py-2 bg-gray-100 rounded-lg text-xs">Batal</button>
+                      </span>
+                    ) : (
+                      <button onClick={() => setDeleteConfirm(e.id)} className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg"><Trash2 className="w-3.5 h-3.5" /> Hapus</button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            </>
           )}
         </>
       )}
@@ -231,13 +314,13 @@ export default function PayrollPage() {
               <p className="text-xs text-gray-400 mt-1">Klik &quot;Generate Slip Gaji&quot; untuk membuat</p>
             </div>
           ) : (
-            <div className="bg-white rounded-xl border border-white/10 overflow-hidden">
+            <div className="hidden md:block bg-white rounded-xl border border-white/10 overflow-hidden">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 border-b border-white/10">
                   <tr>
                     <th className="text-left px-4 py-3 font-medium text-gray-500">Nama</th>
                     <th className="text-right px-4 py-3 font-medium text-gray-500">Gaji Pokok</th>
-                    <th className="text-right px-4 py-3 font-medium text-gray-500">Bonus</th>
+                    <th className="text-right px-4 py-3 font-medium text-gray-500">Tunjangan</th>
                     <th className="text-right px-4 py-3 font-medium text-gray-500">Potongan</th>
                     <th className="text-right px-4 py-3 font-medium text-gray-500">Total</th>
                     <th className="text-center px-4 py-3 font-medium text-gray-500">Status</th>
@@ -245,18 +328,33 @@ export default function PayrollPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {payroll.map(r => (
+                  {payroll.map(r => {
+                    const sums = payrollSums(r);
+                    const hasItems = (r.items?.length || 0) > 0;
+                    return (
                     <tr key={r.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 font-medium text-gray-900">{r.employee?.name || '-'}</td>
+                      <td className="px-4 py-3 font-medium text-gray-900">
+                        <div>{r.employee?.name || '-'}</div>
+                        {hasItems && <div className="text-[11px] text-gray-400 font-normal mt-0.5">{r.items!.map(it => `${it.kind === 'allowance' ? '+' : '−'} ${it.category}${it.description ? ` — ${it.description}` : ''}`).join(' • ')}</div>}
+                      </td>
                       <td className="px-4 py-3 text-right text-gray-600">{formatRp(r.base_salary)}</td>
-                      <td className="px-4 py-3 text-right text-emerald-600">{r.bonus > 0 ? `+${formatRp(r.bonus)}` : '-'}</td>
-                      <td className="px-4 py-3 text-right text-red-600">{r.deduction > 0 ? `-${formatRp(r.deduction)}` : '-'}</td>
+                      <td className="px-4 py-3 text-right text-emerald-600">{sums.allowance > 0 ? `+${formatRp(sums.allowance)}` : '-'}</td>
+                      <td className="px-4 py-3 text-right text-red-600">{sums.deduction > 0 ? `-${formatRp(sums.deduction)}` : '-'}</td>
                       <td className="px-4 py-3 text-right font-semibold text-gray-900">{formatRp(r.total)}</td>
                       <td className="px-4 py-3 text-center">
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${r.paid ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{r.paid ? 'Lunas' : 'Belum'}</span>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-center gap-1">
+                          {r.paid && (
+                            <button
+                              onClick={() => openReceipt(r)}
+                              title="Lihat / bagikan kuitansi"
+                              className="px-2 py-1 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors"
+                            >
+                              Kuitansi
+                            </button>
+                          )}
                           <button onClick={() => openEditPay(r)} className="p-1.5 text-gray-400 hover:text-indigo-600 rounded-lg hover:bg-indigo-50"><Edit className="w-4 h-4" /></button>
                           {payDeleteConfirm === r.id ? (
                             <div className="flex items-center gap-1">
@@ -283,9 +381,62 @@ export default function PayrollPage() {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {/* Kartu HP: tanpa scroll samping */}
+          {!payLoading && !!payroll?.length && (
+            <div className="md:hidden space-y-3">
+              {payroll.map(r => {
+                const sums = payrollSums(r);
+                return (
+                <div key={r.id} className="bg-white rounded-xl border border-white/10 p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-gray-900 truncate">{r.employee?.name || '-'}</p>
+                      <p className="text-xs text-gray-500">{r.employee?.position || ''} • {MONTHS[r.month - 1]} {r.year}</p>
+                    </div>
+                    <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${r.paid ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{r.paid ? 'Lunas' : 'Belum'}</span>
+                  </div>
+                  <div className="mt-3 space-y-1 text-sm">
+                    <div className="flex justify-between text-gray-600"><span>Gaji pokok</span><span>{formatRp(r.base_salary)}</span></div>
+                    {sums.allowance > 0 && <div className="flex justify-between text-emerald-600"><span>Tunjangan</span><span>+{formatRp(sums.allowance)}</span></div>}
+                    {sums.deduction > 0 && <div className="flex justify-between text-red-600"><span>Potongan</span><span>-{formatRp(sums.deduction)}</span></div>}
+                    {(r.items || []).map((it) => (
+                      <div key={it.id} className="flex justify-between text-xs text-gray-500 pl-3">
+                        <span>{it.kind === 'allowance' ? '+' : '−'} {it.category}{it.description ? ` — ${it.description}` : ''}</span>
+                        <span>{formatRp(it.amount)}</span>
+                      </div>
+                    ))}
+                    <div className="flex justify-between font-bold text-gray-900 border-t border-gray-100 pt-1.5 mt-1.5"><span>Total</span><span>{formatRp(r.total)}</span></div>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {r.paid && (
+                      <button onClick={() => openReceipt(r)} className="px-3 py-2 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg">Kuitansi</button>
+                    )}
+                    <button
+                      onClick={() => handleTogglePaid(r.id, r.paid)}
+                      className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium ${r.paid ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}
+                    >
+                      {r.paid ? <><XCircle className="w-3.5 h-3.5" /> Batal</> : <><CheckCircle className="w-3.5 h-3.5" /> Bayar</>}
+                    </button>
+                    <button onClick={() => openEditPay(r)} className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg"><Edit className="w-3.5 h-3.5" /> Rincian</button>
+                    {payDeleteConfirm === r.id ? (
+                      <span className="inline-flex items-center gap-1">
+                        <button onClick={() => handleDeletePay(r.id)} className="px-3 py-2 bg-red-600 text-white rounded-lg text-xs">Ya, hapus</button>
+                        <button onClick={() => setPayDeleteConfirm(null)} className="px-3 py-2 bg-gray-100 rounded-lg text-xs">Batal</button>
+                      </span>
+                    ) : (
+                      <button onClick={() => setPayDeleteConfirm(r.id)} className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg"><Trash2 className="w-3.5 h-3.5" /> Hapus</button>
+                    )}
+                  </div>
+                </div>
+                );
+              })}
             </div>
           )}
         </>
@@ -335,35 +486,104 @@ export default function PayrollPage() {
         </div>
       )}
 
-      {/* Payroll Edit Modal */}
+      {/* Payroll Edit Modal (rincian tunjangan & potongan) */}
       {payFormOpen && editPay && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md">
-            <h3 className="text-lg font-bold text-gray-900 mb-1">Edit Slip Gaji</h3>
+        <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg my-auto max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-bold text-gray-900 mb-1">Rincian Slip Gaji</h3>
             <p className="text-sm text-gray-500 mb-4">{editPay.employee?.name || '-'} - {MONTHS[editPay.month - 1]} {editPay.year}</p>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Bonus (Rp)</label>
-                  <input type="number" value={payForm.bonus} onChange={e => setPayForm({ ...payForm, bonus: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm" min={0} />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Potongan (Rp)</label>
-                  <input type="number" value={payForm.deduction} onChange={e => setPayForm({ ...payForm, deduction: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm" min={0} />
-                </div>
-              </div>
-              <div className="text-sm text-gray-600">
-                Gaji Pokok: {formatRp(editPay.base_salary)}
-                <div className="mt-1">Total: <span className="font-semibold text-gray-900">{formatRp(editPay.base_salary + payForm.bonus - payForm.deduction)}</span></div>
-              </div>
-              {(payForm.bonus < 0 || payForm.deduction < 0) && <p className="text-xs text-red-600">Bonus dan potongan tidak boleh negatif</p>}
+            <p className="text-sm text-gray-600 mb-3">Gaji Pokok: <span className="font-semibold text-gray-900">{formatRp(editPay.base_salary)}</span></p>
+
+            <div className="space-y-2">
+              {payItems.length === 0 && (
+                <p className="text-sm text-gray-400 py-2">Belum ada tunjangan / potongan. Tambahkan di bawah.</p>
+              )}
+              {payItems.map((it, idx) => {
+                const cats = it.kind === 'allowance' ? PAYROLL_ALLOWANCE_CATEGORIES : PAYROLL_DEDUCTION_CATEGORIES;
+                return (
+                  <div key={idx} className={`flex gap-2 items-start rounded-xl border p-2.5 ${it.kind === 'allowance' ? 'border-emerald-200 bg-emerald-50/50' : 'border-red-200 bg-red-50/50'}`}>
+                    <div className="flex-1 grid grid-cols-2 gap-2">
+                      <select
+                        value={it.kind}
+                        onChange={(e) => {
+                          const kind = e.target.value as PayrollItemKind;
+                          updatePayItem(idx, { kind, category: kind === 'allowance' ? 'Insentif' : 'BPJS' });
+                        }}
+                        className="px-2 py-2 border border-gray-300 rounded-lg text-xs font-medium bg-white"
+                      >
+                        <option value="allowance">+ Tunjangan</option>
+                        <option value="deduction">− Potongan</option>
+                      </select>
+                      <select
+                        value={(cats as readonly string[]).includes(it.category) ? it.category : 'Lainnya'}
+                        onChange={(e) => updatePayItem(idx, { category: e.target.value })}
+                        className="px-2 py-2 border border-gray-300 rounded-lg text-xs bg-white"
+                      >
+                        {cats.map((c) => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                      <input
+                        value={it.description || ''}
+                        onChange={(e) => updatePayItem(idx, { description: e.target.value })}
+                        placeholder="Keterangan (opsional)"
+                        className="px-2 py-2 border border-gray-300 rounded-lg text-xs bg-white"
+                      />
+                      <input
+                        type="number"
+                        value={it.amount || ''}
+                        onChange={(e) => updatePayItem(idx, { amount: parseFloat(e.target.value) || 0 })}
+                        placeholder="Rp"
+                        min={0}
+                        className="px-2 py-2 border border-gray-300 rounded-lg text-xs bg-white"
+                      />
+                    </div>
+                    <button onClick={() => removePayItem(idx)} className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg" title="Hapus baris">
+                      <MinusCircle className="w-4 h-4" />
+                    </button>
+                  </div>
+                );
+              })}
             </div>
-            <div className="flex justify-end gap-3 mt-6">
+
+            <div className="flex flex-wrap gap-2 mt-3">
+              <button onClick={() => addPayItem('allowance')} className="inline-flex items-center gap-1 px-3 py-2 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg">
+                <Plus className="w-3.5 h-3.5" /> Tunjangan (Insentif, THR...)
+              </button>
+              <button onClick={() => addPayItem('deduction')} className="inline-flex items-center gap-1 px-3 py-2 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 rounded-lg">
+                <Plus className="w-3.5 h-3.5" /> Potongan (BPJS, Kasbon...)
+              </button>
+            </div>
+
+            {(() => {
+              const prev = previewTotals(editPay.base_salary, payItems);
+              const filled = payItems.filter((i) => (Number(i.amount) || 0) > 0).length;
+              return (
+                <div className="mt-4 rounded-xl bg-gray-50 border border-gray-200 p-3 text-sm space-y-1">
+                  <div className="flex justify-between text-gray-500"><span>Baris terisi</span><span>{filled} dari {payItems.length}</span></div>
+                  <div className="flex justify-between text-emerald-600"><span>Tunjangan</span><span>+{formatRp(prev.allow)}</span></div>
+                  <div className="flex justify-between text-red-600"><span>Potongan</span><span>−{formatRp(prev.deduct)}</span></div>
+                  <div className="flex justify-between font-bold text-gray-900 border-t border-gray-200 pt-1.5"><span>Total diterima</span><span>{formatRp(prev.total)}</span></div>
+                </div>
+              );
+            })()}
+            {payItems.some((i) => (Number(i.amount) || 0) < 0) && <p className="text-xs text-red-600 mt-2">Nominal tidak boleh negatif</p>}
+            {payItems.some((i) => (Number(i.amount) || 0) === 0) && <p className="text-xs text-amber-600 mt-2">Baris bernominal 0 akan diabaikan saat disimpan — hapus jika tidak perlu.</p>}
+            <div className="flex justify-end gap-3 mt-4">
               <button onClick={() => setPayFormOpen(false)} className="px-4 py-2.5 text-sm text-gray-500 hover:text-gray-700">Batal</button>
-              <button onClick={handlePayEditSubmit} disabled={payForm.bonus < 0 || payForm.deduction < 0} className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 disabled:opacity-50">Simpan</button>
+              <button onClick={handlePayEditSubmit} disabled={saveItemsMut.isPending || payItems.some((i) => (Number(i.amount) || 0) < 0) || payItems.filter((i) => (Number(i.amount) || 0) > 0).length === 0} className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 disabled:opacity-50">
+                {saveItemsMut.isPending ? 'Menyimpan...' : `Simpan ${payItems.filter((i) => (Number(i.amount) || 0) > 0).length} Rincian`}
+              </button>
             </div>
           </div>
         </div>
+      )}
+
+      {/* Receipt Preview Modal */}
+      {receipt && school && (
+        <ReceiptModal
+          data={receipt}
+          school={{ name: school.name }}
+          onClose={() => setReceipt(null)}
+        />
       )}
     </div>
   );

@@ -1,8 +1,8 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getEmployees, createEmployee, updateEmployee, deleteEmployee, getPayroll, createPayroll, updatePayroll, deletePayroll, generatePayroll } from '../services/payroll.service';
-import type { EmployeeFormInput, PayrollFormInput } from '../types/payroll.types';
+import { getEmployees, createEmployee, updateEmployee, deleteEmployee, getPayroll, createPayroll, updatePayroll, deletePayroll, generatePayroll, savePayrollItems } from '../services/payroll.service';
+import type { EmployeeFormInput, PayrollFormInput, PayrollItemInput } from '../types/payroll.types';
 
 // ── Employees ──
 export function useEmployees(schoolId: string) {
@@ -40,4 +40,12 @@ export function useDeletePayroll(schoolId: string) {
 export function useGeneratePayroll(schoolId: string) {
   const qc = useQueryClient();
   return useMutation({ mutationFn: ({ month, year }: { month: number; year: number }) => generatePayroll(schoolId, month, year), onSuccess: () => qc.invalidateQueries({ queryKey: ['payroll', schoolId] }) });
+}
+export function useSavePayrollItems(schoolId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ recordId, baseSalary, items }: { recordId: string; baseSalary: number; items: PayrollItemInput[] }) =>
+      savePayrollItems(schoolId, recordId, baseSalary, items),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['payroll', schoolId] }),
+  });
 }
