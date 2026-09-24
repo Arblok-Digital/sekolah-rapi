@@ -40,7 +40,7 @@ RAG lokal ini menjaga model tetap memahami produk walau sesi dan model AI bergan
 ## Ringkasan Produk
 
 - `VERIFIED`: SekolahRapi adalah aplikasi web administrasi sekolah berbasis Next.js 14 dan Supabase.
-- `VERIFIED`: Modul aktif mencakup siswa, SPP, transaksi/kas, pendaftaran siswa, inventaris, payroll, laporan, auth, dan panel dev lokal.
+- `VERIFIED`: Modul aktif mencakup siswa, SPP, transaksi/kas, pendaftaran siswa, inventaris, payroll, laporan, **kuitansi digital (PNG/share/cetak)**, auth, dan panel dev lokal.
 - `VERIFIED`: Data utama dipisahkan dengan `school_id` dan dilindungi RLS berdasarkan migration yang tersedia.
 - `VERIFIED`: Kolom `profiles.role` dan `profiles.school_id` di-lock trigger (hanya service_role/postgres bisa ubah); dev functions memakai `search_path=''`; view keuangan pakai `security_invoker`.
 - `PARTIAL`: Offline support ada untuk siswa & transaksi (fallback hanya saat error jaringan, payload membawa `id` lokal, sync engine aktif via `SyncStatus` di dashboard), tetapi modul lain dan offline reads belum terpasang.
@@ -57,16 +57,17 @@ RAG lokal ini menjaga model tetap memahami produk walau sesi dan model AI bergan
 
 - Next.js 14 App Router, React 18, TypeScript, Tailwind CSS.
 - Supabase Auth/PostgreSQL/RLS/Realtime melalui `@supabase/ssr` dan `@supabase/supabase-js`.
-- TanStack Query, Dexie (offline), next-pwa. Catatan audit: `zustand`, `recharts`, `react-pdf`, `framer-motion`, `cva` terpasang tapi belum dipakai — jangan claim chart/animasi dari library itu.
-- Scripts: `npm run dev`, `npm run build`, `npm run start`, `npm run lint`, `npm run test:entitlements`.
+- TanStack Query, Dexie (offline), next-pwa, **html-to-image** (kuitansi PNG via foreignObject). `zustand`/`recharts`/`react-pdf`/`framer-motion`/`cva` **tidak terpasang** (sudah dibersihkan).
+- Scripts: `npm run dev`, `npm run build`, `npm run start`, `npm run lint`, `npm run typecheck`, `npm run test` / `test:watch` / `test:coverage`.
 
-## Kondisi Penting Saat RAG Diperbarui (2026-08-03)
+## Kondisi Penting Saat RAG Diperbarui (2026-09-24)
 
 - Audit fullstack (2026-08-01/02) sudah dibereskan: privilege escalation `profiles.role/school_id` di-lock, `SECURITY DEFINER` di-harden (`search_path=''` + REVOKE PUBLIC), view keuangan `security_invoker`, offline sync di-mount, auto-transaction SPP/payroll/inventory diperbaiki, endpoint debug `test-auth` dihapus.
-- Migration yang WAJIB dianggap sudah applied di semua env: `20260802001` (lock profiles), `20260802002` (harden functions+views), `20260802003` (dedupe kategori + UNIQUE). Jangan mengedit ulang isi migration 005/006 — kontennya sudah ditukar agar fresh deploy lolos (005 = categories, 006 = transactions).
+- Migration yang WAJIB dianggap sudah applied di semua env: `20260802001` (lock profiles), `20260802002` (harden functions+views), `20260802003` (dedupe kategori + UNIQUE), **`20260909005` (spp unique bill), `20260909006` (payroll_items rincian gaji)**. Jangan mengedit ulang isi migration 005/006 — kontennya sudah ditukar agar fresh deploy lolos (005 = categories, 006 = transactions).
 - Dokumentasi di `.ai/*` berguna tapi sebagian bisa stale; verifikasi ke source/migration dulu. `DOCUMENTATION.md` dan `CURRENT-STATE.md` sudah dihapus (superseded oleh RAG.md + `.ai/*`).
 - Klaim landing/pricing harus disesuaikan dengan enforce plan yang ada (mis. "kas 2 kategori", "1 pengguna", "export Excel") — beberapa belum benar-benar di-enforce di DB.
 - Prioritas produk: owner mobile-first (login HP) + pemantauan arus kas real-time. Jangan tambah kompleksitas multi-role/ekosistem sekolah kecuali diminta.
+- Tahun SPP/payroll dinamis: dropdown `currentYear-2..+3` (`src/app/(dashboard)/spp/page.tsx:198`, `PaymentForm.tsx:132`, `payroll/page.tsx:296`), otomatis geser tiap tahun — tidak perlu edit code untuk 2029+.
 
 ## Infra & Biaya (2026-08-03)
 
