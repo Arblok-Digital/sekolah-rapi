@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { createSupabaseClient } from '@/shared/services/supabase/client';
 import { TrendingUp, TrendingDown, ArrowRight, Loader2, History } from 'lucide-react';
 import { cn } from '@/shared/utils/cn';
+import { toUserMessage } from '@/shared/lib/safe-error';
 import type { Transaction } from '@/shared/types';
 import {
   Timeframe,
@@ -70,7 +71,7 @@ export function TransactionHistory({ schoolId, limit = 10, showAllHref = '/audit
           setCatMap(map);
         }
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Gagal memuat transaksi');
+        if (!cancelled) setError(toUserMessage(err, 'Gagal memuat transaksi'));
       }
     }
     load();

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createSupabaseClient } from '@/shared/services/supabase/client';
+import { toUserMessage } from '@/shared/lib/safe-error';
 import { getSession } from '@/shared/services/supabase/auth';
 import type { Transaction, TransactionFormData } from '../types/transaction.types';
 import {
@@ -32,7 +33,7 @@ export function useTransactions({ schoolId, typeFilter }: UseTransactionsOptions
       setTransactions(data);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Gagal memuat transaksi');
+      setError(toUserMessage(err, 'Gagal memuat transaksi'));
     } finally {
       setLoading(false);
     }

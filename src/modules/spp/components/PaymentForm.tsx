@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useToast } from '@/shared/components/ui/toast';
+import { toUserMessage } from '@/shared/lib/safe-error';
 import type { SPPFormInput, SPPPayment, SPPStatus } from '../types/spp.types';
 import { getMonthName } from '../types/spp.types';
 
@@ -150,7 +151,7 @@ export function PaymentForm({
       setNoPeriod(false);
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Gagal menyimpan pembayaran');
+      setError(toUserMessage(err, 'Gagal menyimpan pembayaran'));
     } finally {
       setSubmitting(false);
     }

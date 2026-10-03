@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/shared/providers/AuthProvider';
+import { toUserMessage } from '@/shared/lib/safe-error';
 import { createSupabaseClient } from '@/shared/services/supabase/client';
 import { StudentTable } from '@/modules/students/components/StudentTable';
 import { StudentForm } from '@/modules/students/components/StudentForm';
@@ -75,7 +76,7 @@ export default function StudentsPage() {
     } catch (err) {
       setActionMessage({
         type: 'error',
-        text: err instanceof Error ? err.message : 'Gagal menyimpan data siswa',
+        text: toUserMessage(err, 'Gagal menyimpan data siswa'),
       });
     }
   };
@@ -99,7 +100,7 @@ export default function StudentsPage() {
     } catch (err) {
       setActionMessage({
         type: 'error',
-        text: err instanceof Error ? err.message : 'Gagal menghapus siswa',
+        text: toUserMessage(err, 'Gagal menghapus siswa'),
       });
     } finally {
       setDeletingId(null);

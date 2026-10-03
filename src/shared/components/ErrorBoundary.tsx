@@ -2,6 +2,7 @@
 
 import { Component, ReactNode, ErrorInfo } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { toUserMessage } from '@/shared/lib/safe-error';
 
 interface Props {
   children: ReactNode;
@@ -47,7 +48,7 @@ export class ErrorBoundary extends Component<Props, State> {
             {this.state.error && (
               <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-left">
                 <p className="text-red-400 text-xs font-mono break-all">
-                  {this.state.error.message}
+                  {toUserMessage(this.state.error, 'Kesalahan tidak terduga')}
                 </p>
               </div>
             )}

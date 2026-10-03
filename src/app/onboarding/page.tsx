@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createSupabaseClient } from '@/shared/services/supabase/client';
+import { toUserMessage } from '@/shared/lib/safe-error';
 import { useAuth } from '@/shared/providers/AuthProvider';
 import { Building2, Loader2, UserRound } from 'lucide-react';
 import { AuthShell, authButtonClassName, authFieldClassName } from '@/shared/components/Auth/AuthShell';
@@ -89,8 +90,8 @@ export default function OnboardingPage() {
         router.refresh();
         router.push('/pending-approval');
       }, 1500);
-    } catch (err: any) {
-      setError(err.message);
+  } catch (err: any) {
+    setError(toUserMessage(err, 'Gagal menyimpan data. Silakan coba lagi.'));
       setStep('form');
       setLoading(false);
     }

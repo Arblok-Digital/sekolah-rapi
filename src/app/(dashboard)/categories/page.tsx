@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from 'react';
 import { useAuth } from '@/shared/providers/AuthProvider';
+import { toUserMessage } from '@/shared/lib/safe-error';
 import {
   useCategories,
   useCreateCategory,
@@ -94,7 +95,7 @@ export default function CategoriesPage() {
       }
       setFormOpen(false);
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Gagal menyimpan kategori.');
+      setFormError(toUserMessage(err, 'Gagal menyimpan kategori.'));
     }
   }
 
@@ -105,7 +106,7 @@ export default function CategoriesPage() {
       await deleteMut.mutateAsync(deleting.id);
       setDeleting(null);
     } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : 'Gagal menghapus kategori.');
+      setDeleteError(toUserMessage(err, 'Gagal menghapus kategori.'));
     }
   }
 

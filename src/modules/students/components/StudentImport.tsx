@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from 'react';
 import * as XLSX from 'xlsx';
 import { importFromCSV } from '../services/student.service';
+import { toUserMessage } from '@/shared/lib/safe-error';
 import type { StudentFormData } from '../types/student.types';
 import { Upload, FileSpreadsheet, X, CheckCircle, AlertCircle, Download } from 'lucide-react';
 
@@ -110,7 +111,7 @@ export function StudentImport({ schoolId, onDone }: StudentImportProps) {
       }
       setParsed(rows);
     } catch (err: any) {
-      setError(err.message);
+      setError(toUserMessage(err, 'Gagal membaca file. Pastikan formatnya benar.'));
     }
   }, []);
 
@@ -134,7 +135,7 @@ export function StudentImport({ schoolId, onDone }: StudentImportProps) {
       setResult(res);
       if (res.imported > 0) onDone();
     } catch (err: any) {
-      setError(err.message || 'Gagal import');
+      setError(toUserMessage(err, 'Gagal import data siswa'));
     } finally {
       setImporting(false);
     }

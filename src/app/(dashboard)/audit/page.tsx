@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/shared/providers/AuthProvider';
 import { assertSchoolFeature } from '@/shared/services/plan-guard';
 import { createSupabaseClient } from '@/shared/services/supabase/client';
+import { toUserMessage } from '@/shared/lib/safe-error';
 import { Download, Loader2, TrendingUp, TrendingDown, Scale, History, Receipt, ScrollText } from 'lucide-react';
 import type { Transaction } from '@/shared/types';
 import {
@@ -104,7 +105,7 @@ export default function AuditPage() {
 
     fetchData().catch((err) => {
       console.error('[Audit Page] load failed', err);
-      setError(err instanceof Error ? err.message : 'Gagal memuat riwayat transaksi');
+      setError(toUserMessage(err, 'Gagal memuat riwayat transaksi'));
       setLoading(false);
     });
   }, [schoolId]);

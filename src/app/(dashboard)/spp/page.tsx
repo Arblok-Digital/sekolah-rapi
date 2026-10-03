@@ -23,6 +23,7 @@ import {
   useBackfillSPPTransactions,
 } from '@/modules/spp/hooks/useSPP';
 import { cn } from '@/shared/utils/cn';
+import { toUserMessage } from '@/shared/lib/safe-error';
 import { useSchoolRealtime } from '@/shared/hooks/useSchoolRealtime';
 import { ReceiptModal, sppReceipt, type ReceiptData } from '@/modules/receipt';
 
@@ -113,7 +114,7 @@ export default function SPPPage() {
         text: `${res.created} tagihan ${getMonthName(bulkMonth)} ${bulkYear} dibuat untuk ${res.students} siswa (${res.existing} siswa sudah punya tagihan).`,
       });
     } catch (err) {
-      setBulkMessage({ type: 'error', text: `Gagal membuat tagihan: ${(err as Error).message}` });
+      setBulkMessage({ type: 'error', text: toUserMessage(err, 'Gagal membuat tagihan. Silakan coba lagi.') });
     }
   };
 
@@ -136,7 +137,7 @@ export default function SPPPage() {
           : `Semua ${res.checked} pembayaran lunas sudah tercatat di Kas. Tidak ada yang perlu diperbaiki.`,
       });
     } catch (err) {
-      setSyncMessage({ type: 'error', text: `Gagal sinkronisasi ke Kas: ${(err as Error).message}` });
+      setSyncMessage({ type: 'error', text: toUserMessage(err, 'Gagal sinkronisasi ke Kas. Silakan coba lagi.') });
     }
   };
 
@@ -151,7 +152,7 @@ export default function SPPPage() {
       const res = await bulkPaidMutation.mutateAsync({ schoolId, userId: session.user.id, month: targetMonth, year: targetYear });
       setActionMessage({ type: 'success', text: `${res.updated} dari ${res.total} tagihan ${label} ditandai lunas + tercatat ke Kas. Edit manual siswa yang masih nunggak.` });
     } catch (err) {
-      setActionMessage({ type: 'error', text: `Gagal melunasi massal: ${(err as Error).message}` });
+      setActionMessage({ type: 'error', text: toUserMessage(err, 'Gagal melunasi massal. Silakan coba lagi.') });
     }
   };
 
@@ -180,7 +181,7 @@ export default function SPPPage() {
       onSuccess: () =>
         setActionMessage({ type: 'success', text: 'Pembayaran berhasil dihapus' }),
       onError: (err) =>
-        setActionMessage({ type: 'error', text: `Gagal menghapus pembayaran: ${err.message}` }),
+        setActionMessage({ type: 'error', text: toUserMessage(err, 'Gagal menghapus pembayaran. Silakan coba lagi.') }),
       onSettled: () => setDeletingId(null),
     });
   };

@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { submitEnrollment } from '@/modules/enrollment/services/enrollment.service';
 import { CLASS_OPTIONS } from '@/modules/enrollment/types/enrollment.types';
 import { createSupabaseClient } from '@/shared/services/supabase/client';
+import { toUserMessage } from '@/shared/lib/safe-error';
 import Link from 'next/link';
 import { CheckCircle, ArrowLeft } from 'lucide-react';
 
@@ -67,7 +68,7 @@ function RegisterStudentForm() {
       await submitEnrollment(schoolId, formData);
       setSubmitted(true);
     } catch (err: any) {
-      setError(err.message || 'Terjadi kesalahan. Silakan coba lagi.');
+      setError(toUserMessage(err, 'Pendaftaran gagal dikirim. Silakan coba lagi.'));
     } finally {
       setLoading(false);
     }

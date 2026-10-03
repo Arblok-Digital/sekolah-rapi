@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createSupabaseClient } from '@/shared/services/supabase/client';
+import { toUserMessage } from '@/shared/lib/safe-error';
 import { useAuth } from '@/shared/providers/AuthProvider';
 import Link from 'next/link';
 import { Building2, Loader2, LockKeyhole, Mail, Phone, UserRound } from 'lucide-react';
@@ -109,8 +110,8 @@ export default function RegisterPage() {
       // 6. All good — redirect to pending approval (status = pending)
       router.refresh();
       router.push('/pending-approval');
-    } catch (err: any) {
-      setError(err.message);
+  } catch (err: any) {
+    setError(toUserMessage(err, 'Pendaftaran gagal. Silakan coba lagi.'));
       setStep('form');
       setLoading(false);
     }

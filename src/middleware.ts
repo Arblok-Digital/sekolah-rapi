@@ -8,10 +8,11 @@ import {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Pass through: static files, internal Next.js routes
+  // Pass through: static files, internal Next.js routes, dan cron
+  // (Vercel Cron datang tanpa session cookie — jalur API lain tetap dicek).
   if (
     pathname.startsWith('/_next') ||
-    pathname.startsWith('/api') ||
+    pathname.startsWith('/api/cron') ||
     pathname.includes('.')
   ) {
     return NextResponse.next();

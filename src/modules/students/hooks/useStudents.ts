@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createSupabaseClient } from '@/shared/services/supabase/client';
+import { toUserMessage } from '@/shared/lib/safe-error';
 import type { Student, StudentFormData } from '../types/student.types';
 import {
   getStudents,
@@ -40,7 +41,7 @@ export function useStudents({
       setStudents(data);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Gagal memuat data siswa');
+      setError(toUserMessage(err, 'Gagal memuat data siswa'));
     } finally {
       setLoading(false);
     }

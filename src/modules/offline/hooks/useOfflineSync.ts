@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { db } from '@/modules/offline/db';
 import { syncToSupabase, getPendingSyncCount } from '@/modules/offline/services/sync.service';
+import { toUserMessage } from '@/shared/lib/safe-error';
 
 export interface SyncStatusState {
   pending: number;
@@ -48,7 +49,7 @@ export function useOfflineSync() {
       const now = new Date();
       setStatus(prev => ({ ...prev, lastSync: now, isSyncing: false, pending: result.pending, error: null }));
     } catch (err) {
-      setStatus(prev => ({ ...prev, isSyncing: false, error: err instanceof Error ? err.message : 'Sync failed' }));
+      setStatus(prev => ({ ...prev, isSyncing: false, error: toUserMessage(err, 'Sync failed') }));
     }
   }, [status.pending, status.isSyncing, isOnline]);
 

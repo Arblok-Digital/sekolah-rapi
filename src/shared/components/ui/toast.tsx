@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { CheckCircle2, AlertTriangle, Info, X } from 'lucide-react';
+import { toUserMessage } from '@/shared/lib/safe-error';
 
 export type ToastVariant = 'success' | 'error' | 'info';
 
@@ -53,12 +54,7 @@ function normalizeVariant(variant: ToastProps['variant']): ToastVariant {
 
 /** Extract a readable message from any thrown value, with a localized fallback. */
 export function getErrorMessage(err: unknown, fallback = 'Terjadi kesalahan'): string {
-  if (err instanceof Error) return err.message || fallback;
-  if (err && typeof err === 'object' && 'message' in err) {
-    const msg = (err as { message?: unknown }).message;
-    if (typeof msg === 'string' && msg) return msg;
-  }
-  return fallback;
+  return toUserMessage(err, fallback);
 }
 
 let nextId = 0;

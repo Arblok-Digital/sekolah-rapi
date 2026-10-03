@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { signIn } from '@/modules/auth/services/auth.service';
+import { toUserMessage } from '@/shared/lib/safe-error';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2, LockKeyhole, Mail } from 'lucide-react';
@@ -25,9 +26,10 @@ export default function LoginPage() {
 
     const { error } = await signIn(email, password);
     if (error) {
-      setError(error.message === 'Invalid login credentials'
-        ? 'Email atau password salah'
-        : error.message
+      setError(
+        error.message === 'Invalid login credentials'
+          ? 'Email atau password salah'
+          : toUserMessage(error, 'Gagal masuk. Periksa email dan password Anda.')
       );
       setLoading(false);
       return;

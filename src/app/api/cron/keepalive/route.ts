@@ -10,11 +10,15 @@ import { NextResponse } from 'next/server';
  * ringan ke Supabase agar tercatat sebagai aktivitas API.
  */
 export async function GET(request: Request) {
-  // Soft guard: hanya boleh dipanggil oleh cron (header Vercel) atau CRON_SECRET.
-  const isVercelCron = request.headers.get('x-vercel-cron') === '1';
-  const auth = request.headers.get('authorization');
+  // Guard: bila CRON_SECRET di-set, WAJIB Authorization: Bearer <secret>
+  // (Vercel otomatis mengirimkannya untuk request cron).
+  // Tanpa secret, jatuh ke header x-vercel-cron — tetap dipertahankan agar
+  // cron lama tidak mati, tapi sebaiknya CRON_SECRET segera diisi di env.
   const secret = process.env.CRON_SECRET;
-  if (!isVercelCron && !(secret && auth === `Bearer ${secret}`)) {
+  const auth = request.headers.get('authorization');
+  const isVercelCron = request.headers.get('x-vercel-cron') === '1';
+  const authorized = secret ? auth === `Bearer ${secret}` : isVercelCron;
+  if (!authorized) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

@@ -8,6 +8,8 @@ declare global {
       NEXT_PUBLIC_APP_NAME: string;
       NEXT_PUBLIC_APP_URL: string;
       NEXT_PUBLIC_POWERED_BY: string;
+      /** Opsional: kunci untuk autentikasi request cron (Vercel mengirim otomatis). */
+      CRON_SECRET?: string;
     }
   }
 }
