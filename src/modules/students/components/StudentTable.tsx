@@ -1,6 +1,6 @@
 'use client';
 
-import { Edit, Trash2, Loader2 } from 'lucide-react';
+import { Edit, Trash2, Loader2, Users } from 'lucide-react';
 import type { Student } from '../types/student.types';
 
 interface StudentTableProps {
@@ -20,8 +20,9 @@ export function StudentTable({ students, loading, onEdit, onDelete, deletingId }
 
   if (students.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500">
-        Belum ada siswa. Klik &quot;Tambah Siswa&quot; untuk memulai.
+      <div className="flex flex-col items-center justify-center py-12 text-center text-gray-400">
+        <Users className="w-10 h-10 mb-3 text-gray-300" strokeWidth={1.5} aria-hidden />
+        <p>Belum ada siswa. Klik &quot;Tambah Siswa&quot; untuk memulai.</p>
       </div>
     );
   }

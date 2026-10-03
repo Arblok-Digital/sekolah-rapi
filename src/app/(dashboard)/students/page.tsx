@@ -117,24 +117,24 @@ export default function StudentsPage() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-2xl font-bold text-white">Data Siswa</h2>
           <p className="text-sm text-white/60 mt-1">Kelola data siswa sekolah</p>
         </div>
-        <div className="flex gap-2">
+        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
           <button
             onClick={() => canUse('student_import') && setShowImport(true)}
             disabled={!canUse('student_import')}
             title={!canUse('student_import') ? 'Import siswa tersedia mulai paket Basic' : undefined}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 flex items-center gap-1.5"
+            className="inline-flex w-full items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 sm:w-auto sm:justify-start"
           >
             <FileSpreadsheet className="w-4 h-4" />
             Import
           </button>
           <button
             onClick={openAddStudent}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+            className="inline-flex w-full items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 sm:w-auto sm:justify-start"
           >
             + Tambah Siswa
           </button>
@@ -160,34 +160,36 @@ export default function StudentsPage() {
       )}
 
       {/* Filters */}
-      <div className="mb-4 flex flex-wrap gap-3">
+      <div className="mb-4 flex flex-wrap items-center gap-x-3">
         <input
           type="text"
           placeholder="Cari nama atau NIS..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="px-3 py-2 border border-white/15 rounded-md text-sm"
+          className="w-full mb-3 px-3 py-2 border border-white/15 rounded-md text-sm sm:mb-0 sm:w-auto"
         />
-        <select
-          value={classFilter}
-          onChange={(e) => setClassFilter(e.target.value)}
-          className="px-3 py-2 border border-white/15 rounded-md text-sm"
-        >
-          <option value="">Semua Kelas</option>
-          {availableClasses.map((c) => (
-            <option key={c} value={c}>{c}</option>
-          ))}
-        </select>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-3 py-2 border border-white/15 rounded-md text-sm"
-        >
-          <option value="">Semua Status</option>
-          <option value="active">Aktif</option>
-          <option value="graduated">Lulus</option>
-          <option value="transferred">Pindah</option>
-        </select>
+        <div className="flex w-full gap-2 overflow-x-auto whitespace-nowrap pb-2 scrollbar-hide sm:w-auto sm:gap-3 sm:overflow-visible sm:pb-0">
+          <select
+            value={classFilter}
+            onChange={(e) => setClassFilter(e.target.value)}
+            className="shrink-0 px-3 py-2 border border-white/15 rounded-md text-sm"
+          >
+            <option value="">Semua Kelas</option>
+            {availableClasses.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="shrink-0 px-3 py-2 border border-white/15 rounded-md text-sm"
+          >
+            <option value="">Semua Status</option>
+            <option value="active">Aktif</option>
+            <option value="graduated">Lulus</option>
+            <option value="transferred">Pindah</option>
+          </select>
+        </div>
       </div>
 
       {/* Table */}

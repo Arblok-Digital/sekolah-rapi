@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/shared/providers/AuthProvider';
 import { CLASS_OPTIONS } from '@/shared/constants';
 import { createSupabaseClient } from '@/shared/services/supabase/client';
-import { Plus, RefreshCw, Search, X } from 'lucide-react';
+import { Plus, RefreshCw, Search, X, ChevronDown } from 'lucide-react';
 import { PaymentTable } from '@/modules/spp/components/PaymentTable';
 import { PaymentForm } from '@/modules/spp/components/PaymentForm';
 import { TunggakanTable } from '@/modules/spp/components/TunggakanTable';
@@ -49,6 +49,7 @@ export default function SPPPage() {
   const [bulkMessage, setBulkMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [syncMessage, setSyncMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const { schoolId, session, canUse, school, profile } = useAuth();
 
   const filter: SPPFilter = {
@@ -211,6 +212,37 @@ export default function SPPPage() {
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 6 }, (_, i) => currentYear - 2 + i);
 
+  // Aksi sekunder — dirender inline di desktop dan di dalam menu "Aksi Lainnya" di mobile
+  const secondaryActions = (
+    <>
+      <button
+        onClick={() => { setMoreMenuOpen(false); setFormOpen(false); setBulkOpen((v) => !v); }}
+        className="inline-flex w-full items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-white/10 rounded-lg hover:bg-white/20 transition-colors sm:w-auto sm:justify-start"
+      >
+        <Plus className="w-4 h-4" />
+        Buat Tagihan
+      </button>
+      <button
+        onClick={() => { setMoreMenuOpen(false); handleBulkPaid(); }}
+        disabled={bulkPaidMutation.isPending || !filterMonth}
+        title={filterMonth ? 'Tandai lunas semua yang belum bayar di bulan ini' : 'Pilih bulan dulu'}
+        className="inline-flex w-full items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 sm:w-auto sm:justify-start"
+      >
+        <RefreshCw className={cn('w-4 h-4', bulkPaidMutation.isPending && 'animate-spin')} />
+        {bulkPaidMutation.isPending ? 'Melunasi...' : 'Lunasi Semua'}
+      </button>
+      <button
+        onClick={() => { setMoreMenuOpen(false); handleSyncKas(); }}
+        disabled={backfillMutation.isPending}
+        title="Catatkan semua pembayaran lunas yang belum masuk Kas"
+        className="inline-flex w-full items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-white/10 rounded-lg hover:bg-white/20 transition-colors disabled:opacity-50 sm:w-auto sm:justify-start"
+      >
+        <RefreshCw className={cn('w-4 h-4', backfillMutation.isPending && 'animate-spin')} />
+        {backfillMutation.isPending ? 'Menyinkron...' : 'Sinkronkan ke Kas'}
+      </button>
+    </>
+  );
+
   const tunggakanPayments = unpaid || [];
   const tunggakanStudentCount = new Set(tunggakanPayments.map((p) => p.student_id)).size;
   const tunggakanClassList: string[] = [];
@@ -252,39 +284,41 @@ export default function SPPPage() {
             Tagihan &amp; pembayaran siswa per kategori — otomatis tercatat di Kas sekolah
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
           <button
             onClick={() => { setBulkOpen(false); openCreateForm(); }}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors"
+            className="inline-flex w-full items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors sm:w-auto sm:justify-start"
           >
             <Plus className="w-4 h-4" />
             Catat Pembayaran
           </button>
-          <button
-            onClick={() => { setFormOpen(false); setBulkOpen((v) => !v); }}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Buat Tagihan
-          </button>
-          <button
-            onClick={handleBulkPaid}
-            disabled={bulkPaidMutation.isPending || !filterMonth}
-            title={filterMonth ? 'Tandai lunas semua yang belum bayar di bulan ini' : 'Pilih bulan dulu'}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className={cn('w-4 h-4', bulkPaidMutation.isPending && 'animate-spin')} />
-            {bulkPaidMutation.isPending ? 'Melunasi...' : 'Lunasi Semua'}
-          </button>
-          <button
-            onClick={handleSyncKas}
-            disabled={backfillMutation.isPending}
-            title="Catatkan semua pembayaran lunas yang belum masuk Kas"
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-white/10 rounded-lg hover:bg-white/20 transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className={cn('w-4 h-4', backfillMutation.isPending && 'animate-spin')} />
-            {backfillMutation.isPending ? 'Menyinkron...' : 'Sinkronkan ke Kas'}
-          </button>
+
+          {/* Desktop: aksi sekunder tetap inline seperti sebelumnya */}
+          <div className="hidden sm:flex sm:items-center sm:gap-2">{secondaryActions}</div>
+
+          {/* Mobile: aksi sekunder masuk ke menu "Aksi Lainnya" */}
+          <div className="relative sm:hidden">
+            <button
+              onClick={() => setMoreMenuOpen((v) => !v)}
+              aria-expanded={moreMenuOpen}
+              className="inline-flex w-full items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
+            >
+              Aksi Lainnya
+              <ChevronDown className={cn('w-4 h-4 transition-transform', moreMenuOpen && 'rotate-180')} />
+            </button>
+            {moreMenuOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setMoreMenuOpen(false)}
+                  aria-hidden
+                />
+                <div className="absolute left-0 right-0 top-full z-20 mt-2 space-y-2 rounded-xl border border-white/10 bg-[#173f35] p-2 shadow-2xl">
+                  {secondaryActions}
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -378,23 +412,23 @@ export default function SPPPage() {
       {/* Summary cards */}
       {summary && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="bg-white rounded-xl border border-white/10 p-4">
-            <p className="text-xs text-gray-500 mb-1">Total Siswa Aktif</p>
-            <p className="text-2xl font-bold text-gray-900">{summary.total_siswa}</p>
+          <div className="bg-white rounded-xl border border-white/10 p-3 sm:p-4">
+            <p className="text-xs text-gray-400 mb-1 sm:text-gray-500">Total Siswa Aktif</p>
+            <p className="text-lg font-bold text-gray-900 sm:text-2xl">{summary.total_siswa}</p>
           </div>
-          <div className="bg-white rounded-xl border border-white/10 p-4">
-            <p className="text-xs text-gray-500 mb-1">Terkumpul</p>
-            <p className="text-2xl font-bold text-emerald-600">
+          <div className="bg-white rounded-xl border border-white/10 p-3 sm:p-4">
+            <p className="text-xs text-gray-400 mb-1 sm:text-gray-500">Terkumpul</p>
+            <p className="text-lg font-bold text-emerald-600 sm:text-2xl">
               Rp {summary.terkumpul.toLocaleString('id-ID')}
             </p>
           </div>
-          <div className="bg-white rounded-xl border border-white/10 p-4">
-            <p className="text-xs text-gray-500 mb-1">Belum Bayar</p>
-            <p className="text-2xl font-bold text-red-600">{summary.outstanding}</p>
+          <div className="bg-white rounded-xl border border-white/10 p-3 sm:p-4">
+            <p className="text-xs text-gray-400 mb-1 sm:text-gray-500">Belum Bayar</p>
+            <p className="text-lg font-bold text-red-600 sm:text-2xl">{summary.outstanding}</p>
           </div>
-          <div className="bg-white rounded-xl border border-white/10 p-4">
-            <p className="text-xs text-gray-500 mb-1">Collection Rate</p>
-            <p className="text-2xl font-bold text-indigo-600">{summary.collection_rate}%</p>
+          <div className="bg-white rounded-xl border border-white/10 p-3 sm:p-4">
+            <p className="text-xs text-gray-400 mb-1 sm:text-gray-500">Collection Rate</p>
+            <p className="text-lg font-bold text-indigo-600 sm:text-2xl">{summary.collection_rate}%</p>
           </div>
         </div>
       )}
@@ -428,8 +462,8 @@ export default function SPPPage() {
       )}
 
       {/* Filters */}
-      <div className="flex items-center gap-3">
-        <div className="inline-flex p-1 bg-white/10 rounded-xl">
+      <div className="flex items-center gap-3 overflow-x-auto whitespace-nowrap pb-1 scrollbar-hide sm:pb-0">
+        <div className="inline-flex shrink-0 p-1 bg-white/10 rounded-xl">
           {(['all', 'tunggakan'] as ViewMode[]).map((mode) => (
             <button
               key={mode}
@@ -456,11 +490,11 @@ export default function SPPPage() {
 
       {viewMode === 'all' ? (
         <>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap pb-2 scrollbar-hide sm:gap-3">
             <select
               value={filterCategory}
               onChange={(e) => setFilterCategory(e.target.value)}
-              className="px-3 py-2 border border-white/15 rounded-lg text-sm"
+              className="px-3 py-2 shrink-0 border border-white/15 rounded-lg text-sm"
             >
               <option value="">Semua Kategori</option>
               {incomeCategories.map((c) => (
@@ -470,7 +504,7 @@ export default function SPPPage() {
             <select
               value={filterStatus || ''}
               onChange={(e) => setFilterStatus((e.target.value || undefined) as SPPStatus | undefined)}
-              className="px-3 py-2 border border-white/15 rounded-lg text-sm"
+              className="px-3 py-2 shrink-0 border border-white/15 rounded-lg text-sm"
             >
               <option value="">Semua Status</option>
               <option value="unpaid">Belum Bayar</option>
@@ -480,7 +514,7 @@ export default function SPPPage() {
             <select
               value={classFilterSPP}
               onChange={(e) => setClassFilterSPP(e.target.value)}
-              className="px-3 py-2 border border-white/15 rounded-lg text-sm"
+              className="px-3 py-2 shrink-0 border border-white/15 rounded-lg text-sm"
             >
               <option value="">Semua Kelas</option>
               {CLASS_OPTIONS.map((c) => (
@@ -490,7 +524,7 @@ export default function SPPPage() {
             <select
               value={filterMonth || ''}
               onChange={(e) => setFilterMonth(e.target.value ? Number(e.target.value) : undefined)}
-              className="px-3 py-2 border border-white/15 rounded-lg text-sm"
+              className="px-3 py-2 shrink-0 border border-white/15 rounded-lg text-sm"
             >
               <option value="">Semua Bulan</option>
               {Array.from({ length: 12 }, (_, i) => (
@@ -502,7 +536,7 @@ export default function SPPPage() {
             <select
               value={filterYear}
               onChange={(e) => setFilterYear(Number(e.target.value))}
-              className="px-3 py-2 border border-white/15 rounded-lg text-sm"
+              className="px-3 py-2 shrink-0 border border-white/15 rounded-lg text-sm"
             >
               {years.map((y) => (
                 <option key={y} value={y}>{y}</option>
@@ -511,11 +545,11 @@ export default function SPPPage() {
           </div>
         </>
       ) : (
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap pb-2 scrollbar-hide sm:gap-3">
           <select
             value={tunggakanClass}
             onChange={(e) => setTunggakanClass(e.target.value)}
-            className="px-3 py-2 border border-white/15 rounded-lg text-sm"
+            className="px-3 py-2 shrink-0 border border-white/15 rounded-lg text-sm"
           >
             <option value="">Semua Kelas</option>
             {tunggakanClassList.map((k) => (

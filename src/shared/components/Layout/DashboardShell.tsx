@@ -34,6 +34,13 @@ export function DashboardShell({ children, schoolName, userName, userRole }: Das
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center justify-between border-b border-white/10 bg-[#173f35]/90 px-4 backdrop-blur-xl lg:px-7">
           <div className="flex items-center gap-3">
+            {/* Inisial brand — hanya mobile, watermark muted di samping nama sekolah */}
+            <span
+              aria-hidden
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white/10 text-xs font-black text-white/20 sm:hidden"
+            >
+              SR
+            </span>
             <div>
               <h1 className="max-w-[200px] truncate text-sm font-black text-white lg:max-w-xs lg:text-base">
                 {schoolName || 'Dashboard'}

@@ -22,15 +22,25 @@ import {
   Shield,
   UserPlus,
   LockKeyhole,
+  type LucideIcon,
 } from 'lucide-react';
 import { APP_NAME, POWERED_BY } from '@/shared/constants';
 import { type Feature } from '@/shared/entitlements';
 
-const navLinks = [
+type NavLink = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  feature?: Feature;
+  /** Label pendek untuk tab bar mobile (muat satu baris) */
+  mobileLabel?: string;
+};
+
+const navLinks: NavLink[] = [
   { href: '/overview', label: 'Overview', icon: LayoutDashboard, feature: 'dashboard' as Feature },
   { href: '/students', label: 'Siswa', icon: Users, feature: 'students' as Feature },
   { href: '/enrollment', label: 'Pendaftar', icon: UserPlus, feature: 'enrollment' as Feature },
-  { href: '/spp', label: 'Keuangan Siswa', icon: Wallet, feature: 'spp' as Feature },
+  { href: '/spp', label: 'Keuangan Siswa', mobileLabel: 'Keuangan', icon: Wallet, feature: 'spp' as Feature },
   { href: '/transactions', label: 'Kas', icon: Banknote, feature: 'transactions' as Feature },
   { href: '/categories', label: 'Kategori', icon: Tags, feature: 'transactions' as Feature },
   { href: '/inventory', label: 'Inventaris', icon: Package, feature: 'inventory' as Feature },
@@ -173,7 +183,7 @@ export function Sidebar() {
       </aside>
 
       {/* App-like primary navigation for small screens. The drawer keeps secondary tools available. */}
-      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-[#173f35]/95 px-2 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-12px_32px_rgba(0,0,0,.28)] backdrop-blur-xl lg:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-[#173f35]/80 px-2 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-12px_32px_rgba(0,0,0,.28)] backdrop-blur-md lg:hidden">
         <div className="mx-auto grid max-w-md grid-cols-5 gap-1">
           {mobilePrimaryLinks.map((link) => {
             const Icon = link.icon;
@@ -184,12 +194,12 @@ export function Sidebar() {
                 href={link.href}
                 onClick={() => setMobileOpen(false)}
                 className={cn(
-                  'flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[10px] font-bold transition-colors',
+                  'flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[10px] font-bold transition-all duration-200',
                   isActive ? 'bg-[#dfe99a]/15 text-[#eaf2b8]' : 'text-white/55 active:bg-white/10 active:text-white'
                 )}
               >
-                <Icon className={cn('h-5 w-5', isActive && 'text-[#dfe99a]')} />
-                <span>{link.label}</span>
+                <Icon className={cn('h-5 w-5 transition-all duration-200', isActive && 'scale-105 text-[#dfe99a]')} />
+                <span className="max-w-full truncate">{link.mobileLabel ?? link.label}</span>
               </Link>
             );
           })}
@@ -197,7 +207,7 @@ export function Sidebar() {
             type="button"
             onClick={() => setMobileOpen((open) => !open)}
             className={cn(
-              'flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[10px] font-bold transition-colors',
+              'flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[10px] font-bold transition-all duration-200',
               mobileOpen || !mobilePrimaryLinks.some((link) => isActiveRoute(pathname, link.href))
                 ? 'bg-[#dfe99a]/15 text-[#eaf2b8]'
                 : 'text-white/55 active:bg-white/10 active:text-white'
@@ -205,8 +215,8 @@ export function Sidebar() {
             aria-label={mobileOpen ? 'Tutup menu lainnya' : 'Buka menu lainnya'}
             aria-expanded={mobileOpen}
           >
-            {mobileOpen ? <X className="h-5 w-5 text-[#dfe99a]" /> : <Menu className="h-5 w-5" />}
-            <span>Lainnya</span>
+            {mobileOpen ? <X className="h-5 w-5 transition-all duration-200 text-[#dfe99a]" /> : <Menu className="h-5 w-5 transition-all duration-200" />}
+            <span className="max-w-full truncate">Lainnya</span>
           </button>
         </div>
       </nav>
