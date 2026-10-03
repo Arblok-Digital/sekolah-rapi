@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { createSupabaseClient } from '@/shared/services/supabase/client';
 import type { Session } from '@supabase/supabase-js';
@@ -32,7 +32,7 @@ interface AuthContextType {
   isDev: boolean;
   schoolId: string | null;
   userRole: string | null;
-  refreshProfile: () => Promise<void>;
+  refreshProfile: () => Promise<Profile | null>;
   signOut: () => Promise<void>;
   plan: Plan;
   canUse: (feature: Feature) => boolean;
@@ -46,7 +46,7 @@ const AuthContext = createContext<AuthContextType>({
   isDev: false,
   schoolId: null,
   userRole: null,
-  refreshProfile: async () => {},
+  refreshProfile: async () => null,
   signOut: async () => {},
   plan: 'free',
   canUse: () => false,
@@ -59,6 +59,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
+
+  // Ref agar refreshProfile selalu membaca session terbaru, bukan closure lama.
+  // Halaman registrasi/onboarding memanggil refreshProfile dari dalam async
+  // handler yang dibuat sebelum session ada — closure berbasis state akan no-op.
+  const sessionRef = useRef<Session | null>(null);
+  useEffect(() => {
+    sessionRef.current = session;
+  }, [session]);
 
   const fetchProfile = useCallback(async (userId: string) => {
     const supabase = createSupabaseClient();
@@ -88,11 +96,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshProfile = useCallback(async () => {
-    if (!session?.user) return;
-    const { profile: p, school: s } = await fetchProfile(session.user.id);
+    const userId = sessionRef.current?.user?.id;
+    if (!userId) return null;
+
+    const { profile: p, school: s } = await fetchProfile(userId);
     setProfile(p);
     setSchool(s);
-  }, [session?.user, fetchProfile]);
+    return p;
+  }, [fetchProfile]);
 
   const signOut = useCallback(async () => {
     const supabase = createSupabaseClient();
@@ -146,6 +157,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 // (/, /pricing, /fitur, /solusi, /panduan, /blog, dll) tidak boleh diarahkan
 // ke login. Daftar publik dijaga sinkron dengan middleware via
 // src/shared/constants/public-paths.ts.
+// healRef: fetch pertama profile bisa terjadi SEBELUM row-nya diinsert
+// (registrasi/onboarding), sehingga state profile masih null. Coba sekali
+// lagi sebelum melempar ke /onboarding supaya tidak terjadi loop
+// onboarding <-> overview.
+const healedForUserRef = useRef<string | null>(null);
+
 useEffect(() => {
   if (loading) return;
 
@@ -155,39 +172,48 @@ useEffect(() => {
   if (!session) {
     router.replace('/login');
     return;
-    }
+  }
 
-    if (!profile) {
+  if (!profile) {
+    if (healedForUserRef.current !== session.user.id) {
+      healedForUserRef.current = session.user.id;
+      refreshProfile().then((p) => {
+        if (!p) router.replace('/onboarding');
+      });
+      return;
+    }
+    router.replace('/onboarding');
+    return;
+  }
+
+  healedForUserRef.current = null;
+
+  // Extra safety: profile punya school_id tapi school blom ke-fetch
+  if (profile.role !== 'dev' && profile.school_id && !school) {
+    // FIX: Jangan redirect ke pending-approval, biarkan user di /overview
+    // atau redirect ke onboarding jika profile belum lengkap
+    if (!profile.name || !profile.role) {
       router.replace('/onboarding');
+    }
+    return;
+  }
+
+  // Check school status and redirect accordingly
+  if (profile.role !== 'dev') {
+    if (school?.status === 'pending') {
+      router.replace('/pending-approval');
       return;
     }
-
-    // Extra safety: profile punya school_id tapi school blom ke-fetch
-    if (profile.role !== 'dev' && profile.school_id && !school) {
-      // FIX: Jangan redirect ke pending-approval, biarkan user di /overview
-      // atau redirect ke onboarding jika profile belum lengkap
-      if (!profile.name || !profile.role) {
-        router.replace('/onboarding');
-      }
+    if (school?.status === 'rejected') {
+      router.replace('/rejected');
       return;
     }
-
-    // Check school status and redirect accordingly
-    if (profile.role !== 'dev') {
-      if (school?.status === 'pending') {
-        router.replace('/pending-approval');
-        return;
-      }
-      if (school?.status === 'rejected') {
-        router.replace('/rejected');
-        return;
-      }
-      if (school?.status !== 'active') {
-        router.replace('/pending-approval');
-        return;
-      }
+    if (school?.status !== 'active') {
+      router.replace('/pending-approval');
+      return;
     }
-  }, [loading, session, profile, school, router, pathname]);
+  }
+}, [loading, session, profile, school, router, pathname, refreshProfile]);
 
   const isDev = profile?.role === 'dev';
   const schoolId = profile?.school_id ?? null;

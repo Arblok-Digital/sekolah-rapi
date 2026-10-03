@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createSupabaseClient } from '@/shared/services/supabase/client';
+import { useAuth } from '@/shared/providers/AuthProvider';
 import { Building2, Loader2, UserRound } from 'lucide-react';
 import { AuthShell, authButtonClassName, authFieldClassName } from '@/shared/components/Auth/AuthShell';
 
@@ -14,6 +15,7 @@ export default function OnboardingPage() {
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<'checking' | 'form' | 'creating' | 'done'>('checking');
   const router = useRouter();
+  const { refreshProfile } = useAuth();
 
   // Check existing session on mount
   useEffect(() => {
@@ -30,13 +32,16 @@ export default function OnboardingPage() {
         .from('profiles').select('id, school_id').eq('id', session.user.id).maybeSingle();
 
       if (profile?.school_id) {
+        // Sinkronkan AuthProvider supaya state profile ikut terisi — kalau tidak,
+        // redirect ke /overview bakal dilempar balik ke sini oleh AuthProvider.
+        await refreshProfile();
         router.replace('/overview');
         return;
       }
 
       setStep('form');
     })();
-  }, [router]);
+  }, [router, refreshProfile]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,6 +79,9 @@ export default function OnboardingPage() {
         role: 'owner',
       });
       if (profileError) throw new Error('Gagal membuat profil: ' + profileError.message);
+
+      // Sinkronkan AuthProvider sebelum redirect (fetch pertama terjadi sebelum insert)
+      await refreshProfile();
 
       // 3. Done (kategori default otomatis dibuat oleh trigger after_school_create)
       setStep('done');

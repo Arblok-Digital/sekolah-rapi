@@ -4,8 +4,16 @@ import { useAuth } from '@/shared/providers/AuthProvider';
 import { Clock, Mail, Phone, XCircle } from 'lucide-react';
 
 export default function PendingApprovalPage() {
-  const { profile, school, signOut } = useAuth();
+  const { profile, school, loading, signOut } = useAuth();
   const isRejected = school?.status === 'rejected';
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0f0f1a] flex items-center justify-center">
+        <span className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (isRejected) {
     return (

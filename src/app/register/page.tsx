@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createSupabaseClient } from '@/shared/services/supabase/client';
+import { useAuth } from '@/shared/providers/AuthProvider';
 import Link from 'next/link';
 import { Building2, Loader2, LockKeyhole, Mail, Phone, UserRound } from 'lucide-react';
 import {
@@ -21,6 +22,7 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<'form' | 'creating'>('form');
   const router = useRouter();
+  const { refreshProfile } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,6 +46,7 @@ export default function RegisterPage() {
         // Signed in — check if profile exists
         const { data: existingProfile } = await supabase.from('profiles').select('id').eq('id', signInData.user.id).maybeSingle();
         if (existingProfile) {
+          await refreshProfile();
           router.refresh();
           router.push('/overview');
           return;
@@ -98,7 +101,12 @@ export default function RegisterPage() {
 
       if (profileError) throw new Error('Gagal membuat profil: ' + profileError.message);
 
-      // 5. All good — redirect to pending approval (status = pending)
+      // 5. Sinkronkan AuthProvider — fetch profile pertama kali terjadi saat
+      //    signUp (sebelum insert di atas), jadi state-nya masih null dan
+      //    redirect ke /pending-approval bakal dilempar muter ke /onboarding.
+      await refreshProfile();
+
+      // 6. All good — redirect to pending approval (status = pending)
       router.refresh();
       router.push('/pending-approval');
     } catch (err: any) {
