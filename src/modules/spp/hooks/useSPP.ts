@@ -21,8 +21,8 @@ const SPP_KEYS = {
     ['spp', 'list', schoolId, filter] as const,
   outstanding: (schoolId: string, month?: number, year?: number) =>
     ['spp', 'outstanding', schoolId, month, year] as const,
-  summary: (schoolId: string, month?: number, year?: number) =>
-    ['spp', 'summary', schoolId, month, year] as const,
+  summary: (schoolId: string, month?: number, year?: number, category?: string) =>
+    ['spp', 'summary', schoolId, month, year, category] as const,
 };
 
 /**
@@ -48,14 +48,14 @@ export function useOutstandingSPP(schoolId: string, month?: number, year?: numbe
 }
 
 /**
- * Hook: fetch siswa yang belum bayar untuk suatu bulan (konsisten Overview).
+ * Hook: fetch siswa yang belum bayar untuk suatu periode (konsisten Overview).
  */
 export function useUnpaidSPP(
   schoolId: string,
-  options?: { month?: number; year?: number; classFilter?: string }
+  options?: { month?: number; year?: number; classFilter?: string; category?: string }
 ) {
   return useQuery({
-    queryKey: ['spp', 'unpaid', schoolId, options?.month, options?.year, options?.classFilter] as const,
+    queryKey: ['spp', 'unpaid', schoolId, options?.month, options?.year, options?.classFilter, options?.category] as const,
     queryFn: () => getUnpaidPayments(schoolId, options),
     enabled: !!schoolId,
   });
@@ -64,10 +64,10 @@ export function useUnpaidSPP(
 /**
  * Hook: fetch SPP summary (collection rate, counts).
  */
-export function useSPPSummary(schoolId: string, month?: number, year?: number) {
+export function useSPPSummary(schoolId: string, month?: number, year?: number, category?: string) {
   return useQuery({
-    queryKey: SPP_KEYS.summary(schoolId, month, year),
-    queryFn: () => getSPPSummary(schoolId, month, year),
+    queryKey: SPP_KEYS.summary(schoolId, month, year, category),
+    queryFn: () => getSPPSummary(schoolId, month, year, category),
     enabled: !!schoolId,
   });
 }

@@ -18,18 +18,21 @@ export async function getSPPPayments(
     .select(
       `
       *,
-      students!inner(name, nis, class)
+      students!inner(name, nis, class),
+      category:categories(name)
     `
     )
     .eq('school_id', schoolId)
-    .order('year', { ascending: false })
-    .order('month', { ascending: false });
+    .order('year', { ascending: false, nullsFirst: false })
+    .order('month', { ascending: false, nullsFirst: false });
 
   if (filter?.month) {
     query = query.eq('month', filter.month);
   }
   if (filter?.year) {
-    query = query.eq('year', filter.year);
+    // Pembayaran tanpa periode (year NULL — seragam, pendaftaran, dst) tetap
+    // ikut tampil agar tidak hilang dari daftar.
+    query = query.or(`year.eq.${filter.year},year.is.null`);
   }
   if (filter?.status) {
     query = query.eq('status', filter.status);
@@ -39,6 +42,9 @@ export async function getSPPPayments(
   }
   if (filter?.class) {
     query = query.eq('students.class', filter.class);
+  }
+  if (filter?.category) {
+    query = query.eq('category_id', filter.category);
   }
 
   const { data, error } = await query;
@@ -76,8 +82,9 @@ export async function createSPPPayment(
     .insert({
       school_id: schoolId,
       student_id: input.student_id,
-      month: input.month,
-      year: input.year,
+      category_id: input.category_id ?? null,
+      month: input.month ?? null,
+      year: input.year ?? null,
       amount: input.amount,
       paid_amount: input.paid_amount,
       status: input.status,
@@ -94,7 +101,7 @@ export async function createSPPPayment(
     throw new Error(error.message);
   }
 
-  // Auto-create transaction when SPP is paid
+  // Auto-create transaction when the payment is paid
   if (input.status === 'paid' && input.paid_amount && input.paid_amount > 0) {
     await createSPPIncomeTransaction(supabase, {
       schoolId,
@@ -104,6 +111,7 @@ export async function createSPPPayment(
       year: input.year,
       amount: input.paid_amount,
       referenceDate: input.payment_date,
+      categoryId: input.category_id,
     });
   }
 
@@ -157,6 +165,10 @@ export async function bulkCreateSPPPayments(
 ): Promise<{ created: number; existing: number; students: number }> {
   const supabase = createSupabaseClient();
 
+  // Bulk tagihan selalu khusus kategori SPP — kategori lain diinput per baris
+  // lewat form (perluannya: tagihan non-bulanan tidak digenerasi massal).
+  const sppCategory = await ensureSPPCategory(supabase, schoolId);
+
   const { data: students, error: studentError } = await supabase
     .from('students')
     .select('id')
@@ -168,6 +180,7 @@ export async function bulkCreateSPPPayments(
     .from(TABLE)
     .select('student_id')
     .eq('school_id', schoolId)
+    .eq('category_id', sppCategory.id)
     .eq('month', params.month)
     .eq('year', params.year);
   if (existingError) throw new Error(existingError.message);
@@ -179,6 +192,7 @@ export async function bulkCreateSPPPayments(
     const rows = newStudents.map((s) => ({
       school_id: schoolId,
       student_id: s.id,
+      category_id: sppCategory.id,
       month: params.month,
       year: params.year,
       amount: params.amount,
@@ -199,14 +213,15 @@ export async function bulkCreateSPPPayments(
 }
 
 /**
- * Ambil daftar siswa yang BELUM bayar untuk suatu bulan — konsisten dengan
- * Overview (total siswa aktif − siswa yang sudah bayar/angsuran). Siswa aktif
- * yang belum punya tagihan sama sekali ikut tampil (no_bill) supaya tidak
- * 'hilang' dari pantauan tunggakan.
+ * Ambil daftar siswa yang BELUM bayar untuk suatu periode — konsisten dengan
+ * Overview (total siswa aktif − siswa yang sudah bayar/angsuran). Berlaku per
+ * kategori: siswa yang masih punya tagihan lunas SEBAGIAN (mis. SPP lunas tapi
+ * seragam belum) tetap tampil. Siswa aktif yang belum punya tagihan sama sekali
+ * ikut tampil (no_bill) supaya tidak 'hilang' dari pantauan tunggakan.
  */
 export async function getUnpaidPayments(
   schoolId: string,
-  options?: { month?: number; year?: number; classFilter?: string }
+  options?: { month?: number; year?: number; classFilter?: string; category?: string }
 ): Promise<SPPPayment[]> {
   const supabase = createSupabaseClient();
 
@@ -230,7 +245,8 @@ export async function getUnpaidPayments(
     .select(
       `
       *,
-      students!inner(name, nis, class)
+      students!inner(name, nis, class),
+      category:categories(name)
     `
     )
     .eq('school_id', schoolId)
@@ -239,39 +255,41 @@ export async function getUnpaidPayments(
   if (options?.classFilter) {
     billQuery = billQuery.eq('students.class', options.classFilter);
   }
+  if (options?.category) {
+    billQuery = billQuery.eq('category_id', options.category);
+  }
   const { data: bills, error: billError } = await billQuery;
   if (billError) throw new Error(billError.message);
 
-  const paidIds = new Set(
-    (bills ?? [])
-      .filter((b) => b.status === 'paid' || b.status === 'partial')
-      .map((b) => b.student_id)
-  );
-
   const result: SPPPayment[] = [];
   (students ?? []).forEach((student) => {
-    if (paidIds.has(student.id)) return;
-    const bill = (bills ?? []).find((b) => b.student_id === student.id);
-    if (bill) {
-      result.push(mapPayment(bill));
-    } else {
-      // Siswa belum punya tagihan bulan ini — tetap tampil sebagai belum bayar.
-      result.push({
-        id: `nobill-${student.id}`,
-        school_id: schoolId,
-        student_id: student.id,
-        month: filterMonth,
-        year: filterYear,
-        amount: 0,
-        paid_amount: 0,
-        status: 'unpaid',
-        recorded_by: '',
-        no_bill: true,
-        student_name: student.name,
-        student_nis: student.nis,
-        student_class: student.class,
-      });
+    const ownBills = (bills ?? []).filter((b) => b.student_id === student.id);
+    const openBills = ownBills.filter((b) => b.status !== 'paid');
+
+    if (openBills.length > 0) {
+      openBills.forEach((bill) => result.push(mapPayment(bill)));
+      return;
     }
+    if (ownBills.length > 0) return; // semua tagihannya lunas
+
+    // Siswa belum punya tagihan periode ini — tetap tampil sebagai belum bayar.
+    result.push({
+      id: `nobill-${student.id}`,
+      school_id: schoolId,
+      student_id: student.id,
+      month: filterMonth,
+      year: filterYear,
+      category_id: options?.category ?? null,
+      category_name: undefined,
+      amount: 0,
+      paid_amount: 0,
+      status: 'unpaid',
+      recorded_by: '',
+      no_bill: true,
+      student_name: student.name,
+      student_nis: student.nis,
+      student_class: student.class,
+    });
   });
 
   return result;
@@ -279,11 +297,13 @@ export async function getUnpaidPayments(
 
 /**
  * Get SPP summary (collection rate, counts).
+ * `category` opsional — bila diisi, ringkasan dihitung hanya utk kategori itu.
  */
 export async function getSPPSummary(
   schoolId: string,
   month?: number,
-  year?: number
+  year?: number,
+  category?: string
 ): Promise<SPSSummary> {
   const supabase = createSupabaseClient();
 
@@ -302,13 +322,17 @@ export async function getSPPSummary(
     throw new Error(countError.message);
   }
 
-  // SPP payments for this month/year
-  const { data: payments, error: sppError } = await supabase
+  // Pembayaran periode ini (semua kategori, atau satu kategori bila difilter)
+  let paymentQuery = supabase
     .from(TABLE)
-    .select('status, paid_amount, amount')
+    .select('status, paid_amount, amount, student_id')
     .eq('school_id', schoolId)
     .eq('month', filterMonth)
     .eq('year', filterYear);
+  if (category) {
+    paymentQuery = paymentQuery.eq('category_id', category);
+  }
+  const { data: payments, error: sppError } = await paymentQuery;
 
   if (sppError) {
     throw new Error(sppError.message);
@@ -319,11 +343,15 @@ export async function getSPPSummary(
   const totalSiswaActive = totalSiswa ?? 0;
 
   // Konsisten dengan dashboard Overview: outstanding = total siswa aktif −
-  // siswa yang sudah bayar/angsuran bulan ini (tagihan unik per siswa+bulan).
-  const paidCount = payments?.filter((p) => p.status === 'paid' || p.status === 'partial').length ?? 0;
-  const outstanding = Math.max(0, totalSiswaActive - paidCount);
+  // siswa UNIK yang sudah bayar/angsuran (1 siswa boleh punya >1 tagihan/kategori).
+  const paidStudents = new Set(
+    (payments ?? [])
+      .filter((p) => p.status === 'paid' || p.status === 'partial')
+      .map((p) => p.student_id)
+  );
+  const outstanding = Math.max(0, totalSiswaActive - paidStudents.size);
   const collectionRate = totalSiswaActive > 0
-    ? Math.round((paidCount / totalSiswaActive) * 100)
+    ? Math.round((paidStudents.size / totalSiswaActive) * 100)
     : 0;
 
   return {
@@ -379,7 +407,13 @@ export async function updateSPPPayment(
     if (amount > 0) {
       const referenceDate =
         updates.payment_date || payment.payment_date || new Date().toISOString().split('T')[0];
-      const description = `SPP Bulan ${payment.month}/${payment.year}`;
+      const description = await paymentDescription(
+        supabase,
+        payment.school_id,
+        payment.category_id,
+        payment.month,
+        payment.year
+      );
 
       if (!(await hasSPPIncomeTransaction(supabase, payment.school_id, id, description, amount, referenceDate))) {
         const userId = await getCurrentUserId(supabase);
@@ -391,6 +425,7 @@ export async function updateSPPPayment(
           year: payment.year,
           amount,
           referenceDate,
+          categoryId: payment.category_id,
         });
       }
     }
@@ -443,10 +478,17 @@ export async function bulkMarkPaidSPP(
   params: { month: number; year: number }
 ): Promise<{ updated: number; total: number }> {
   const supabase = createSupabaseClient();
+
+  // Hanya tagihan kategori SPP — tagihan kategori lain tidak boleh ikut
+  // ditandai lunas oleh tombol massal ini.
+  const sppCategory = await ensureSPPCategory(supabase, schoolId);
+  const categoryNames = await loadCategoryNames(supabase, schoolId);
+
   const { data: rows, error } = await supabase
     .from(TABLE)
-    .select('id, status, amount, paid_amount')
+    .select('id, status, amount, paid_amount, month, year, category_id')
     .eq('school_id', schoolId)
+    .eq('category_id', sppCategory.id)
     .eq('month', params.month)
     .eq('year', params.year)
     .neq('status', 'paid');
@@ -462,16 +504,22 @@ export async function bulkMarkPaidSPP(
       .update({ status: 'paid', paid_amount: amount, payment_date: today } as never)
       .eq('id', r.id);
     if (updError) throw new Error(updError.message);
-    const description = `SPP Bulan ${params.month}/${params.year}`;
+    const description = buildPaymentDescription(
+      categoryNames[r.category_id] ?? sppCategory.name,
+      r.month,
+      r.year
+    );
     if (!(await hasSPPIncomeTransaction(supabase, schoolId, r.id, description, amount, today))) {
       await createSPPIncomeTransaction(supabase, {
         schoolId,
         userId,
         sourceId: r.id,
-        month: params.month,
-        year: params.year,
+        month: r.month,
+        year: r.year,
         amount,
         referenceDate: today,
+        categoryId: r.category_id,
+        categoryName: categoryNames[r.category_id] ?? sppCategory.name,
       });
     }
     updated++;
@@ -492,17 +540,19 @@ export async function backfillMissingSPPTransactions(
 
   const { data: paid, error } = await supabase
     .from(TABLE)
-    .select('id, month, year, amount, paid_amount, payment_date')
+    .select('id, month, year, amount, paid_amount, payment_date, category_id')
     .eq('school_id', schoolId)
     .eq('status', 'paid');
   if (error) throw new Error(error.message);
 
+  const categoryNames = await loadCategoryNames(supabase, schoolId);
   const withMoney = (paid ?? []).filter((p) => (p.paid_amount ?? 0) > 0 || (p.amount ?? 0) > 0);
   let created = 0;
 
   for (const p of withMoney) {
     const amount = (p.paid_amount ?? 0) > 0 ? p.paid_amount : p.amount;
-    const description = `SPP Bulan ${p.month}/${p.year}`;
+    const categoryName = categoryNames[p.category_id] ?? 'SPP';
+    const description = buildPaymentDescription(categoryName, p.month, p.year);
     const referenceDate = p.payment_date || new Date().toISOString().split('T')[0];
 
     if (await hasSPPIncomeTransaction(supabase, schoolId, p.id, description, amount, referenceDate)) {
@@ -516,6 +566,8 @@ export async function backfillMissingSPPTransactions(
       year: p.year,
       amount,
       referenceDate,
+      categoryId: p.category_id,
+      categoryName,
     });
     created++;
   }
@@ -611,9 +663,89 @@ async function getCurrentUserId(supabase: SupabaseClient): Promise<string> {
   return user.id;
 }
 
+/** Nama kategori per id — satu query, dipakai loop bulk/backfill. */
+async function loadCategoryNames(
+  supabase: SupabaseClient,
+  schoolId: string
+): Promise<Record<string, string>> {
+  const { data } = await supabase
+    .from('categories')
+    .select('id, name')
+    .eq('school_id', schoolId);
+
+  const map: Record<string, string> = {};
+  (data ?? []).forEach((c) => {
+    map[c.id] = c.name;
+  });
+  return map;
+}
+
+/** Kategori 'SPP' milik sekolah — dibuat otomatis bila belum ada. */
+async function ensureSPPCategory(
+  supabase: SupabaseClient,
+  schoolId: string
+): Promise<{ id: string; name: string }> {
+  // Prefer the first matching SPP category; duplicate rows must not break the
+  // lookup (a .single() call errors when more than one row matches).
+  const { data: cats } = await supabase
+    .from('categories')
+    .select('id, name')
+    .eq('school_id', schoolId)
+    .eq('name', 'SPP')
+    .limit(1);
+  if (cats?.[0]) return cats[0];
+
+  const { data: newCat, error: catError } = await supabase
+    .from('categories')
+    .insert({ name: 'SPP', type: 'income', school_id: schoolId })
+    .select('id, name')
+    .maybeSingle();
+  if (catError || !newCat?.id) {
+    console.error('[SPP Service] create SPP category error:', catError);
+    throw new Error(catError?.message || 'Kategori SPP tidak ditemukan');
+  }
+  return newCat;
+}
+
 /**
- * Auto-create the income transaction for a paid SPP record.
- * Finds the school's 'SPP' category, then inserts the ledger entry.
+ * Deskripsi transaksi Kas per pembayaran. Format lama dipertahankan persis
+ * ("SPP Bulan 10/2026") supaya dedup & data historis tetap cocok; kategori lain
+ * memakai format yang sama dengan namanya ("Seragam Bulan 10/2026").
+ */
+function buildPaymentDescription(
+  categoryName: string,
+  month?: number | null,
+  year?: number | null
+): string {
+  if (month && year) return `${categoryName} Bulan ${month}/${year}`;
+  if (year) return `${categoryName} ${year}`;
+  return categoryName;
+}
+
+/** Deskripsi untuk satu tagihan (kategori null = tagihan lama, dianggap SPP). */
+async function paymentDescription(
+  supabase: SupabaseClient,
+  schoolId: string,
+  categoryId: string | null | undefined,
+  month?: number | null,
+  year?: number | null
+): Promise<string> {
+  if (!categoryId) {
+    const spp = await ensureSPPCategory(supabase, schoolId);
+    return buildPaymentDescription(spp.name, month, year);
+  }
+  const { data } = await supabase
+    .from('categories')
+    .select('name')
+    .eq('id', categoryId)
+    .maybeSingle();
+  return buildPaymentDescription(data?.name || 'SPP', month, year);
+}
+
+/**
+ * Auto-create the income transaction for a PAID student payment.
+ * Resolves the Kas category (explicit categoryId, or the school's 'SPP'
+ * category as fallback) then inserts the ledger entry.
  */
 async function createSPPIncomeTransaction(
   supabase: SupabaseClient,
@@ -621,42 +753,38 @@ async function createSPPIncomeTransaction(
     schoolId: string;
     userId: string;
     sourceId: string;
-    month: number;
-    year: number;
+    month?: number | null;
+    year?: number | null;
     amount: number;
     referenceDate?: string;
+    categoryId?: string | null;
+    categoryName?: string | null;
   }
 ): Promise<void> {
-  // Prefer the first matching SPP category; duplicate rows must not break the
-  // lookup (a .single() call errors when more than one row matches).
-  let { data: cats } = await supabase
-    .from('categories')
-    .select('id')
-    .eq('school_id', params.schoolId)
-    .eq('name', 'SPP')
-    .limit(1);
-  let cat = cats?.[0];
+  let categoryId = params.categoryId ?? null;
+  let categoryName = params.categoryName ?? null;
 
-  // Auto-create the SPP category when missing so income is never silently skipped.
-  if (!cat) {
-    const { data: newCat, error: catError } = await supabase
+  if (!categoryId) {
+    const sppCategory = await ensureSPPCategory(supabase, params.schoolId);
+    categoryId = sppCategory.id;
+    categoryName = sppCategory.name;
+  } else if (!categoryName) {
+    const { data } = await supabase
       .from('categories')
-      .insert({ name: 'SPP', type: 'income', school_id: params.schoolId })
-      .select('id')
+      .select('name')
+      .eq('id', categoryId)
       .maybeSingle();
-    if (catError || !newCat?.id) {
-      console.error('[SPP Service] create SPP category error:', catError);
-      throw new Error(catError?.message || 'Kategori SPP tidak ditemukan');
-    }
-    cat = newCat;
+    categoryName = data?.name || 'SPP';
   }
+
+  const resolvedCategoryName: string = categoryName || 'SPP';
 
   const { error } = await supabase.from('transactions').insert({
     school_id: params.schoolId,
     type: 'income',
-    category_id: cat.id,
+    category_id: categoryId,
     amount: params.amount,
-    description: `SPP Bulan ${params.month}/${params.year}`,
+    description: buildPaymentDescription(resolvedCategoryName, params.month, params.year),
     reference_date: params.referenceDate || new Date().toISOString().split('T')[0],
     recorded_by: params.userId,
     source_type: 'spp',
@@ -671,11 +799,14 @@ async function createSPPIncomeTransaction(
 
 function mapPayment(item: any): SPPPayment {
   const students = item.students as { name?: string; nis?: string; class?: string } | undefined;
+  const category = item.category as { name?: string } | undefined;
   return {
     ...item,
     student_name: students?.name,
     student_nis: students?.nis,
     student_class: students?.class,
+    category_name: category?.name,
     students: undefined,
+    category: undefined,
   };
 }

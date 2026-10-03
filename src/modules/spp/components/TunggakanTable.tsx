@@ -3,7 +3,7 @@
 import { Fragment, useState } from 'react';
 import { cn } from '@/shared/utils/cn';
 import type { SPPPayment } from '../types/spp.types';
-import { getMonthName, formatRupiah } from '../types/spp.types';
+import { formatPeriodLabel, formatRupiah } from '../types/spp.types';
 import { ChevronDown, Users, Wallet } from 'lucide-react';
 
 interface TunggakanTableProps {
@@ -81,7 +81,7 @@ export function TunggakanTable({ payments, loading }: TunggakanTableProps) {
         <div className="p-10 text-center">
           <p className="text-sm font-medium text-gray-600">Tidak ada siswa yang menunggak 🎉</p>
           <p className="text-xs text-gray-400 mt-1">
-            Semua siswa sudah membayar SPP bulan ini.
+            Semua siswa sudah membayar tagihan periode ini.
           </p>
         </div>
       </div>
@@ -116,7 +116,7 @@ export function TunggakanTable({ payments, loading }: TunggakanTableProps) {
                 <th className="w-8" />
                 <th className="text-left font-medium text-gray-500 px-4 py-3 whitespace-nowrap">Siswa</th>
                 <th className="text-left font-medium text-gray-500 px-4 py-3 whitespace-nowrap">Kelas</th>
-                <th className="text-center font-medium text-gray-500 px-4 py-3 whitespace-nowrap">Bulan Menunggak</th>
+                <th className="text-center font-medium text-gray-500 px-4 py-3 whitespace-nowrap">Tagihan</th>
                 <th className="text-right font-medium text-gray-500 px-4 py-3 whitespace-nowrap">Total Sisa</th>
               </tr>
             </thead>
@@ -150,7 +150,7 @@ export function TunggakanTable({ payments, loading }: TunggakanTableProps) {
                       <td className="px-4 py-3 text-center">
                         {row.bills.length > 0 ? (
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 border border-red-200">
-                            {row.bills.length} bulan
+                            {row.bills.length} tagihan
                           </span>
                         ) : (
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 border border-amber-200">
@@ -174,7 +174,7 @@ export function TunggakanTable({ payments, loading }: TunggakanTableProps) {
                                   return (
                                     <tr key={bill.id}>
                                       <td className="px-4 py-2.5 text-gray-700">
-                                        {getMonthName(bill.month)} {bill.year}
+                                        {bill.category_name || 'SPP'} ({formatPeriodLabel(bill.month, bill.year)})
                                       </td>
                                       <td className="px-4 py-2.5 text-right text-gray-600">
                                         {formatRupiah(bill.amount)}
@@ -203,7 +203,7 @@ export function TunggakanTable({ payments, loading }: TunggakanTableProps) {
                           </div>
                           ) : (
                             <div className="rounded-lg border border-gray-200 bg-white overflow-hidden px-4 py-3 text-sm text-gray-400">
-                              Belum ada tagihan untuk bulan ini.
+                              Belum ada tagihan untuk periode ini.
                             </div>
                           )}
                         </td>
@@ -216,7 +216,7 @@ export function TunggakanTable({ payments, loading }: TunggakanTableProps) {
           </table>
         </div>
         <div className="border-t border-gray-100 px-4 py-2.5 text-xs text-gray-400">
-          {rows.length} siswa belum bayar bulan ini{
+          {rows.length} siswa belum bayar periode ini{
             realBills > 0 ? ` (${realBills} tagihan belum lunas)` : ''
           }. Klik baris untuk melihat rincian.
         </div>

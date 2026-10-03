@@ -10,6 +10,7 @@ import { PaymentForm } from '@/modules/spp/components/PaymentForm';
 import { TunggakanTable } from '@/modules/spp/components/TunggakanTable';
 import type { SPPFormInput, SPPFilter, SPPPayment, SPPStatus } from '@/modules/spp/types/spp.types';
 import { getMonthName } from '@/modules/spp/types/spp.types';
+import { useCategories } from '@/modules/transactions/hooks/useCategories';
 import {
   useSPPPayments,
   useCreateSPPPayment,
@@ -35,6 +36,7 @@ export default function SPPPage() {
   const [filterYear, setFilterYear] = useState(new Date().getFullYear());
   const [filterMonth, setFilterMonth] = useState<number | undefined>(undefined);
   const [filterStatus, setFilterStatus] = useState<SPPStatus | undefined>(undefined);
+  const [filterCategory, setFilterCategory] = useState('');
   const [classFilterSPP, setClassFilterSPP] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('all');
   const [tunggakanClass, setTunggakanClass] = useState('');
@@ -53,11 +55,22 @@ export default function SPPPage() {
     ...(filterMonth ? { month: filterMonth } : {}),
     ...(filterStatus ? { status: filterStatus } : {}),
     ...(classFilterSPP ? { class: classFilterSPP } : {}),
+    ...(filterCategory ? { category: filterCategory } : {}),
   };
 
+  const { data: incomeCategories = [] } = useCategories(schoolId || '', 'income');
   const { data: payments, isLoading, error } = useSPPPayments(schoolId || '', filter);
-  const { data: summary } = useSPPSummary(schoolId || '', filterMonth, filterYear);
-  const { data: unpaid } = useUnpaidSPP(schoolId || '', { month: filterMonth, year: filterYear });
+  const { data: summary } = useSPPSummary(
+    schoolId || '',
+    filterMonth,
+    filterYear,
+    filterCategory || undefined
+  );
+  const { data: unpaid } = useUnpaidSPP(schoolId || '', {
+    month: filterMonth,
+    year: filterYear,
+    category: filterCategory || undefined,
+  });
   const createMutation = useCreateSPPPayment(schoolId || '', session?.user?.id || '');
   const bulkCreateMutation = useBulkCreateSPPPayments();
   const bulkPaidMutation = useBulkMarkPaidSPP();
@@ -160,12 +173,12 @@ export default function SPPPage() {
   };
 
   const handleDelete = (id: string) => {
-    if (!window.confirm('Yakin ingin menghapus pembayaran SPP ini?')) return;
+    if (!window.confirm('Yakin ingin menghapus pembayaran ini? Transaksi Kas terkait akan dikoreksi otomatis.')) return;
     setActionMessage(null);
     setDeletingId(id);
     deleteMutation.mutate(id, {
       onSuccess: () =>
-        setActionMessage({ type: 'success', text: 'Pembayaran SPP berhasil dihapus' }),
+        setActionMessage({ type: 'success', text: 'Pembayaran berhasil dihapus' }),
       onError: (err) =>
         setActionMessage({ type: 'error', text: `Gagal menghapus pembayaran: ${err.message}` }),
       onSettled: () => setDeletingId(null),
@@ -180,6 +193,7 @@ export default function SPPPage() {
         id: payment.id,
         studentName: payment.student_name || 'Siswa',
         studentDetail: detail || undefined,
+        categoryName: payment.category_name || 'SPP',
         month: payment.month,
         year: payment.year,
         amount: payment.amount,
@@ -214,7 +228,8 @@ export default function SPPPage() {
     !q ||
     (p.student_name || '').toLowerCase().includes(q) ||
     (p.student_nis || '').toLowerCase().includes(q) ||
-    (p.student_class || '').toLowerCase().includes(q);
+    (p.student_class || '').toLowerCase().includes(q) ||
+    (p.category_name || '').toLowerCase().includes(q);
   const filteredPayments = (payments || []).filter(matchesSearch);
   const tunggakanSearchFiltered = tunggakanFiltered.filter(matchesSearch);
 
@@ -231,9 +246,9 @@ export default function SPPPage() {
       {/* Page header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-white">Pembayaran SPP</h2>
+          <h2 className="text-xl font-bold text-white">Keuangan Siswa</h2>
           <p className="text-sm text-white/60 mt-0.5">
-            Kelola pembayaran SPP siswa per bulan
+            Tagihan &amp; pembayaran siswa per kategori — otomatis tercatat di Kas sekolah
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -442,6 +457,16 @@ export default function SPPPage() {
         <>
           <div className="flex items-center gap-3">
             <select
+              value={filterCategory}
+              onChange={(e) => setFilterCategory(e.target.value)}
+              className="px-3 py-2 border border-white/15 rounded-lg text-sm"
+            >
+              <option value="">Semua Kategori</option>
+              {incomeCategories.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+            <select
               value={filterStatus || ''}
               onChange={(e) => setFilterStatus((e.target.value || undefined) as SPPStatus | undefined)}
               className="px-3 py-2 border border-white/15 rounded-lg text-sm"
@@ -518,7 +543,7 @@ export default function SPPPage() {
                 : 'bg-red-50 border-red-200 text-red-700'
           )}
         >
-          {deletingId ? 'Menghapus pembayaran SPP...' : actionMessage?.text}
+          {deletingId ? 'Menghapus pembayaran...' : actionMessage?.text}
         </div>
       )}
 
@@ -527,7 +552,7 @@ export default function SPPPage() {
         isLoading ? (
           <div className="text-center py-12">
             <div className="w-8 h-8 border-2 border-white/15 border-t-indigo-600 rounded-full animate-spin mx-auto" />
-            <p className="text-sm text-white/60 mt-3">Memuat data SPP...</p>
+            <p className="text-sm text-white/60 mt-3">Memuat data keuangan siswa...</p>
           </div>
         ) : (
           <PaymentTable
@@ -547,6 +572,7 @@ export default function SPPPage() {
         onClose={closeForm}
         onSubmit={editingPayment ? handleUpdate : handleCreate}
         students={studentList}
+        categories={incomeCategories}
         initialData={editingPayment}
       />
 

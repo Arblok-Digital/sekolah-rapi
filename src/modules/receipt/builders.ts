@@ -35,13 +35,15 @@ export function kasReceipt(opts: {
   };
 }
 
-/** Kuitansi SPP — hanya untuk status lunas / angsuran. */
+/** Kuitansi pembayaran siswa — hanya untuk status lunas / angsuran. */
 export function sppReceipt(opts: {
   id: string;
   studentName: string;
   studentDetail?: string;
-  month: number;
-  year: number;
+  /** Nama kategori Kas (SPP, Seragam, Donasi, ...) — default 'SPP'. */
+  categoryName?: string;
+  month?: number | null;
+  year?: number | null;
   amount: number;
   paidAmount: number;
   status: 'paid' | 'partial';
@@ -50,17 +52,22 @@ export function sppReceipt(opts: {
   existingNumber?: string;
   cashierName?: string;
 }): ReceiptData {
-  const period = `${MONTHS_ID[opts.month - 1] || opts.month} ${opts.year}`;
+  const category = (opts.categoryName || 'SPP').toUpperCase();
+  const hasPeriod = opts.month != null && opts.year != null;
+  const period = hasPeriod
+    ? `${MONTHS_ID[(opts.month as number) - 1] || opts.month} ${opts.year}`
+    : (opts.year ? String(opts.year) : '');
   const paid = opts.paidAmount > 0 ? opts.paidAmount : opts.amount;
+  const lineLabel = hasPeriod || opts.year ? `${category} ${period}` : category;
   return {
-    title: opts.status === 'paid' ? 'KUITANSI PEMBAYARAN SPP' : 'KUITANSI ANGSURAN SPP',
+    title: opts.status === 'paid' ? `KUITANSI PEMBAYARAN ${category}` : `KUITANSI ANGSURAN ${category}`,
     number: opts.existingNumber?.trim() || receiptNumber(opts.id, opts.date || todayISO()),
     date: opts.date || todayISO(),
     direction: 'in',
     counterparty: opts.studentName,
     lines: [
       {
-        label: `SPP ${period}`,
+        label: lineLabel,
         detail: [opts.studentDetail, opts.status === 'partial' ? `Total dibayar s/d kuitansi ini (tagihan ${opts.amount.toLocaleString('id-ID')})` : undefined].filter(Boolean).join(' • ') || undefined,
         amount: paid,
       },

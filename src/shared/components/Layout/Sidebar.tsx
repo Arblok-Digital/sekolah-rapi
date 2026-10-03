@@ -30,7 +30,7 @@ const navLinks = [
   { href: '/overview', label: 'Overview', icon: LayoutDashboard, feature: 'dashboard' as Feature },
   { href: '/students', label: 'Siswa', icon: Users, feature: 'students' as Feature },
   { href: '/enrollment', label: 'Pendaftar', icon: UserPlus, feature: 'enrollment' as Feature },
-  { href: '/spp', label: 'SPP', icon: Wallet, feature: 'spp' as Feature },
+  { href: '/spp', label: 'Keuangan Siswa', icon: Wallet, feature: 'spp' as Feature },
   { href: '/transactions', label: 'Kas', icon: Banknote, feature: 'transactions' as Feature },
   { href: '/categories', label: 'Kategori', icon: Tags, feature: 'transactions' as Feature },
   { href: '/inventory', label: 'Inventaris', icon: Package, feature: 'inventory' as Feature },

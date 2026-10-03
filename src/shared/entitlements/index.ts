@@ -17,7 +17,7 @@ const PLAN_RANK: Record<Plan, number> = { free: 0, basic: 1, pro: 2, lifetime: 3
 export const FEATURE_DEFINITIONS: Record<Feature, { label: string; minimumPlan: Plan }> = {
   dashboard: { label: 'Dashboard', minimumPlan: 'free' },
   students: { label: 'Manajemen siswa', minimumPlan: 'free' },
-  spp: { label: 'SPP', minimumPlan: 'free' },
+  spp: { label: 'Keuangan Siswa', minimumPlan: 'free' },
   transactions: { label: 'Kas', minimumPlan: 'free' },
   reports: { label: 'Laporan', minimumPlan: 'basic' },
   student_import: { label: 'Import siswa Excel', minimumPlan: 'basic' },

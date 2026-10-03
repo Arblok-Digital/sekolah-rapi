@@ -19,14 +19,18 @@ function formatRpShort(n: number) {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
 }
 
-function sourceBadge(source?: string | null) {
-  switch (source) {
-    case 'spp': return { label: 'SPP', className: 'bg-blue-500/15 text-blue-300' };
-    case 'payroll': return { label: 'Gaji', className: 'bg-purple-500/15 text-purple-300' };
-    case 'inventory': return { label: 'Belanja', className: 'bg-amber-500/15 text-amber-300' };
-    case 'reversal': return { label: 'Koreksi', className: 'bg-red-500/15 text-red-300' };
-    default: return { label: 'Manual', className: 'bg-white/10 text-white/60' };
-  }
+function sourceBadge(source?: string | null, label?: string) {
+  const base = (() => {
+    switch (source) {
+      case 'spp': return { label: 'SPP', className: 'bg-blue-500/15 text-blue-300' };
+      case 'payroll': return { label: 'Gaji', className: 'bg-purple-500/15 text-purple-300' };
+      case 'inventory': return { label: 'Belanja', className: 'bg-amber-500/15 text-amber-300' };
+      case 'reversal': return { label: 'Koreksi', className: 'bg-red-500/15 text-red-300' };
+      default: return { label: 'Manual', className: 'bg-white/10 text-white/60' };
+    }
+  })();
+  // Pembayaran siswa tampil memakai nama kategorinya (SPP, Seragam, Donasi, ...)
+  return label && source === 'spp' ? { ...base, label } : base;
 }
 
 interface TransactionHistoryProps {
@@ -38,6 +42,7 @@ interface TransactionHistoryProps {
 export function TransactionHistory({ schoolId, limit = 10, showAllHref = '/audit' }: TransactionHistoryProps) {
   const [timeframe, setTimeframe] = useState<Timeframe>('month');
   const [allTx, setAllTx] = useState<Transaction[] | null>(null);
+  const [catMap, setCatMap] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -48,11 +53,22 @@ export function TransactionHistory({ schoolId, limit = 10, showAllHref = '/audit
       try {
         const { data, error: txError } = await supabase
           .from('transactions')
-          .select('id, description, amount, type, reference_date, source_type')
+          .select('id, description, amount, type, reference_date, source_type, category_id')
           .eq('school_id', schoolId)
           .order('reference_date', { ascending: false });
         if (txError) throw txError;
-        if (!cancelled) setAllTx((data as Transaction[]) || []);
+
+        const { data: catData } = await supabase
+          .from('categories')
+          .select('id, name')
+          .eq('school_id', schoolId);
+
+        if (!cancelled) {
+          setAllTx((data as Transaction[]) || []);
+          const map: Record<string, string> = {};
+          (catData || []).forEach((c) => { map[c.id] = c.name; });
+          setCatMap(map);
+        }
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Gagal memuat transaksi');
       }
@@ -125,7 +141,10 @@ export function TransactionHistory({ schoolId, limit = 10, showAllHref = '/audit
       ) : (
         <div className="divide-y divide-white/[0.04]">
           {visible.map((tx) => {
-            const badge = sourceBadge(tx.source_type);
+            const badge = sourceBadge(
+              tx.source_type,
+              tx.source_type === 'spp' ? catMap[tx.category_id] : undefined
+            );
             return (
               <div key={tx.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
                 <div className="flex items-start gap-3 min-w-0">

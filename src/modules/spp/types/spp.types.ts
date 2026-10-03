@@ -8,6 +8,8 @@ export interface SPPPayment extends SharedSPPPayment {
   student_name?: string;
   student_nis?: string;
   student_class?: string;
+  /** Nama kategori Kas (join dari tabel categories). */
+  category_name?: string;
   /** True when the bulan-payment (tagihan) belum dibuat — siswa dianggap belum bayar (konsisten dengan Overview). */
   no_bill?: boolean;
 }
@@ -28,13 +30,18 @@ export interface SPPFilter {
   status?: SPPStatus;
   student_id?: string;
   class?: string;
+  /** Filter kategori Kas (categories.id). */
+  category?: string;
 }
 
 /** Form input for creating a new SPP payment */
 export interface SPPFormInput {
   student_id: string;
-  month: number;
-  year: number;
+  /** Kategori Kas — kosong = kategori 'SPP' (fallback). */
+  category_id?: string;
+  /** null/undefined = pembayaran sekali jadi tanpa periode. */
+  month?: number | null;
+  year?: number | null;
   amount: number;
   paid_amount: number;
   payment_date?: string;
@@ -52,6 +59,14 @@ export const MONTH_NAMES = [
 /** Helper: get month name */
 export function getMonthName(month: number): string {
   return MONTH_NAMES[month - 1] || `Bulan ${month}`;
+}
+
+/** Label periode untuk baris/tabel: "Oktober 2026", "2026", atau "-" (tanpa periode). */
+export function formatPeriodLabel(month?: number | null, year?: number | null): string {
+  if (month && year) return `${getMonthName(month)} ${year}`;
+  if (year) return String(year);
+  if (month) return getMonthName(month);
+  return '-';
 }
 
 /** Helper: format currency in IDR */

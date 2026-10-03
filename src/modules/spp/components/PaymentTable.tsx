@@ -31,7 +31,7 @@ export function PaymentTable({ payments, loading, onEdit, onDelete, onReceipt }:
     return (
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div className="p-6 text-center text-sm text-gray-400">
-          Belum ada data pembayaran SPP.
+          Belum ada data pembayaran siswa.
         </div>
       </div>
     );
@@ -45,6 +45,7 @@ export function PaymentTable({ payments, loading, onEdit, onDelete, onReceipt }:
             <tr className="border-b border-gray-100 bg-gray-50/50">
               <th className="text-left font-medium text-gray-500 px-4 py-3 whitespace-nowrap">Siswa</th>
               <th className="text-left font-medium text-gray-500 px-4 py-3 whitespace-nowrap">Kelas</th>
+              <th className="text-left font-medium text-gray-500 px-4 py-3 whitespace-nowrap">Kategori</th>
               <th className="text-left font-medium text-gray-500 px-4 py-3 whitespace-nowrap">Bulan</th>
               <th className="text-left font-medium text-gray-500 px-4 py-3 whitespace-nowrap">Tahun</th>
               <th className="text-right font-medium text-gray-500 px-4 py-3 whitespace-nowrap">Nominal</th>
@@ -70,8 +71,15 @@ export function PaymentTable({ payments, loading, onEdit, onDelete, onReceipt }:
                     </div>
                   </td>
                   <td className="px-4 py-3 text-gray-600">{payment.student_class || '-'}</td>
-                  <td className="px-4 py-3 text-gray-600">{getMonthName(payment.month)}</td>
-                  <td className="px-4 py-3 text-gray-600">{payment.year}</td>
+                  <td className="px-4 py-3">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+                      {payment.category_name || 'SPP'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-gray-600">
+                    {payment.month ? getMonthName(payment.month) : '-'}
+                  </td>
+                  <td className="px-4 py-3 text-gray-600">{payment.year ?? '-'}</td>
                   <td className="px-4 py-3 text-right font-medium text-gray-900">
                     {formatRupiah(payment.amount)}
                   </td>

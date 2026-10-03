@@ -82,12 +82,25 @@ export default function OverviewPage() {
         .select('id, status')
         .eq('school_id', schoolId!);
 
-      const { data: sppThisMonth } = await supabase
+      // Kesehatan SPP dihitung HANYA dari tagihan kategori 'SPP' — tagihan
+      // kategori lain (seragam, donasi, dst) tidak boleh mengubah rate ini.
+      const { data: sppCategory } = await supabase
+        .from('categories')
+        .select('id')
+        .eq('school_id', schoolId!)
+        .eq('name', 'SPP')
+        .limit(1);
+      const sppCategoryId = sppCategory?.[0]?.id ?? null;
+
+      const { data: sppThisMonthRaw } = await supabase
         .from('spp_payments')
-        .select('student_id, status')
+        .select('student_id, status, category_id')
         .eq('school_id', schoolId!)
         .eq('year', now.getFullYear())
         .eq('month', now.getMonth() + 1);
+      const sppThisMonth = (sppThisMonthRaw ?? []).filter(
+        (s) => !sppCategoryId || s.category_id === sppCategoryId
+      );
 
       // Calculate
       const totalIncome = allTx?.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0) || 0;
@@ -265,7 +278,7 @@ export default function OverviewPage() {
 
           <div className="mt-4 pt-3 border-t border-white/5">
             <a href="/spp" className="flex items-center gap-1 text-xs font-black text-[#dfe99a] transition-colors hover:text-white">
-              Kelola SPP <ArrowRight className="w-3 h-3" />
+              Kelola Keuangan Siswa <ArrowRight className="w-3 h-3" />
             </a>
           </div>
         </div>

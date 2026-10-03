@@ -26,6 +26,13 @@ interface SppRecap {
   collectionRate: number;
 }
 
+interface CategoryRecap {
+  category: string;
+  count: number;
+  amount: number;
+  share: number;
+}
+
 type ReportType = 'financial' | 'spp';
 
 export default function ReportsPage() {
@@ -37,6 +44,7 @@ export default function ReportsPage() {
 
   const [financialData, setFinancialData] = useState<MonthlyReport[]>([]);
   const [sppData, setSppData] = useState<SppRecap[]>([]);
+  const [incomeByCategory, setIncomeByCategory] = useState<CategoryRecap[]>([]);
   const [summary, setSummary] = useState({ totalIncome: 0, totalExpense: 0, totalNet: 0 });
 
   useEffect(() => {
@@ -58,10 +66,17 @@ export default function ReportsPage() {
 
       const { data: txData } = await supabase
         .from('transactions')
-        .select('amount, type, reference_date')
+        .select('amount, type, reference_date, category_id')
         .eq('school_id', activeSchoolId)
         .gte('reference_date', yearStart)
         .lte('reference_date', yearEnd);
+
+      const { data: catData } = await supabase
+        .from('categories')
+        .select('id, name')
+        .eq('school_id', activeSchoolId);
+      const catNames: Record<string, string> = {};
+      (catData || []).forEach((c) => { catNames[c.id] = c.name; });
 
       const { data: sppData } = await supabase
         .from('spp_payments')
@@ -97,8 +112,28 @@ export default function ReportsPage() {
         return { month: m, totalStudents: activeStudents, paidCount, totalExpected, totalCollected, collectionRate: totalExpected > 0 ? Math.round((totalCollected / totalExpected) * 100) : 0 };
       });
 
+      // Pemasukan per kategori (tahun berjalan)
+      const incomeMap = new Map<string, { amount: number; count: number }>();
+      (txData || [])
+        .filter((t) => t.type === 'income')
+        .forEach((t) => {
+          const key = t.category_id || '';
+          const prev = incomeMap.get(key) || { amount: 0, count: 0 };
+          incomeMap.set(key, { amount: prev.amount + t.amount, count: prev.count + 1 });
+        });
+      const incomeTotal = Array.from(incomeMap.values()).reduce((s, r) => s + r.amount, 0);
+      const categoryRecap: CategoryRecap[] = Array.from(incomeMap.entries())
+        .map(([id, r]) => ({
+          category: catNames[id] || 'Tanpa kategori',
+          count: r.count,
+          amount: r.amount,
+          share: incomeTotal > 0 ? Math.round((r.amount / incomeTotal) * 100) : 0,
+        }))
+        .sort((a, b) => b.amount - a.amount);
+
       setFinancialData(monthlyFin);
       setSppData(monthlySpp);
+      setIncomeByCategory(categoryRecap);
       setSummary({
         totalIncome: monthlyFin.reduce((s, m) => s + m.income, 0),
         totalExpense: monthlyFin.reduce((s, m) => s + m.expense, 0),
@@ -214,6 +249,40 @@ export default function ReportsPage() {
                       <td className="px-4 py-2.5 text-right text-red-600">{formatRp(totalExpense)}</td>
                       <td className={`px-4 py-2.5 text-right ${totalNet >= 0 ? 'text-indigo-600' : 'text-red-600'}`}>{formatRp(totalNet)}</td>
                     </tr>
+                  </tbody>
+                </table>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl border border-white/10">
+                <div className="px-4 py-3 border-b border-white/10">
+                  <h3 className="text-sm font-semibold text-gray-900">Pemasukan per Kategori {year}</h3>
+                </div>
+                <div className="overflow-x-auto">
+                <table className="w-full text-sm whitespace-nowrap">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="text-left px-4 py-2.5 font-medium text-gray-500">Kategori</th>
+                      <th className="text-center px-4 py-2.5 font-medium text-gray-500">Transaksi</th>
+                      <th className="text-right px-4 py-2.5 font-medium text-gray-500">Total</th>
+                      <th className="text-right px-4 py-2.5 font-medium text-gray-500">Porsi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {incomeByCategory.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="px-4 py-6 text-center text-gray-400">Belum ada pemasukan tahun ini.</td>
+                      </tr>
+                    ) : (
+                      incomeByCategory.map((r) => (
+                        <tr key={r.category} className="hover:bg-gray-50">
+                          <td className="px-4 py-2.5 text-gray-900 font-medium">{r.category}</td>
+                          <td className="px-4 py-2.5 text-center text-gray-600">{r.count}</td>
+                          <td className="px-4 py-2.5 text-right text-emerald-600">{formatRp(r.amount)}</td>
+                          <td className="px-4 py-2.5 text-right text-gray-600">{r.share}%</td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
                 </div>

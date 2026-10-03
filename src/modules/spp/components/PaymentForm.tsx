@@ -13,11 +13,17 @@ interface StudentOption {
   class: string;
 }
 
+interface CategoryOption {
+  id: string;
+  name: string;
+}
+
 interface PaymentFormProps {
   open: boolean;
   onClose: () => void;
   onSubmit: (input: SPPFormInput) => Promise<void>;
   students?: StudentOption[];
+  categories?: CategoryOption[];
   defaultMonth?: number;
   defaultYear?: number;
   initialData?: SPPPayment | null;
@@ -30,6 +36,7 @@ export function PaymentForm({
   onClose,
   onSubmit,
   students = [],
+  categories = [],
   defaultMonth,
   defaultYear,
   initialData,
@@ -37,8 +44,10 @@ export function PaymentForm({
   const now = new Date();
   const isEditing = !!initialData;
   const [studentId, setStudentId] = useState('');
-  const [month, setMonth] = useState(defaultMonth ?? now.getMonth() + 1);
-  const [year, setYear] = useState(defaultYear ?? now.getFullYear());
+  const [categoryId, setCategoryId] = useState('');
+  const [month, setMonth] = useState<number | null>(defaultMonth ?? now.getMonth() + 1);
+  const [year, setYear] = useState<number | null>(defaultYear ?? now.getFullYear());
+  const [noPeriod, setNoPeriod] = useState(false);
   const [amount, setAmount] = useState('');
   const [paidAmount, setPaidAmount] = useState('');
   const [status, setStatus] = useState<SPPStatus>('paid');
@@ -49,13 +58,27 @@ export function PaymentForm({
   const [error, setError] = useState('');
   const { toast } = useToast();
 
+  const defaultCategoryId =
+    categories.find((c) => c.name === 'SPP')?.id ?? categories[0]?.id ?? '';
+
   // Reset/sync form fields whenever the modal opens (create or edit)
   useEffect(() => {
     if (!open) return;
     const fallback = new Date();
+    const hasPeriod = initialData ? initialData.month != null || initialData.year != null : true;
     setStudentId(initialData?.student_id ?? '');
-    setMonth(initialData?.month ?? defaultMonth ?? fallback.getMonth() + 1);
-    setYear(initialData?.year ?? defaultYear ?? fallback.getFullYear());
+    setCategoryId(initialData?.category_id ?? defaultCategoryId);
+    setNoPeriod(!hasPeriod);
+    setMonth(
+      initialData
+        ? (initialData.month ?? null)
+        : (defaultMonth ?? fallback.getMonth() + 1)
+    );
+    setYear(
+      initialData
+        ? (initialData.year ?? null)
+        : (defaultYear ?? fallback.getFullYear())
+    );
     setAmount(initialData ? String(initialData.amount) : '');
     setPaidAmount(initialData ? String(initialData.paid_amount) : '');
     setStatus(initialData?.status ?? 'paid');
@@ -63,7 +86,7 @@ export function PaymentForm({
     setPaymentDate(initialData?.payment_date ?? fallback.toISOString().split('T')[0]);
     setReceiptNumber(initialData?.receipt_number ?? '');
     setError('');
-  }, [open, initialData, defaultMonth, defaultYear]);
+  }, [open, initialData, defaultMonth, defaultYear, defaultCategoryId]);
 
   // Sync paid amount with amount when status changes to 'paid'
   useEffect(() => {
@@ -82,6 +105,10 @@ export function PaymentForm({
       setError('Pilih siswa terlebih dahulu');
       return;
     }
+    if (!categoryId) {
+      setError('Pilih kategori pembayaran terlebih dahulu');
+      return;
+    }
     if (!amount || parseInt(amount) <= 0) {
       setError('Nominal wajib diisi');
       return;
@@ -95,8 +122,9 @@ export function PaymentForm({
 
     const input: SPPFormInput = {
       student_id: studentId,
-      month,
-      year,
+      category_id: categoryId,
+      month: noPeriod ? null : month,
+      year: noPeriod ? null : year,
       amount: parseInt(amount),
       paid_amount: paid,
       status,
@@ -109,7 +137,7 @@ export function PaymentForm({
     try {
       await onSubmit(input);
       toast({
-        title: isEditing ? 'Pembayaran SPP diperbarui' : 'Pembayaran SPP dicatat',
+        title: isEditing ? 'Pembayaran siswa diperbarui' : 'Pembayaran siswa dicatat',
         variant: 'success',
       });
       // Reset form
@@ -119,6 +147,7 @@ export function PaymentForm({
       setStatus('paid');
       setMethod('tunai');
       setReceiptNumber('');
+      setNoPeriod(false);
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal menyimpan pembayaran');
@@ -140,7 +169,7 @@ export function PaymentForm({
         {/* header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <h3 className="text-lg font-semibold text-gray-900">
-            {isEditing ? 'Edit Pembayaran SPP' : 'Tambah Pembayaran SPP'}
+            {isEditing ? 'Edit Pembayaran Siswa' : 'Tambah Pembayaran Siswa'}
           </h3>
           <button
             onClick={onClose}
@@ -187,15 +216,65 @@ export function PaymentForm({
             )}
           </div>
 
+          {/* Kategori */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Kategori *</label>
+            <select
+              value={categoryId}
+              onChange={(e) => setCategoryId(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+              required
+            >
+              <option value="">-- Pilih Kategori --</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-gray-400">
+              Pembayaran dengan kategori ini langsung tercatat di Kas sekolah.
+            </p>
+          </div>
+
+          {/* Periode — opsional untuk pembayaran sekali jadi */}
+          <div>
+            <label className="flex items-center gap-2 text-sm text-gray-600">
+              <input
+                type="checkbox"
+                checked={noPeriod}
+                onChange={(e) => {
+                  const next = e.target.checked;
+                  setNoPeriod(next);
+                  if (next) {
+                    setMonth(null);
+                    setYear(null);
+                  } else {
+                    const now2 = new Date();
+                    setMonth(defaultMonth ?? now2.getMonth() + 1);
+                    setYear(defaultYear ?? now2.getFullYear());
+                  }
+                }}
+                className="rounded border-gray-300 text-primary focus:ring-primary/20"
+              />
+              Tanpa bulan/tahun (pembayaran sekali jadi)
+            </label>
+            <p className="mt-0.5 text-xs text-gray-400">
+              Untuk seragam, pendaftaran, jemputan, dan sejenisnya.
+            </p>
+          </div>
+
           {/* Month / Year row */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Bulan *</label>
               <select
-                value={month}
+                value={noPeriod ? '' : month ?? ''}
                 onChange={(e) => setMonth(parseInt(e.target.value))}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                disabled={noPeriod}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none disabled:bg-gray-50 disabled:text-gray-400"
               >
+                <option value="">-</option>
                 {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
                   <option key={m} value={m}>
                     {getMonthName(m)}
@@ -206,10 +285,12 @@ export function PaymentForm({
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Tahun *</label>
               <select
-                value={year}
+                value={noPeriod ? '' : year ?? ''}
                 onChange={(e) => setYear(parseInt(e.target.value))}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                disabled={noPeriod}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none disabled:bg-gray-50 disabled:text-gray-400"
               >
+                <option value="">-</option>
                 {years.map((y) => (
                   <option key={y} value={y}>
                     {y}

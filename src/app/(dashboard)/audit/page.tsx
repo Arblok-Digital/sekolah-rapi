@@ -20,14 +20,22 @@ interface SourceMeta {
   className: string;
 }
 
-function sourceMeta(source?: string | null): SourceMeta {
-  switch (source) {
-    case 'spp': return { label: 'SPP', className: 'bg-blue-100 text-blue-700' };
-    case 'payroll': return { label: 'Gaji', className: 'bg-purple-100 text-purple-700' };
-    case 'inventory': return { label: 'Belanja', className: 'bg-amber-100 text-amber-700' };
-    case 'reversal': return { label: 'Koreksi', className: 'bg-red-100 text-red-700' };
-    default: return { label: 'Manual', className: 'bg-gray-100 text-gray-600' };
-  }
+function sourceMeta(source?: string | null, label?: string): SourceMeta {
+  const base = ((): SourceMeta => {
+    switch (source) {
+      case 'spp': return { label: 'SPP', className: 'bg-blue-100 text-blue-700' };
+      case 'payroll': return { label: 'Gaji', className: 'bg-purple-100 text-purple-700' };
+      case 'inventory': return { label: 'Belanja', className: 'bg-amber-100 text-amber-700' };
+      case 'reversal': return { label: 'Koreksi', className: 'bg-red-100 text-red-700' };
+      default: return { label: 'Manual', className: 'bg-gray-100 text-gray-600' };
+    }
+  })();
+  // Pembayaran siswa tampil memakai nama kategorinya (SPP, Seragam, Donasi, ...)
+  return label && source === 'spp' ? { ...base, label } : base;
+}
+
+function txSourceMeta(tx: Transaction, categories: Record<string, string>): SourceMeta {
+  return sourceMeta(tx.source_type, categories[tx.category_id]);
 }
 
 export default function AuditPage() {
@@ -130,7 +138,7 @@ export default function AuditPage() {
   function exportCSV() {
     let csv = 'Tanggal,Tipe,Keterangan,Sumber,Kategori,Masuk,Keluar,Saldo\n';
     displayRows.forEach((tx) => {
-      const meta = sourceMeta(tx.source_type);
+      const meta = txSourceMeta(tx, categories);
       csv += [
         formatDate(tx.reference_date),
         tx.type === 'income' ? 'Pemasukan' : 'Pengeluaran',
@@ -286,7 +294,7 @@ export default function AuditPage() {
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {displayRows.map((tx) => {
-                      const meta = sourceMeta(tx.source_type);
+                      const meta = txSourceMeta(tx, categories);
                       return (
                         <tr key={tx.id} className={`hover:bg-gray-50 ${tx.source_type === 'reversal' ? 'bg-red-50/40' : ''}`}>
                           <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{formatDate(tx.reference_date)}</td>

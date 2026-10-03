@@ -42,8 +42,11 @@ export interface SPPPayment {
   id: string;
   school_id: string;
   student_id: string;
-  month: number;
-  year: number;
+  /** Periode tagihan — null untuk pembayaran sekali jadi (seragam, pendaftaran, dll). */
+  month: number | null;
+  year: number | null;
+  /** Kategori Kas (tabel categories) yang dipakai saat pembayaran ini masuk ke Kas. */
+  category_id?: string | null;
   amount: number;
   paid_amount: number;
   status: 'paid' | 'partial' | 'unpaid';
