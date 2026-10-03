@@ -6,9 +6,9 @@ export const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://sekolah-rapi.
 export const CLASS_OPTIONS = [
   'KB', 'PAUD A', 'PAUD B',
   'TK A', 'TK B',
-  '1A', '1B', '2A', '2B', '3A', '3B', '4A', '4B', '5A', '5B', '6A', '6B',
-  '7A', '7B', '8A', '8B', '9A', '9B',
-  '10A', '10B', '11A', '11B', '12A', '12B',
+  '1A', '1B', '1C', '2A', '2B', '2C', '3A', '3B', '3C', '4A', '4B', '4C', '5A', '5B', '5C', '6A', '6B', '6C',
+  '7A', '7B', '7C', '8A', '8B', '8C', '9A', '9B', '9C',
+  '10A', '10B', '10C', '11A', '11B', '11C', '12A', '12B', '12C',
 ];
 
 export const ROLES = {
