@@ -35,6 +35,18 @@ jobs:
           rm backup.dump
           ls -lh sekolah-rapi-*.gpg
 
+      - name: Verifikasi backup bisa dibuka (uji decrypt + format PGDMP)
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          magic=$(gpg --batch --passphrase "$BACKUP_PASSPHRASE" -d sekolah-rapi-*.dump.gpg | head -c 5)
+          if [ "$magic" != "PGDMP" ]; then
+            echo "GAGAL: decrypt bukan format pg_dump custom (magic='$magic')"
+            exit 1
+          fi
+          echo "OK: backup terdekripsi, format pg_dump valid"
+
       - name: Push ke repo privat (rotasi 12 backup terbaru)
         env:
           BACKUP_REPO_SSH_KEY: ${{ secrets.BACKUP_REPO_SSH_KEY }}
