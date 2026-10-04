@@ -40,12 +40,15 @@ jobs:
           BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
         run: |
           set -euo pipefail
-          magic=$(gpg --batch --passphrase "$BACKUP_PASSPHRASE" -d sekolah-rapi-*.dump.gpg | head -c 5)
+          gpg --batch --passphrase "$BACKUP_PASSPHRASE" -d sekolah-rapi-*.dump.gpg -o verify.dump
+          magic=$(head -c 5 verify.dump)
+          size=$(stat -c%s verify.dump)
+          rm verify.dump
           if [ "$magic" != "PGDMP" ]; then
-            echo "GAGAL: decrypt bukan format pg_dump custom (magic='$magic')"
+            echo "GAGAL: format bukan pg_dump custom (magic='$magic')"
             exit 1
           fi
-          echo "OK: backup terdekripsi, format pg_dump valid"
+          echo "OK: backup terdekripsi penuh ($size bytes), format pg_dump valid"
 
       - name: Push ke repo privat (rotasi 12 backup terbaru)
         env:
