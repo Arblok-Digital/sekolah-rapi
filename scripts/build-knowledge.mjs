@@ -18,6 +18,7 @@ const files = [
   'CHANGELOG.md',
   'PROMPTS.md',
   'FOUNDER.md',
+  'ARBLOK-DIGITAL.md',
 ];
 
 async function read(file) {

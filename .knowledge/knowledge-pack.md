@@ -1099,33 +1099,80 @@ Context hampir habis. Jangan mulai perubahan baru. Update .ai/TASKS.md dan .ai/C
 
 # Founder - Arblok Digital
 
-> `CONFIDENCE: PARTIAL` — butuh data lengkap dari founder. Jangan mengarang fakta.
+> `CONFIDENCE: PARTIAL` — fakta diambil dari JSON-LD resmi https://arblok-digital.vercel.app/ (situs perusahaan). Cerita personal belum ada sumbernya, jangan mengarang.
 
 ## Informasi Dasar
-- Nama lengkap: [TODO - isi]
-- Nama panggilan: [TODO - isi]
-- Peran: [TODO - isi, contoh: Founder & CEO Arblok Digital]
-- Lokasi: [TODO - isi]
+- Nama: **Ardi** (nama yang dipakai di situs; kemungkinan besar "Ardi Jobin" dari slug LinkedIn `ardi-jobin-455446380` — sebut lengkap hanya jika user yang konfirmasi)
+- Peran: **Founder ARBLOK Digital** (tercantum di JSON-LD situs: `"founder": {"@type":"Person","name":"Ardi"}`)
+- Lokasi: Tasikmalaya, Jawa Barat, Indonesia
+- Email: ardiblokchine@gmail.com
+- WhatsApp / kontak: +6289508053795 (https://wa.me/6289508053795)
+
+## Sosial Media
+- LinkedIn: https://www.linkedin.com/in/ardi-jobin-455446380
+- Instagram: https://www.instagram.com/arblokd/
+- TikTok: https://www.tiktok.com/@ardiblokchine
+- Facebook: https://web.facebook.com/profile.php?id=61591871531409
+
+## Konteks Peran
+- ARBLOK Digital adalah studio perangkat lunak tempat Ardi menjadi founder.
+- Keahlian yang tercantum di situs (knowsAbout): sistem penjualan & persediaan, administrasi sekolah, pelayanan dokumen, alur persetujuan, website & portal informasi, otomatisasi pekerjaan berulang.
+- Produk unggulan untuk sekolah: **SekolahRapi** (aplikasi administrasi sekolah dari Arblok Digital).
 
 ## Cerita Singkat
-[TODO - 2-3 paragraf tentang latar belakang, kenapa membangun SekolahRapi/Arblok Digital]
+> `CONFIDENCE: PARTIAL` — versi ringkas dari deskripsi perusahaan di situs. Belum ada biografi personal publik.
 
-## Nilai & Visi
-[TODO - visi/misi Arblok Digital]
-
-## Pengalaman Relevan
-[TODO - poin-poin kunci]
-
-## Kontak & Sosial Media (opsional)
-- Website: https://arblok.digital (atau domain resmi)
-- LinkedIn: [TODO]
-- X/Twitter: [TODO]
-- Instagram: [TODO]
+Ardi membangun ARBLOK Digital, studio perangkat lunak di Tasikmalaya, dengan fokus membuat sistem khusus (bukan template) untuk usaha, sekolah, dan instansi — dengan pendekatan: pahami pekerjaan sehari-hari → pilih satu masalah prioritas → uji versi pertama bersama pengguna → jalankan dan dampingi. Salah satu hasilnya adalah SekolahRapi.
 
 ## Catatan untuk AI
-- Jangan pernah mengarang detail yang kosong. Jika data belum ada, katakan dengan jelas "Saya belum punya info detail soal ini" bukan mengarang.
-- Fokus pada fakta yang diberikan di atas.
-- Bahasa Indonesia, tone: ramah, profesional, praktis (sesuai brand SekolahRapi).
+- Nama lengkap: JANGAN menebak. Pakai "Ardi, founder ARBLOK Digital" saja.
+- Cerita personal (perjalanan karier, tahun berdiri detail, prestasi): JANGAN mengarang — kalau ditanya, arahkan ke WhatsApp kontak resmi.
+- Kontak selalu arahkan ke WA +6289508053795 atau email resmi.
+- Bahasa Indonesia, tone ramah-profesional-praktis.
+
+
+---
+
+## ARBLOK-DIGITAL.md
+
+# Profil Perusahaan - ARBLOK Digital
+
+> `CONFIDENCE: VERIFIED` — diambil dari JSON-LD + konten https://arblok-digital.vercel.app/
+
+## Identitas
+- Nama: **ARBLOK Digital** (alternate: Arblok Digital)
+- Deskripsi: studio perangkat lunak dari Tasikmalaya yang membantu usaha, sekolah, dan instansi membuat sistem untuk pencatatan, pelayanan, serta alur persetujuan.
+- Alamat: Tasikmalaya, Jawa Barat, Indonesia
+- Situs: https://arblok-digital.vercel.app
+- Telepon/WA: +6289508053795 · Email: ardiblokchine@gmail.com
+
+## Layanan (Offer Catalog resmi)
+1. **Sistem Penjualan dan Persediaan** — mencatat transaksi, perubahan stok, dan ringkasan yang dapat diperiksa.
+2. **Sistem Administrasi Sekolah** — pencatatan pembayaran, data siswa, kelas, dan status administrasi (= SekolahRapi).
+3. **Sistem Pelayanan dan Persetujuan** — formulir pengajuan, tahap pemeriksaan, dan riwayat keputusan.
+4. **Website dan Portal Informasi** — menjelaskan layanan, menerima permintaan, menyediakan informasi.
+
+## FAQ Resmi (dari situs Arblok)
+- **Berapa biaya pembuatan website/aplikasi?** — Fleksibel: paket Starter/MVP terjangkau untuk UMKM hingga sistem enterprise. Tidak ada budget terlalu kecil; diskusi via WhatsApp.
+- **Apa itu zero-cost hosting?** — Aplikasi terhubung langsung ke database cloud dengan Row Level Security (RLS), tanpa server backend 24/7 → biaya hosting bisa Rp 0 untuk beban kerja UMKM normal.
+- **Berapa lama proses pembuatan?** — Landing/company profile 1-3 minggu; sistem khusus (kasir, sekolah, kelurahan) 1-3 bulan. Timeline jelas saat konsultasi.
+- **Bisa custom fitur setelah selesai?** — Bisa. Arsitektur Monorepo (NPM Workspaces) bikin modifikasi cepat dan murah.
+- **Ada garansi setelah peluncuran?** — Ya, paket maintenance fleksibel + pelatihan tim agar bisa kelola mandiri.
+- **Apa itu Arblok Digital?** — Studio perangkat lunak dari Tasikmalaya untuk usaha, sekolah, dan instansi.
+- **Masalah seperti apa yang bisa dibahas?** — Pencatatan penjualan/stok terpisah, administrasi sekolah sulit dipantau, pengajuan dokumen lambat, pekerjaan berulang rawan terlewat.
+- **Bagaimana memulai?** — Kirim gambaran singkat pekerjaan yang merepotkan via WhatsApp; pembicaraan awal untuk memahami masalah, pengguna, dan prioritas.
+
+## Cara Kerja (4 langkah, dari situs)
+1. Pahami pekerjaan sehari-hari.
+2. Pilih satu masalah prioritas.
+3. Uji versi pertama bersama pengguna.
+4. Jalankan dan dampingi.
+
+## Klaim Utama (situs)
+- **0%** potongan transaksi (untuk solusi POS/toko sendiri — konteks UMKM, bukan SekolahRapi).
+- **100%** hak milik data & pelanggan.
+- **24/7** akses realtime dari HP.
+
 
 ---
 
