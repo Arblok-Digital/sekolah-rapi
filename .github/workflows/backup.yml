@@ -1,0 +1,62 @@
+name: Weekly DB Backup
+
+on:
+  schedule:
+    - cron: "0 19 * * 0" # Minggu 19:00 UTC = Senin 02:00 WIB
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Dump database (pg_dump PostgreSQL 17 via Docker)
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          docker run --rm -e SUPABASE_DB_URL -v "$PWD:/work" postgres:17 \
+            bash -c 'pg_dump "$SUPABASE_DB_URL" -Fc --no-owner --no-privileges -f /work/backup.dump'
+          test -s backup.dump
+          ls -lh backup.dump
+
+      - name: Enkripsi AES-256 (GPG)
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          stamp=$(date -u +%Y-%m-%d)
+          gpg --batch --yes --symmetric --cipher-algo AES256 \
+            --passphrase "$BACKUP_PASSPHRASE" \
+            --output "sekolah-rapi-$stamp.dump.gpg" backup.dump
+          rm backup.dump
+          ls -lh sekolah-rapi-*.gpg
+
+      - name: Push ke repo privat (rotasi 12 backup terbaru)
+        env:
+          BACKUP_REPO_SSH_KEY: ${{ secrets.BACKUP_REPO_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          printf '%s\n' "$BACKUP_REPO_SSH_KEY" > ~/.ssh/backup_deploy_key
+          chmod 600 ~/.ssh/backup_deploy_key
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/backup_deploy_key -o IdentitiesOnly=yes"
+          git clone --depth 1 git@github.com:Arblok-Digital/sekolah-rapi-backups.git backups
+          cp sekolah-rapi-*.gpg backups/
+          cd backups
+          git config user.name "backup-bot"
+          git config user.email "backup-bot@sekolah-rapi"
+          ls -1 sekolah-rapi-*.dump.gpg | sort | head -n -12 | xargs -r git rm -q
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Tidak ada perubahan baru"
+          else
+            git commit -m "backup $(date -u +%Y-%m-%d)"
+            git push
+          fi
+          echo "== Isi repo backup =="
+          ls -lh sekolah-rapi-*.gpg | tail -6
