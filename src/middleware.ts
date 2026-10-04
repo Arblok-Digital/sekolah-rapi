@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import {
   isIndexablePublic,
   isPublicPath,
+  isApiPublicPath,
 } from '@/shared/constants/public-paths';
 
 export async function middleware(request: NextRequest) {
@@ -10,11 +11,12 @@ export async function middleware(request: NextRequest) {
 
   // Pass through: static files, internal Next.js routes, dan cron
   // (Vercel Cron datang tanpa session cookie — jalur API lain tetap dicek).
-  if (
-    pathname.startsWith('/_next') ||
-    pathname.startsWith('/api/cron') ||
-    pathname.includes('.')
-  ) {
+    if (
+      pathname.startsWith('/_next') ||
+      pathname.startsWith('/api/cron') ||
+      isApiPublicPath(pathname) ||
+      pathname.includes('.')
+    ) {
     return NextResponse.next();
   }
 

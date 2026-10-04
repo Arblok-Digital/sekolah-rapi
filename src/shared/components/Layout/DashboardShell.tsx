@@ -1,5 +1,6 @@
 'use client';
 
+import TanyaArblok from '@/shared/components/Chat/TanyaArblok';
 import { Sidebar } from '@/shared/components/Layout/Sidebar';
 import { useAuth } from '@/shared/providers/AuthProvider';
 import { Wifi, WifiOff, LogOut } from 'lucide-react';
@@ -86,6 +87,7 @@ export function DashboardShell({ children, schoolName, userName, userRole }: Das
           {children}
         </main>
       </div>
+      <TanyaArblok context="dashboard" />
     </div>
   );
 }

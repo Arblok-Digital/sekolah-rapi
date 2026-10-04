@@ -10,6 +10,8 @@ declare global {
       NEXT_PUBLIC_POWERED_BY: string;
       /** Opsional: kunci untuk autentikasi request cron (Vercel mengirim otomatis). */
       CRON_SECRET?: string;
+      /** Opsional: kunci API Gemini untuk chat "Tanya Arblok". */
+      GEMINI_API_KEY?: string;
     }
   }
 }

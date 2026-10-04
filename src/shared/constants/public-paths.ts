@@ -31,3 +31,9 @@ export function isPublicPath(pathname: string): boolean {
     PUBLIC_NOINDEX_PATHS.some((p) => pathname === p || pathname.startsWith(p + '?'))
   );
 }
+
+export const API_PUBLIC_PATHS = ['/api/chat'];
+export function isApiPublicPath(pathname: string): boolean {
+  return API_PUBLIC_PATHS.some((x) => pathname === x || pathname.startsWith(x + '/'));
+}
+

@@ -1,3 +1,4 @@
+import TanyaArblok from '@/shared/components/Chat/TanyaArblok';
 import Link from "next/link";
 import {
   ArrowRight,
@@ -490,6 +491,8 @@ export default function LandingPage() {
       >
         <MessageCircle className="h-6 w-6" />
       </a>
+
+      <TanyaArblok context="landing" />
     </MarketingLayout>
   );
 }
