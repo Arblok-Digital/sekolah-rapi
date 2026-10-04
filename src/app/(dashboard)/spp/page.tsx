@@ -294,7 +294,7 @@ export default function SPPPage() {
         <div>
           <h2 className="text-xl font-bold text-white">Keuangan Siswa</h2>
           <p className="text-sm text-white/60 mt-0.5">
-            Tagihan &amp; pembayaran siswa per kategori — otomatis tercatat di Kas sekolah
+            Tagihan &amp; pembayaran siswa per kategori — otomatis tercatat di Kas sekolah. Klik nama / baris siswa untuk kartu keuangan (lunas, angsuran, belum bayar).
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">

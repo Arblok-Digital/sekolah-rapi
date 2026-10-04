@@ -62,13 +62,24 @@ export function PaymentTable({ payments, loading, onEdit, onDelete, onReceipt, o
             {payments.map((payment) => {
               const badge = statusBadge[payment.status] || statusBadge.unpaid;
               return (
-                <tr key={payment.id} className="hover:bg-gray-50/50 transition-colors">
+                <tr
+                  key={payment.id}
+                  className={cn(
+                    'hover:bg-gray-50/50 transition-colors',
+                    onStudentClick && 'cursor-pointer'
+                  )}
+                  onClick={onStudentClick ? () => onStudentClick(payment) : undefined}
+                  title={onStudentClick ? 'Lihat kartu keuangan siswa' : undefined}
+                >
                   <td className="px-4 py-3">
                     <div>
                       {onStudentClick ? (
                         <button
                           type="button"
-                          onClick={() => onStudentClick(payment)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onStudentClick(payment);
+                          }}
                           className="font-medium text-gray-900 hover:text-indigo-600 hover:underline underline-offset-2 transition-colors"
                           title="Lihat kartu keuangan siswa"
                         >
@@ -116,7 +127,10 @@ export function PaymentTable({ payments, loading, onEdit, onDelete, onReceipt, o
                       <div className="flex items-center justify-center gap-1">
                         {onReceipt && (payment.status === 'paid' || payment.status === 'partial') && (
                           <button
-                            onClick={() => onReceipt(payment)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onReceipt(payment);
+                            }}
                             className="px-2 py-1 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors"
                             title="Lihat / bagikan kuitansi"
                           >
@@ -125,7 +139,10 @@ export function PaymentTable({ payments, loading, onEdit, onDelete, onReceipt, o
                         )}
                         {onEdit && (
                           <button
-                            onClick={() => onEdit(payment)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onEdit(payment);
+                            }}
                             className="p-1.5 text-gray-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors"
                             title="Edit"
                           >
@@ -136,7 +153,10 @@ export function PaymentTable({ payments, loading, onEdit, onDelete, onReceipt, o
                         )}
                         {onDelete && (
                           <button
-                            onClick={() => onDelete(payment.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDelete(payment.id);
+                            }}
                             className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                             title="Hapus"
                           >
