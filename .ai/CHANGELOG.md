@@ -2,6 +2,15 @@
 
 Tuliskan entri terbaru di atas. Maksimal ringkas: hasil, file, validasi, blocker, next step.
 
+## 2026-10-04 — Koreksi Masuk Riwayat, Keluar dari Ringkasan
+
+- Keputusan owner: koreksi (reversal) **tetap di riwayat** (jejak audit anti-korupsi) tapi **dikecualikan dari semua angka ringkasan** — pasangan koreksi + transaksi aslinya saling menghapus, keduanya dikeluarkan dari agregat biar Pemasukan/Pengeluaran jujur (sebelumnya Overview/Laporan menggelembung: demo 4jt/3jt vs real 1jt/0).
+- Helper baru `src/modules/transactions/utils/reversal.ts`: `collectReversedSourceIds`, `isReversalPairMember`, `excludeReversalPairs`.
+- Dikeluarkan dari: kartu Overview (saldo, bulan ini), widget Riwayat Transaksi (Masuk/Keluar + footnote), rekap bulanan + rekap per kategori + total + CSV Laporan, ringkasan Masuk/Keluar Audit. Saldo berjalan Audit tetap semua baris (buku besar utuh).
+- Label di riwayat: baris koreksi "Koreksi" (merah), baris asli yang diganti "Diganti" (amber) + redup/coret — tabel Kas, Riwayat Overview, Audit.
+- File: `overview/page.tsx`, `reports/page.tsx`, `audit/page.tsx`, `TransactionHistory.tsx`, `TransactionTable.tsx`.
+- Validasi: `typecheck`, `lint`, `vitest 7/7`.
+
 ## 2026-10-04 — Rebuild Kas saat Edit + Tambah Entri Manual di Kartu Siswa
 
 - **Bug**: edit baris pembayaran (kategori/periode/nominal/tanggal) meninggalkan transaksi Kas basi — delta negatif disupres. Bukti: demo Arblok dibuat "uang pendaftaran Rp3jt lunas" lalu diedit jadi "infaq hasanah Rp1jt partial" tetapi Kas tetap 3jt.

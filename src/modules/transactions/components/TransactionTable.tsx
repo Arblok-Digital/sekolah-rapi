@@ -1,8 +1,10 @@
 'use client';
 
+import { useMemo } from 'react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import type { Transaction } from '../types/transaction.types';
+import { collectReversedSourceIds } from '../utils/reversal';
 
 interface TransactionTableProps {
   transactions: Transaction[];
@@ -26,6 +28,9 @@ export function TransactionTable({
 }: TransactionTableProps) {
   const categoryName = (id: string | null | undefined) =>
     categories.find((c) => c.id === id)?.name ?? (id ? `${id.substring(0, 8)}…` : '-');
+
+  const reversedIds = useMemo(() => collectReversedSourceIds(transactions), [transactions]);
+
   if (loading) {
     return (
       <div className="text-center py-8 text-gray-500">Memuat data...</div>
@@ -66,18 +71,36 @@ export function TransactionTable({
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
-          {transactions.map((tx) => (
-            <tr key={tx.id} className="hover:bg-gray-50">
+          {transactions.map((tx) => {
+            const isReversal = tx.source_type === 'reversal';
+            const isReversedOriginal = reversedIds.has(tx.id);
+            return (
+            <tr
+              key={tx.id}
+              className={`hover:bg-gray-50 ${isReversal ? 'bg-red-50/40' : ''} ${isReversedOriginal ? 'opacity-60' : ''}`}
+            >
               <td className="px-4 py-3 whitespace-nowrap">
-                <span
-                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    tx.type === 'income'
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-red-100 text-red-800'
-                  }`}
-                >
-                  {tx.type === 'income' ? 'Pemasukan' : 'Pengeluaran'}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      tx.type === 'income'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}
+                  >
+                    {tx.type === 'income' ? 'Pemasukan' : 'Pengeluaran'}
+                  </span>
+                  {isReversal && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-red-100 text-red-700">
+                      Koreksi
+                    </span>
+                  )}
+                  {isReversedOriginal && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-700">
+                      Diganti
+                    </span>
+                  )}
+                </div>
               </td>
               <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
                 {categoryName(tx.category_id)}
@@ -128,7 +151,8 @@ export function TransactionTable({
                 </div>
               </td>
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
     </div>

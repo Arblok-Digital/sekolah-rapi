@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/shared/utils/cn';
 import { TransactionHistory } from '@/modules/transactions/components/TransactionHistory';
+import { collectReversedSourceIds, excludeReversalPairs } from '@/modules/transactions/utils/reversal';
 
 function formatRp(n: number) {
   return new Intl.NumberFormat('id-ID', {
@@ -64,7 +65,7 @@ export default function OverviewPage() {
 
       const { data: txData } = await supabase
         .from('transactions')
-        .select('id, description, amount, type, reference_date')
+        .select('id, description, amount, type, reference_date, source_type, source_id')
         .eq('school_id', schoolId!)
         .gte('reference_date', monthStart)
         .lte('reference_date', monthEnd)
@@ -73,7 +74,7 @@ export default function OverviewPage() {
       // 2. Fetch all transactions for balance
       const { data: allTx } = await supabase
         .from('transactions')
-        .select('amount, type')
+        .select('id, amount, type, source_type, source_id')
         .eq('school_id', schoolId!);
 
       // 3. Fetch student count + SPP outstanding
@@ -102,13 +103,19 @@ export default function OverviewPage() {
         (s) => !sppCategoryId || s.category_id === sppCategoryId
       );
 
-      // Calculate
-      const totalIncome = allTx?.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0) || 0;
-      const totalExpense = allTx?.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0) || 0;
+      // Calculate — pasangan koreksi (reversal + transaksi aslinya) dikeluarkan
+      // dari semua angka ringkasan: keduanya saling menghapus, dan angka Overview
+      // harus mencerminkan uang yang benar-benar bergerak.
+      const reversedIds = collectReversedSourceIds(allTx ?? []);
+      const realAllTx = excludeReversalPairs(allTx ?? [], reversedIds);
+      const realTx = excludeReversalPairs(txData ?? [], reversedIds);
+
+      const totalIncome = realAllTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0) || 0;
+      const totalExpense = realAllTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0) || 0;
       const saldo = totalIncome - totalExpense;
 
-      const incomeBulanIni = txData?.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0) || 0;
-      const expenseBulanIni = txData?.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0) || 0;
+      const incomeBulanIni = realTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0) || 0;
+      const expenseBulanIni = realTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0) || 0;
 
       const totalSiswa = students?.filter(s => s.status === 'active').length || 0;
       const paidCount = sppThisMonth?.filter(s => s.status === 'paid' || s.status === 'partial').length || 0;

@@ -7,6 +7,7 @@ import { createSupabaseClient } from '@/shared/services/supabase/client';
 import { MONTHS } from '@/modules/payroll/types/payroll.types';
 import { BarChart3, FileSpreadsheet, Download, Loader2, TrendingUp, TrendingDown, Receipt, Users } from 'lucide-react';
 import { useSchoolRealtime } from '@/shared/hooks/useSchoolRealtime';
+import { collectReversedSourceIds, excludeReversalPairs } from '@/modules/transactions/utils/reversal';
 
 function formatRp(n: number) { return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n); }
 
@@ -66,10 +67,15 @@ export default function ReportsPage() {
 
       const { data: txData } = await supabase
         .from('transactions')
-        .select('amount, type, reference_date, category_id')
+        .select('id, amount, type, reference_date, category_id, source_type, source_id')
         .eq('school_id', activeSchoolId)
         .gte('reference_date', yearStart)
         .lte('reference_date', yearEnd);
+
+      // Pasangan koreksi dikeluarkan dari SEMUA angka laporan — laporan adalah
+      // ringkasan bisnis, jejak koreksi tetap bisa dilihat di halaman Audit.
+      const reversedIds = collectReversedSourceIds(txData ?? []);
+      const realTx = excludeReversalPairs(txData ?? [], reversedIds);
 
       const { data: catData } = await supabase
         .from('categories')
@@ -94,7 +100,7 @@ export default function ReportsPage() {
 
       // Financial by month
       const monthlyFin: MonthlyReport[] = MONTHS.map((m, i) => {
-        const monthTx = (txData || []).filter(t => {
+        const monthTx = realTx.filter(t => {
           const d = new Date(t.reference_date);
           return d.getMonth() === i && d.getFullYear() === year;
         });
@@ -114,7 +120,7 @@ export default function ReportsPage() {
 
       // Pemasukan per kategori (tahun berjalan)
       const incomeMap = new Map<string, { amount: number; count: number }>();
-      (txData || [])
+      (realTx || [])
         .filter((t) => t.type === 'income')
         .forEach((t) => {
           const key = t.category_id || '';

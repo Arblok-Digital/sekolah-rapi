@@ -13,6 +13,7 @@ import {
   timeframeRange,
   inTimeframe,
 } from '../utils/timeframe';
+import { collectReversedSourceIds, isReversalPairMember } from '../utils/reversal';
 
 function formatRpShort(n: number) {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}jt`;
@@ -54,7 +55,7 @@ export function TransactionHistory({ schoolId, limit = 10, showAllHref = '/audit
       try {
         const { data, error: txError } = await supabase
           .from('transactions')
-          .select('id, description, amount, type, reference_date, source_type, category_id')
+          .select('id, description, amount, type, reference_date, source_type, source_id, category_id')
           .eq('school_id', schoolId)
           .order('reference_date', { ascending: false });
         if (txError) throw txError;
@@ -80,6 +81,8 @@ export function TransactionHistory({ schoolId, limit = 10, showAllHref = '/audit
 
   const range = timeframe === 'custom' ? { start: '', end: '' } : timeframeRange(timeframe as Exclude<Timeframe, 'custom'>);
 
+  const reversedIds = useMemo(() => collectReversedSourceIds(allTx ?? []), [allTx]);
+
   const visible = useMemo(() => {
     if (!allTx) return [];
     return allTx
@@ -87,11 +90,14 @@ export function TransactionHistory({ schoolId, limit = 10, showAllHref = '/audit
       .slice(0, limit);
   }, [allTx, timeframe, range.start, range.end, limit]);
 
+  // Ringkasan hanya uang nyata — pasangan koreksi saling menghapus dan tidak
+  // boleh menggelembungkan angka Masuk/Keluar.
   const summary = useMemo(() => {
-    const income = visible.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-    const expense = visible.filter((t) => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
-    return { income, expense };
-  }, [visible]);
+    const real = visible.filter((t) => !isReversalPairMember(t, reversedIds));
+    const income = real.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+    const expense = real.filter((t) => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+    return { income, expense, hasCorrection: visible.length !== real.length };
+  }, [visible, reversedIds]);
 
   return (
     <div className="card-premium border-white/10 bg-white/[.07] p-5">
@@ -128,6 +134,9 @@ export function TransactionHistory({ schoolId, limit = 10, showAllHref = '/audit
         <span className="flex items-center gap-1.5 text-red-300">
           <TrendingDown className="w-3.5 h-3.5" /> Keluar {formatRpShort(summary.expense)}
         </span>
+        {summary.hasCorrection && (
+          <span className="text-white/40">koreksi dikecualikan dari ringkasan</span>
+        )}
       </div>
 
       {error && <p className="text-xs text-red-300 py-2">{error}</p>}
@@ -142,12 +151,13 @@ export function TransactionHistory({ schoolId, limit = 10, showAllHref = '/audit
       ) : (
         <div className="divide-y divide-white/[0.04]">
           {visible.map((tx) => {
+            const reversedOriginal = reversedIds.has(tx.id);
             const badge = sourceBadge(
               tx.source_type,
               tx.source_type === 'spp' ? catMap[tx.category_id] : undefined
             );
             return (
-              <div key={tx.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
+              <div key={tx.id} className={cn('flex items-center justify-between py-3 first:pt-0 last:pb-0', reversedOriginal && 'opacity-55')}>
                 <div className="flex items-start gap-3 min-w-0">
                   <div
                     className={cn(
@@ -166,13 +176,17 @@ export function TransactionHistory({ schoolId, limit = 10, showAllHref = '/audit
                     <p className="text-xs text-white/60 mt-0.5">
                       {new Date(tx.reference_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                       <span className={cn('inline-flex ml-2 px-1.5 py-0.5 rounded-md text-[10px] font-bold', badge.className)}>{badge.label}</span>
+                      {reversedOriginal && (
+                        <span className="inline-flex ml-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/15 text-amber-300">Diganti</span>
+                      )}
                     </p>
                   </div>
                 </div>
                 <span
                   className={cn(
                     'text-sm font-semibold shrink-0 ml-3 tabular-nums',
-                    tx.type === 'income' ? 'text-emerald-400' : 'text-red-400'
+                    tx.type === 'income' ? 'text-emerald-400' : 'text-red-400',
+                    reversedOriginal && 'line-through'
                   )}
                 >
                   {tx.type === 'income' ? '+' : '-'}{formatRpShort(tx.amount)}

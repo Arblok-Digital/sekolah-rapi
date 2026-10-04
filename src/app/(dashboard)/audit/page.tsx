@@ -12,6 +12,7 @@ import {
   TIMEFRAME_LABELS,
   timeframeRange,
 } from '@/modules/transactions/utils/timeframe';
+import { collectReversedSourceIds, isReversalPairMember } from '@/modules/transactions/utils/reversal';
 
 function formatRp(n: number) { return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n); }
 function formatDate(d: string) { return d ? d.slice(0, 10) : '-'; }
@@ -111,7 +112,7 @@ export default function AuditPage() {
   }, [schoolId]);
 
   // Saldo berjalan (dari awal data) + filter tampilan
-  const { displayRows, summary } = useMemo(() => {
+  const { displayRows, reversedIds, summary } = useMemo(() => {
     let bal = 0;
     const withBalance = allTx.map((tx) => {
       bal += tx.type === 'income' ? tx.amount : -tx.amount;
@@ -126,12 +127,17 @@ export default function AuditPage() {
       return true;
     });
 
-    const income = filtered.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-    const expense = filtered.filter((t) => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+    // Saldo berjalan memakai SEMUA baris (buku besar = jejak utuh, pasangan
+    // koreksi saling menghapus), tapi ringkasan Masuk/Keluar hanya uang nyata.
+    const reversedIds = collectReversedSourceIds(allTx);
+    const realFiltered = filtered.filter((t) => !isReversalPairMember(t, reversedIds));
+    const income = realFiltered.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+    const expense = realFiltered.filter((t) => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
 
     return {
       // Tampil terbaru di atas
       displayRows: [...filtered].reverse(),
+      reversedIds,
       summary: { income, expense, net: income - expense, count: filtered.length },
     };
   }, [allTx, typeFilter, categoryFilter, startDate, endDate]);
@@ -296,13 +302,17 @@ export default function AuditPage() {
                   <tbody className="divide-y divide-gray-100">
                     {displayRows.map((tx) => {
                       const meta = txSourceMeta(tx, categories);
+                      const reversedOriginal = reversedIds.has(tx.id);
                       return (
-                        <tr key={tx.id} className={`hover:bg-gray-50 ${tx.source_type === 'reversal' ? 'bg-red-50/40' : ''}`}>
+                        <tr key={tx.id} className={`hover:bg-gray-50 ${tx.source_type === 'reversal' ? 'bg-red-50/40' : ''} ${reversedOriginal ? 'opacity-60' : ''}`}>
                           <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{formatDate(tx.reference_date)}</td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-1.5">
                               <span className="font-medium text-gray-900">{tx.description || '-'}</span>
                               {tx.source_type === 'reversal' && <ScrollText className="w-3.5 h-3.5 text-red-500 shrink-0" />}
+                              {reversedOriginal && (
+                                <span className="inline-flex px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 shrink-0">Diganti</span>
+                              )}
                             </div>
                           </td>
                           <td className="px-4 py-3 text-center">
