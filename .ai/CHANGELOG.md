@@ -2,6 +2,14 @@
 
 Tuliskan entri terbaru di atas. Maksimal ringkas: hasil, file, validasi, blocker, next step.
 
+## 2026-10-04 — Harga Dikunci Owner: Tahun 1 Rp4jt, Perpanjangan Rp1,5jt/th
+
+- Keputusan owner (final): **Tahun Pertama Rp 4.000.000** (setup + input data + pelatihan + support 12 bln; anchor coret Rp 5.500.000), **Perpanjangan Rp 1.500.000/tahun** (server, backup, support, update — harga tetap), **fitur custom mulai Rp 500.000** (di luar paket, disepakati di awal). Klien perdana Selasa tetap Rp 3.000.000 sebagai "harga perdana".
+- Skema lama Basic Rp790.000 / Pro Rp1.490.000 dihapus dari halaman publik; tier lisensi internal (`PLAN_DEFINITIONS` free/basic/pro/lifetime) TIDAK berubah — tetap kunci aktivasi di Dev Admin.
+- File: `src/shared/entitlements/index.ts` (PRICING_PLANS), `src/app/pricing/page.tsx` (kartu, anchor harga, FAQ), `src/content/panduan.ts`, `.ai/FAQ.md`.
+- Validasi: `npm run typecheck`, `npm run lint`; knowledge pack di-rebuild via `node scripts/build-knowledge.mjs`.
+- Next: pantau konversi halaman harga; kalau deal Rp3jt bocor ke publik, jaga konsistensi "harga perdana" hanya untuk klien pilot.
+
 ## 2026-09-22 - Mobile/PWA Bug Fixes (Laporan, Kas, Logout, SPP sync Overview)
 
 - Hasil: 4 bug laporan user PWA diperbaiki; semua perbaikan disamakan basis datanya dengan dashboard Overview.

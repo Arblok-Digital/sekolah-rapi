@@ -46,11 +46,24 @@ export const PLAN_DEFINITIONS = {
   },
 } as const satisfies Record<Plan, { label: string; price: number }>;
 
-export const PRICING_PLANS = [
+export type PricingPlanDisplay = {
+  plan: string;
+  name: string;
+  priceLabel: string;
+  originalPriceLabel?: string;
+  billingLabel: string;
+  description: string;
+  cta: string;
+  href: string;
+  features: string[];
+  missing: string[];
+};
+
+export const PRICING_PLANS: PricingPlanDisplay[] = [
   { plan: 'free', name: 'Gratis', priceLabel: 'Rp 0', billingLabel: '/selamanya', description: 'Coba dulu, cocok untuk sekolah kecil yang baru mulai digital.', cta: 'Mulai Gratis', href: '/register', features: ['Manajemen siswa & SPP', 'Pencatatan kas dasar', '1 pengguna aktif', 'Kas digital 2 kategori'], missing: ['Pendaftaran siswa online', 'Dashboard owner realtime', 'Laporan operasional lengkap', 'Penggajian guru', 'Inventaris barang', 'Import Excel', 'Support prioritas'] },
-  { plan: 'basic', name: 'Basic', priceLabel: '790.000', billingLabel: '/tahun', description: 'Fitur operasional lengkap untuk sekolah swasta dan madrasah.', cta: 'Hubungi untuk Aktivasi Basic', href: 'https://wa.me/6289508053795?text=Saya%20ingin%20aktivasi%20SekolahRapi%20Basic', features: ['Semua fitur Free plan', 'Laporan operasional & keuangan', 'Ekspor Excel (semua data)', 'Import siswa via Excel', 'Kategori kas unlimited'], missing: ['Pendaftaran siswa online', 'Dashboard owner realtime', 'Penggajian guru', 'Inventaris barang', 'Dukungan prioritas'] },
-  { plan: 'pro', name: 'Pro', priceLabel: '1.490.000', billingLabel: '/tahun', description: 'Solusi lengkap untuk sekolah yang membutuhkan semua fitur.', cta: 'Hubungi untuk Aktivasi Pro', href: 'https://wa.me/6289508053795?text=Saya%20ingin%20aktivasi%20SekolahRapi%20Pro', features: ['Semua fitur Basic', 'Pendaftaran siswa online yang ringkas', 'Dashboard owner realtime, nyaman di mobile', 'Penggajian guru (payroll)', 'Inventaris barang & aset', 'Impor data massal (Excel)', 'Dukungan prioritas via WA', 'Bantuan pelatihan staff (1x zoom)'], missing: [] },
-] as const;
+  { plan: 'tahun1', name: 'Tahun Pertama', priceLabel: 'Rp 4.000.000', originalPriceLabel: 'Rp 5.500.000', billingLabel: '/tahun pertama', description: 'SekolahRapi lengkap, terpasang dan didampingi sampai jalan.', cta: 'Pasang SekolahRapi', href: 'https://wa.me/6289508053795?text=Saya%20ingin%20pasang%20SekolahRapi%20(Tahun%20Pertama)', features: ['Semua fitur lengkap (setara paket Pro)', 'Setup & konfigurasi sekolah', 'Impor data awal siswa & guru', 'Pelatihan tim sekolah (1x)', 'Support prioritas via WA 12 bulan', 'Backup mingguan terenkripsi'], missing: [] },
+  { plan: 'perpanjangan', name: 'Perpanjangan', priceLabel: 'Rp 1.500.000', billingLabel: '/tahun', description: 'Menjaga sistem tetap jalan — server, backup, support, dan update.', cta: 'Hubungi Perpanjangan', href: 'https://wa.me/6289508053795?text=Saya%20ingin%20perpanjang%20SekolahRapi', features: ['Semua fitur tetap aktif', 'Server, backup mingguan & keepalive', 'Bantuan troubleshooting via WA', 'Update fitur rutin', 'Harga tetap, tidak naik di tahun berikutnya'], missing: ['Fitur custom — mulai Rp 500.000, dihitung terpisah'] },
+];
 
 export function normalizePlan(plan?: string | null): Plan {
   return plan && plan in PLAN_DEFINITIONS ? (plan as Plan) : 'free';

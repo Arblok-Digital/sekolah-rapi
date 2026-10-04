@@ -951,6 +951,14 @@ Detail dan acceptance criteria: `.ai/ORGANIC-GROWTH-ROADMAP.md`.
 
 Tuliskan entri terbaru di atas. Maksimal ringkas: hasil, file, validasi, blocker, next step.
 
+## 2026-10-04 — Harga Dikunci Owner: Tahun 1 Rp4jt, Perpanjangan Rp1,5jt/th
+
+- Keputusan owner (final): **Tahun Pertama Rp 4.000.000** (setup + input data + pelatihan + support 12 bln; anchor coret Rp 5.500.000), **Perpanjangan Rp 1.500.000/tahun** (server, backup, support, update — harga tetap), **fitur custom mulai Rp 500.000** (di luar paket, disepakati di awal). Klien perdana Selasa tetap Rp 3.000.000 sebagai "harga perdana".
+- Skema lama Basic Rp790.000 / Pro Rp1.490.000 dihapus dari halaman publik; tier lisensi internal (`PLAN_DEFINITIONS` free/basic/pro/lifetime) TIDAK berubah — tetap kunci aktivasi di Dev Admin.
+- File: `src/shared/entitlements/index.ts` (PRICING_PLANS), `src/app/pricing/page.tsx` (kartu, anchor harga, FAQ), `src/content/panduan.ts`, `.ai/FAQ.md`.
+- Validasi: `npm run typecheck`, `npm run lint`; knowledge pack di-rebuild via `node scripts/build-knowledge.mjs`.
+- Next: pantau konversi halaman harga; kalau deal Rp3jt bocor ke publik, jaga konsistensi "harga perdana" hanya untuk klien pilot.
+
 ## 2026-09-22 - Mobile/PWA Bug Fixes (Laporan, Kas, Logout, SPP sync Overview)
 
 - Hasil: 4 bug laporan user PWA diperbaiki; semua perbaikan disamakan basis datanya dengan dashboard Overview.
@@ -1183,10 +1191,10 @@ Ardi membangun ARBLOK Digital, studio perangkat lunak di Tasikmalaya, dengan fok
 > `CONFIDENCE: VERIFIED` — salinan FAQ dari kode halaman pricing.
 
 ## FAQ Pricing (halaman /pricing)
-- **Kenapa pendaftaran online dan dashboard realtime ada di Pro?** — Keduanya menyelesaikan bottleneck lintas pihak: orang tua mendaftar dari luar sekolah, operator memproses data, dan owner memantau hasil dari mana saja. Karena membutuhkan alur publik, kontrol akses, serta sinkronisasi realtime, fitur ini ditempatkan sebagai nilai utama Pro.
-- **Bagaimana cara upgrade?** — Klik tombol Upgrade di dashboard atau hubungi via WA di +6289508053795. Diproses dan aktif dalam 1x24 jam.
-- **Apakah ada biaya tersembunyi?** — Tidak ada. Harga adalah langganan per tahun penuh. Tidak ada biaya setup, per pengguna, atau tambahan lain.
-- **Bisa ganti plan setelah bayar?** — Ya, upgrade kapan saja dengan bayar selisih (misal Basic → Pro bayar Rp700.000 selisih di tengah tahun).
+- **Apa bedanya Tahun Pertama dan Perpanjangan?** — Tahun Pertama sudah termasuk pemasangan, impor data awal, dan pelatihan tim — sistem langsung dipakai, bukan cuma diserahkan. Perpanjangan hanya biaya operasional tahun berikutnya (server, backup, support, update) dengan harga tetap Rp 1.500.000 per tahun.
+- **Bagaimana cara mulai?** — Daftar gratis untuk mencoba sendiri, atau chat via WA di +6289508053795 untuk paket Tahun Pertama. Setup, input data awal, dan training tim biasanya aktif dalam 1–3 hari kerja.
+- **Apakah ada biaya tersembunyi?** — Tidak ada. Harga tahun pertama sudah termasuk setup dan training; tahun berikutnya hanya perpanjangan. Fitur custom di luar paket dihitung terpisah mulai Rp 500.000 dan selalu disepakati harganya sebelum dikerjakan.
+- **Kalau fitur yang dibutuhkan belum ada?** — Fitur custom bisa dibangun, mulai Rp 500.000 sesuai lingkup. Kebutuhan dibahas saat konsultasi, harga disepakati di awal — tidak ada biaya mendadak di tengah jalan.
 - **Apakah database harus disimpan di komputer sekolah?** — Tidak. Database cloud Supabase membuat dashboard bisa dipantau owner dari HP. Data dipisahkan per sekolah (school_id + Row Level Security); backup lokal berkala opsional.
 
 Catatan: artikel `/panduan/*` juga punya FAQ masing-masing — ada di bagian PANDUAN di knowledge pack ini.
@@ -1876,7 +1884,7 @@ Kisaran biaya aplikasi administrasi sekolah: gratis, langganan tahunan, hingga p
 
 #### Jawaban singkat
 
-Biaya aplikasi administrasi sekolah di Indonesia bervariasi dari Rp 0 (gratis dengan fitur dasar) sampai jutaan rupiah per tahun untuk paket lengkap. Sebagai gambaran, SekolahRapi menawarkan paket Gratis, Basic Rp 790.000/tahun, dan Pro Rp 1.490.000/tahun. Yang menentukan nilai bukan harga, tetapi fitur yang benar-benar dipakai sekolah.
+Biaya aplikasi administrasi sekolah di Indonesia bervariasi dari Rp 0 (gratis dengan fitur dasar) sampai jutaan rupiah per tahun untuk paket lengkap. Sebagai gambaran, SekolahRapi menawarkan paket Gratis, Tahun Pertama Rp 4.000.000 (termasuk setup, input data, dan pelatihan), dan perpanjangan Rp 1.500.000 per tahun. Yang menentukan nilai bukan harga, tetapi fitur yang benar-benar dipakai sekolah.
 
 #### Pola harga yang umum
 

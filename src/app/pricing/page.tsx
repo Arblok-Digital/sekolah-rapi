@@ -9,8 +9,8 @@ export const dynamic = 'force-dynamic';
 
 const tiers = PRICING_PLANS.map((pricing) => ({
   ...pricing,
-  highlight: pricing.plan === 'pro',
-  icon: pricing.plan === 'pro' ? Zap : pricing.plan === 'basic' ? Star : CheckCircle,
+  highlight: pricing.plan === 'tahun1',
+  icon: pricing.plan === 'tahun1' ? Zap : pricing.plan === 'perpanjangan' ? Star : CheckCircle,
 }));
 
 export default function PricingPage() {
@@ -42,7 +42,7 @@ export default function PricingPage() {
             Harga <span className="text-[#26735d]">Transparan</span>
           </h1>
           <p className="text-lg text-[#59645d]">
-            Mulai gratis. Upgrade saat sekolah Anda butuh lebih. Tidak ada biaya tersembunyi — bayar 1x per tahun penuh akses.
+            Mulai gratis. Tahun pertama lengkap dengan setup dan pendampingan, lalu perpanjangan tahunan dengan harga tetap. Tidak ada biaya tersembunyi.
           </p>
         </div>
       </section>
@@ -80,7 +80,12 @@ export default function PricingPage() {
                 </div>
 
                 {/* Price */}
-                <div className="mb-2">
+                <div className="mb-2 flex items-baseline gap-2 flex-wrap">
+                  {tier.originalPriceLabel && (
+                    <span className={`text-sm font-semibold line-through ${tier.highlight ? 'text-white/45' : 'text-[#8a938c]'}`}>
+                      {tier.originalPriceLabel}
+                    </span>
+                  )}
                   <span className="text-4xl font-bold">{tier.priceLabel}</span>
                   <span className={tier.highlight ? 'text-white/70' : 'text-[#59645d]'}>{tier.billingLabel}</span>
                 </div>
@@ -128,6 +133,12 @@ export default function PricingPage() {
             );
           })}
         </div>
+        <div className="mt-12 text-center">
+          <p className="text-sm text-[#59645d]">
+            Butuh fitur yang belum ada?{' '}
+            <span className="font-bold text-[#173f35]">Fitur custom mulai Rp 500.000</span> — lingkup dan harga disepakati di awal, sebelum dikerjakan.
+          </p>
+        </div>
       </section>
 
       {/* FAQ light */}
@@ -135,10 +146,10 @@ export default function PricingPage() {
         <h2 className="text-2xl font-bold text-center mb-10">Pertanyaan Umum</h2>
         <div className="space-y-4">
           {[
-            { q: 'Kenapa pendaftaran online dan dashboard realtime ada di Pro?', a: 'Keduanya menyelesaikan bottleneck lintas pihak: orang tua mendaftar dari luar sekolah, operator memproses data, dan owner memantau hasil dari mana saja. Karena membutuhkan alur publik, kontrol akses, serta sinkronisasi realtime, fitur ini ditempatkan sebagai nilai utama Pro.' },
-            { q: 'Bagaimana cara upgrade?', a: 'Klik tombol Upgrade di dashboard atau hubungi kami via WA di +6289508053795. Kami akan proses dan aktifkan plan dalam 1x24 jam.' },
-            { q: 'Apakah ada biaya tersembunyi?', a: 'Tidak ada. Harga yang tertera adalah langganan per tahun penuh. Tidak ada biaya setup, biaya per pengguna, atau biaya tambahan lainnya.' },
-            { q: 'Bisa ganti plan setelah bayar?', a: 'Ya. Bisa upgrade kapan saja dengan bayar selisih. Misalnya dari Basic ke Pro bayar Rp 700.000 (selisih paket) di tengah tahun.' },
+            { q: 'Apa bedanya Tahun Pertama dan Perpanjangan?', a: 'Tahun Pertama sudah termasuk pemasangan, impor data awal, dan pelatihan tim — sistem langsung dipakai, bukan cuma diserahkan. Perpanjangan hanya biaya operasional tahun berikutnya (server, backup, support, update) dengan harga tetap Rp 1.500.000 per tahun.' },
+            { q: 'Bagaimana cara mulai?', a: 'Daftar gratis untuk mencoba sendiri, atau chat kami via WA di +6289508053795 untuk paket Tahun Pertama. Kami bantu setup, input data awal, dan training tim — biasanya aktif dalam 1–3 hari kerja.' },
+            { q: 'Apakah ada biaya tersembunyi?', a: 'Tidak ada. Harga tahun pertama sudah termasuk setup dan training; tahun berikutnya hanya perpanjangan. Fitur custom di luar paket dihitung terpisah mulai Rp 500.000 dan selalu disepakati harganya sebelum dikerjakan.' },
+            { q: 'Kalau fitur yang dibutuhkan belum ada?', a: 'Fitur custom bisa dibangun, mulai Rp 500.000 sesuai lingkup. Kebutuhan dibahas saat konsultasi, harga disepakati di awal — tidak ada biaya mendadak di tengah jalan.' },
             { q: 'Apakah database harus disimpan di komputer sekolah?', a: 'Tidak. Database cloud Supabase membuat dashboard bisa dipantau owner dari HP di mana saja. Data dipisahkan per sekolah dengan school_id dan Row Level Security; backup lokal berkala dapat ditambahkan untuk kebutuhan operasional, tetapi bukan database utama.' },
           ].map((faq, i) => (
             <details key={i} className="bg-white/75 rounded-2xl border border-[#17211b]/10 group">
