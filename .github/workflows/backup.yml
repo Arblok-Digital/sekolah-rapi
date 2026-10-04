@@ -19,7 +19,7 @@ jobs:
         run: |
           set -euo pipefail
           docker run --rm --network host -e SUPABASE_DB_URL -v "$PWD:/work" postgres:17 \
-            bash -c 'pg_dump "$SUPABASE_DB_URL" -Fc --no-owner --no-privileges -f /work/backup.dump'
+            bash -c 'printf "precedence ::ffff:0:0/96 100\n" >> /etc/gai.conf; pg_dump "$SUPABASE_DB_URL" -Fc --no-owner --no-privileges -f /work/backup.dump'
           test -s backup.dump
           ls -lh backup.dump
 
