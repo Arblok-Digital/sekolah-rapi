@@ -951,6 +951,12 @@ Detail dan acceptance criteria: `.ai/ORGANIC-GROWTH-ROADMAP.md`.
 
 Tuliskan entri terbaru di atas. Maksimal ringkas: hasil, file, validasi, blocker, next step.
 
+## 2026-10-04 — Sync SPP: Naik = Delta, Turun/Ubah = Koreksi
+
+- `syncSPPIncomeToKas` disempurnakan setelah QA data live (cicilan infaq Andi): metadata (deskripsi/tanggal) konsisten & nominal NAIK → tambah **selisih saja** (tanpa koreksi, riwayat bersih); nominal TURUN / jadi belum bayar / kategori-periode-tanggal berubah → **rebuild penuh** (koreksi semua + bikin ulang). Net selalu = `paid_amount`.
+- Validasi data live: baris `2e80a604` (infaq 3jt partial 500rb) net Kas 500rb ✓; penurunan seragam 500rb→300rb net 300rb ✓.
+- Validasi: `typecheck`, `lint`, `vitest 7/7`.
+
 ## 2026-10-04 — Koreksi Masuk Riwayat, Keluar dari Ringkasan
 
 - Keputusan owner: koreksi (reversal) **tetap di riwayat** (jejak audit anti-korupsi) tapi **dikecualikan dari semua angka ringkasan** — pasangan koreksi + transaksi aslinya saling menghapus, keduanya dikeluarkan dari agregat biar Pemasukan/Pengeluaran jujur (sebelumnya Overview/Laporan menggelembung: demo 4jt/3jt vs real 1jt/0).

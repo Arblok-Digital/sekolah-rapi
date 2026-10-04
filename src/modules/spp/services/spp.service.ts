@@ -508,13 +508,34 @@ async function syncSPPIncomeToKas(
 
   if (linked.length > 0) {
     const linkedSum = linked.reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
-    const coherent =
-      linkedSum === params.targetPaid &&
-      linked.every((t) => t.description === description && t.reference_date === params.referenceDate);
-    if (coherent) return 0;
+    const metadataCoherent = linked.every(
+      (t) => t.description === description && t.reference_date === params.referenceDate
+    );
 
-    // Tidak koheren (baris diedit: kategori/periode/nominal/tanggal) —
-    // bongkar semua transaksi lamanya dengan KOREKSI, lalu bikin ulang.
+    // Masih konsisten (deskripsi & tanggal sama) → tinggal cocokkan nominal.
+    if (metadataCoherent && linkedSum === params.targetPaid) return 0;
+
+    // Cicilan BERTAMBAH → tambah selisihnya saja, tanpa koreksi (riwayat bersih).
+    if (metadataCoherent && linkedSum < params.targetPaid) {
+      const delta = params.targetPaid - linkedSum;
+      const userId = params.userId ?? (await getCurrentUserId(supabase));
+      await createSPPIncomeTransaction(supabase, {
+        schoolId: params.schoolId,
+        userId,
+        sourceId: params.paymentId,
+        month: params.month,
+        year: params.year,
+        amount: delta,
+        referenceDate: params.referenceDate,
+        categoryId,
+        categoryName,
+      });
+      return delta;
+    }
+
+    // Tidak koheren (kategori/periode/tanggal berubah), NAIK-NURUN, atau jadi
+    // belum-bayar → bongkar semua transaksi lamanya dengan KOREKSI, lalu
+    // bikin ulang sesuai kondisi terkini.
     const userId = params.userId ?? (await getCurrentUserId(supabase));
     for (const tx of linked) {
       const { error: revErr } = await supabase.from('transactions').insert({
