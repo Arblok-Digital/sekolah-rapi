@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
             config: {
               systemInstruction: systemPrompt,
               temperature: 0.2,
-              maxOutputTokens: 800,
+              maxOutputTokens: 4096,
             },
             contents,
           });

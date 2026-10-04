@@ -58,17 +58,16 @@ export default function TanyaArblok({ context = 'general' }: { context?: 'landin
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
-      let buf = '';
       const assistantId = crypto.randomUUID();
       setMessages((m) => [...m, { id: assistantId, role: 'assistant', content: '' }]);
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        buf += decoder.decode(value, { stream: true });
+        const piece = decoder.decode(value, { stream: true });
+        if (!piece) continue;
         setMessages((m) =>
-          m.map((x) => (x.id === assistantId ? { ...x, content: (x.content + buf).slice(0, 50000) } : x)),
+          m.map((x) => (x.id === assistantId ? { ...x, content: (x.content + piece).slice(0, 50000) } : x)),
         );
-        buf = '';
       }
     } catch (e: any) {
       const err = e?.message || 'Terjadi kesalahan';
