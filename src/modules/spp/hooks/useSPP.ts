@@ -1,6 +1,7 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { createSupabaseClient } from '@/shared/services/supabase/client';
 import {
   getSPPPayments,
   createSPPPayment,
@@ -15,6 +16,13 @@ import {
   backfillMissingSPPTransactions,
 } from '../services/spp.service';
 import type { SPPFilter, SPPFormInput, SPPPayment } from '../types/spp.types';
+
+/** Satu event cicilan yang tercatat di Kas (transaksi terkait satu baris bayar). */
+export interface InstallmentEvent {
+  paymentId: string;
+  amount: number;
+  date: string;
+}
 
 const SPP_KEYS = {
   all: ['spp'] as const,
@@ -57,6 +65,52 @@ export function useStudentFinance(schoolId: string, studentId: string | null) {
     queryKey: ['spp', 'student', schoolId, studentId],
     queryFn: () => getStudentSPPPayments(schoolId, studentId as string),
     enabled: !!schoolId && !!studentId,
+  });
+}
+
+/**
+ * Hook: riwayat cicilan per baris pembayaran — setiap transaksi pemasukan
+ * yang pernah dibuat dari baris itu (source_type='spp', source_id=baris),
+ * tanpa pasangan koreksi. Dipakai Kartu Keuangan Siswa.
+ */
+export function usePaymentInstallments(schoolId: string, payments?: SPPPayment[]) {
+  const idsKey = payments?.map((p) => p.id).join(',') ?? '';
+  return useQuery({
+    queryKey: ['spp', 'installments', schoolId, idsKey],
+    enabled: !!schoolId && !!idsKey,
+    queryFn: async (): Promise<InstallmentEvent[]> => {
+      const supabase = createSupabaseClient();
+      const paymentIds = idsKey.split(',').filter(Boolean);
+
+      const { data: incomeTx, error } = await supabase
+        .from('transactions')
+        .select('id, amount, reference_date, source_id, created_at')
+        .eq('school_id', schoolId)
+        .eq('source_type', 'spp')
+        .in('source_id', paymentIds)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+
+      const txIds = (incomeTx ?? []).map((t) => t.id);
+      const reversed = new Set<string>();
+      if (txIds.length > 0) {
+        const { data: rev } = await supabase
+          .from('transactions')
+          .select('source_id')
+          .eq('school_id', schoolId)
+          .eq('source_type', 'reversal')
+          .in('source_id', txIds);
+        (rev ?? []).forEach((r) => reversed.add(r.source_id as string));
+      }
+
+      return (incomeTx ?? [])
+        .filter((t) => !reversed.has(t.id))
+        .map((t) => ({
+          paymentId: t.source_id as string,
+          amount: Number(t.amount) || 0,
+          date: t.reference_date,
+        }));
+    },
   });
 }
 

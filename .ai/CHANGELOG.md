@@ -2,6 +2,15 @@
 
 Tuliskan entri terbaru di atas. Maksimal ringkas: hasil, file, validasi, blocker, next step.
 
+## 2026-10-04 — Tombol "+ Cicilan" + Riwayat Cicilan di Kartu Siswa
+
+- Konteks: admin salah paham — ubah "Dibayar" 200rb→500rb (edit total) padahal mau NAMBAH cicilan 500rb (seharusnya total 700rb). Fitur baru menghilangkan kebutuhan hitung manual.
+- **"+ Cicilan"** (ikon koin, per baris non-lunas di Kartu Keuangan Siswa): admin isi *nominal diterima* → sistem update `paid_amount += nominal` (auto status partial/lunas, tolak melebihi tagihan, tanggal = hari ini) → sync Kas lewat jalur delta (+selisih, tanpa koreksi).
+- **Riwayat cicilan** per baris: tiap event transaksi terkait (`source_type='spp'`, `source_id` baris, pasangan koreksi difilter) tampil "Cicilan: +Rp200rb (4 Okt) · +Rp500rb (4 Okt)". Hook baru `usePaymentInstallments`.
+- `syncSPPIncomeToKas`: syarat jalur delta dilonggarkan — deskripsi kategori/periode saja yang harus sama, tanggal bebas (cicilan beda hari wajar); edit tanggal tanpa ubah nominal → tetap rebuild.
+- File: `StudentFinanceCard.tsx`, `useSPP.ts`, `spp.service.ts`.
+- Validasi: `typecheck`, `lint`, `vitest 7/7`.
+
 ## 2026-10-04 — Sync SPP: Naik = Delta, Turun/Ubah = Koreksi
 
 - `syncSPPIncomeToKas` disempurnakan setelah QA data live (cicilan infaq Andi): metadata (deskripsi/tanggal) konsisten & nominal NAIK → tambah **selisih saja** (tanpa koreksi, riwayat bersih); nominal TURUN / jadi belum bayar / kategori-periode-tanggal berubah → **rebuild penuh** (koreksi semua + bikin ulang). Net selalu = `paid_amount`.

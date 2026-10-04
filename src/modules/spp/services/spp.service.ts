@@ -508,15 +508,16 @@ async function syncSPPIncomeToKas(
 
   if (linked.length > 0) {
     const linkedSum = linked.reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
-    const metadataCoherent = linked.every(
-      (t) => t.description === description && t.reference_date === params.referenceDate
-    );
+    // Deskripsi wajib sama (kategori/periode tidak berubah). Tanggal boleh
+    // beda — cicilan baru hari lain wajar (tiap cicilan punya tanggal sendiri).
+    const descCoherent = linked.every((t) => t.description === description);
+    const dateCoherent = linked.every((t) => t.reference_date === params.referenceDate);
 
-    // Masih konsisten (deskripsi & tanggal sama) → tinggal cocokkan nominal.
-    if (metadataCoherent && linkedSum === params.targetPaid) return 0;
+    if (descCoherent && dateCoherent && linkedSum === params.targetPaid) return 0;
 
-    // Cicilan BERTAMBAH → tambah selisihnya saja, tanpa koreksi (riwayat bersih).
-    if (metadataCoherent && linkedSum < params.targetPaid) {
+    // Cicilan BERTAMBAH (deskripsi sama, nominal naik) → tambah selisihnya
+    // saja dengan tanggal baris saat ini — tanpa koreksi, riwayat bersih.
+    if (descCoherent && linkedSum < params.targetPaid) {
       const delta = params.targetPaid - linkedSum;
       const userId = params.userId ?? (await getCurrentUserId(supabase));
       await createSPPIncomeTransaction(supabase, {
@@ -533,9 +534,9 @@ async function syncSPPIncomeToKas(
       return delta;
     }
 
-    // Tidak koheren (kategori/periode/tanggal berubah), NAIK-NURUN, atau jadi
-    // belum-bayar → bongkar semua transaksi lamanya dengan KOREKSI, lalu
-    // bikin ulang sesuai kondisi terkini.
+    // Kategori/periode berubah, nominal TURUN, atau tanggal baris diedit
+    // (tanpa perubahan nominal) → bongkar semua transaksi lamanya dengan
+    // KOREKSI, lalu bikin ulang sesuai kondisi terkini.
     const userId = params.userId ?? (await getCurrentUserId(supabase));
     for (const tx of linked) {
       const { error: revErr } = await supabase.from('transactions').insert({

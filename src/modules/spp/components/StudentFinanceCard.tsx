@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { X, Pencil, Plus } from 'lucide-react';
+import { useState, useEffect, useMemo, Fragment } from 'react';
+import { X, Pencil, Plus, Coins } from 'lucide-react';
 import { cn } from '@/shared/utils/cn';
 import { useToast } from '@/shared/components/ui/toast';
 import { toUserMessage } from '@/shared/lib/safe-error';
 import { useCategories, useCreateCategory } from '@/modules/transactions/hooks/useCategories';
-import { useCreateSPPPayment } from '../hooks/useSPP';
+import { useCreateSPPPayment, useUpdateSPPPayment, usePaymentInstallments } from '../hooks/useSPP';
 import type { SPPFormInput, SPPPayment, SPPStatus } from '../types/spp.types';
 import { formatPeriodLabel, formatRupiah, getMonthName } from '../types/spp.types';
 
@@ -32,6 +32,11 @@ function sisaBayar(p: SPPPayment): number {
   return 0;
 }
 
+function shortDate(d: string) {
+  if (!d) return '-';
+  return new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
 const inputClass =
   'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none disabled:bg-gray-50 disabled:text-gray-400';
 
@@ -48,7 +53,21 @@ export function StudentFinanceCard({
   const { data: categories = [] } = useCategories(schoolId, 'income');
   const createCategory = useCreateCategory(schoolId);
   const createPayment = useCreateSPPPayment(schoolId, userId);
+  const updatePayment = useUpdateSPPPayment();
+  const { data: installments = [] } = usePaymentInstallments(schoolId, payments);
 
+  const eventsByPayment = useMemo(() => {
+    const m = new Map<string, typeof installments>();
+    installments.forEach((e) => {
+      if (!m.has(e.paymentId)) m.set(e.paymentId, []);
+      m.get(e.paymentId)!.push(e);
+    });
+    return m;
+  }, [installments]);
+
+  const [cicilanFor, setCicilanFor] = useState<string | null>(null);
+  const [cicilanNominal, setCicilanNominal] = useState('');
+  const [cicilanError, setCicilanError] = useState('');
   const [formOpen, setFormOpen] = useState(false);
   const [isNewCategory, setIsNewCategory] = useState(false);
   const [categoryId, setCategoryId] = useState('');
@@ -165,6 +184,56 @@ export function StudentFinanceCard({
       setFormError(toUserMessage(err, 'Gagal menyimpan entri'));
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const openCicilan = (p: SPPPayment) => {
+    setCicilanFor(p.id);
+    setCicilanNominal('');
+    setCicilanError('');
+  };
+
+  const closeCicilan = () => {
+    setCicilanFor(null);
+    setCicilanNominal('');
+    setCicilanError('');
+  };
+
+  /**
+   * Tambah cicilan: admin isi NOMINAL YANG DITERIMA, sistem yang jumlahin ke
+   * total pembayaran (delta) — tanpa hitung manual, tanpa koreksi.
+   */
+  const handleAddCicilan = async (p: SPPPayment) => {
+    setCicilanError('');
+    const nominal = parseInt(cicilanNominal || '0');
+    if (!(nominal > 0)) {
+      setCicilanError('Nominal cicilan harus lebih dari 0');
+      return;
+    }
+    const newPaid = (p.paid_amount || 0) + nominal;
+    if ((p.amount || 0) > 0 && newPaid > p.amount) {
+      setCicilanError(`Melebihi tagihan ${formatRupiah(p.amount)} (sisa ${formatRupiah(sisaBayar(p))})`);
+      return;
+    }
+    const newStatus: SPPStatus =
+      (p.amount || 0) > 0 && newPaid >= p.amount ? 'paid' : 'partial';
+
+    try {
+      await updatePayment.mutateAsync({
+        id: p.id,
+        updates: {
+          paid_amount: newPaid,
+          status: newStatus,
+          payment_date: new Date().toISOString().split('T')[0],
+        },
+      });
+      toast({
+        title: `Cicilan ${formatRupiah(nominal)} dicatat — total ${formatRupiah(newPaid)}`,
+        variant: 'success',
+      });
+      closeCicilan();
+    } catch (err) {
+      setCicilanError(toUserMessage(err, 'Gagal mencatat cicilan'));
     }
   };
 
@@ -454,38 +523,97 @@ export function StudentFinanceCard({
                       {items.map((p) => {
                         const badge = statusBadge[p.status] || statusBadge.unpaid;
                         const sisa = sisaBayar(p);
+                        const events = eventsByPayment.get(p.id) ?? [];
                         return (
-                          <div key={p.id} className="flex items-center gap-3 px-3 py-2.5">
-                            <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium text-gray-900 truncate">
-                                {formatPeriodLabel(p.month, p.year)}
-                              </p>
-                              <p className="text-[11px] text-gray-400">
-                                {p.payment_date ? `dibayar ${p.payment_date}` : 'belum ada tanggal bayar'}
-                              </p>
-                            </div>
-                            <div className="text-right shrink-0">
-                              <p className="text-sm font-medium text-gray-900">{formatRupiah(p.paid_amount)}</p>
-                              {sisa > 0 && <p className="text-[11px] text-red-600">sisa {formatRupiah(sisa)}</p>}
-                            </div>
-                            <span
-                              className={cn(
-                                'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border shrink-0',
-                                badge.class
-                              )}
-                            >
-                              {badge.label}
-                            </span>
-                            {onEdit && (
-                              <button
-                                onClick={() => onEdit(p)}
-                                className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors shrink-0"
-                                title="Edit pembayaran ini"
+                          <Fragment key={p.id}>
+                            <div className="flex items-center gap-3 px-3 py-2.5">
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-medium text-gray-900 truncate">
+                                  {formatPeriodLabel(p.month, p.year)}
+                                </p>
+                                <p className="text-[11px] text-gray-400">
+                                  {p.payment_date ? `dibayar ${p.payment_date}` : 'belum ada tanggal bayar'}
+                                </p>
+                                {events.length > 0 && (
+                                  <p className="text-[11px] text-emerald-700 mt-0.5 leading-relaxed">
+                                    Cicilan:{' '}
+                                    {events.map((e, i) => (
+                                      <span key={`${e.paymentId}-${e.date}-${i}`}>
+                                        {i > 0 ? ' · ' : ''}
+                                        +{formatRupiah(e.amount)} ({shortDate(e.date)})
+                                      </span>
+                                    ))}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="text-right shrink-0">
+                                <p className="text-sm font-medium text-gray-900">{formatRupiah(p.paid_amount)}</p>
+                                {sisa > 0 && <p className="text-[11px] text-red-600">sisa {formatRupiah(sisa)}</p>}
+                              </div>
+                              <span
+                                className={cn(
+                                  'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border shrink-0',
+                                  badge.class
+                                )}
                               >
-                                <Pencil className="w-3.5 h-3.5" />
-                              </button>
+                                {badge.label}
+                              </span>
+                              {p.status !== 'paid' && (
+                                <button
+                                  onClick={() => (cicilanFor === p.id ? closeCicilan() : openCicilan(p))}
+                                  className={cn(
+                                    'p-1.5 rounded-lg transition-colors shrink-0',
+                                    cicilanFor === p.id
+                                      ? 'text-indigo-700 bg-indigo-100'
+                                      : 'text-gray-400 hover:text-indigo-600 hover:bg-indigo-50'
+                                  )}
+                                  title="Tambah cicilan"
+                                >
+                                  <Coins className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                              {onEdit && (
+                                <button
+                                  onClick={() => onEdit(p)}
+                                  className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors shrink-0"
+                                  title="Edit pembayaran ini"
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
+                            {cicilanFor === p.id && (
+                              <div className="px-3 py-2.5 bg-indigo-50/60 border-t border-indigo-100">
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="number"
+                                    autoFocus
+                                    value={cicilanNominal}
+                                    onChange={(e) => setCicilanNominal(e.target.value)}
+                                    placeholder={`Cicilan diterima (sisa ${formatRupiah(sisa)})`}
+                                    min={0}
+                                    className="flex-1 min-w-0 rounded-lg border border-gray-300 px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
+                                  />
+                                  <button
+                                    onClick={() => handleAddCicilan(p)}
+                                    disabled={updatePayment.isPending}
+                                    className="px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors disabled:opacity-50"
+                                  >
+                                    {updatePayment.isPending ? 'Menyimpan...' : 'Catat'}
+                                  </button>
+                                  <button
+                                    onClick={closeCicilan}
+                                    className="px-2.5 py-1.5 text-xs font-medium text-gray-600 bg-white hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors"
+                                  >
+                                    Batal
+                                  </button>
+                                </div>
+                                {cicilanError && (
+                                  <p className="mt-1.5 text-[11px] text-red-600">{cicilanError}</p>
+                                )}
+                              </div>
                             )}
-                          </div>
+                          </Fragment>
                         );
                       })}
                     </div>
