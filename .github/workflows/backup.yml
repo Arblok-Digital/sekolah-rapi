@@ -40,7 +40,7 @@ jobs:
           BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
         run: |
           set -euo pipefail
-          gpg --batch --passphrase "$BACKUP_PASSPHRASE" -d sekolah-rapi-*.dump.gpg -o verify.dump
+          gpg --batch --yes --passphrase "$BACKUP_PASSPHRASE" --output verify.dump --decrypt sekolah-rapi-*.dump.gpg
           magic=$(head -c 5 verify.dump)
           size=$(stat -c%s verify.dump)
           rm verify.dump
