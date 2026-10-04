@@ -29,3 +29,7 @@ public/worker-*.js
 
 .vercel
 .env*
+
+# Jangan pernah commit kunci backup (repo ini public)
+backup sekolah rapi.txt
+*passphrase*
