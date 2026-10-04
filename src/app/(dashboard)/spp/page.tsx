@@ -634,6 +634,8 @@ export default function SPPPage() {
         student={studentCard}
         payments={cardPayments}
         loading={cardLoading}
+        schoolId={schoolId || ''}
+        userId={session?.user?.id || ''}
         onClose={() => setStudentCard(null)}
         onEdit={(p) => {
           setStudentCard(null);

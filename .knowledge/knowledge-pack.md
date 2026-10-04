@@ -951,6 +951,14 @@ Detail dan acceptance criteria: `.ai/ORGANIC-GROWTH-ROADMAP.md`.
 
 Tuliskan entri terbaru di atas. Maksimal ringkas: hasil, file, validasi, blocker, next step.
 
+## 2026-10-04 — Rebuild Kas saat Edit + Tambah Entri Manual di Kartu Siswa
+
+- **Bug**: edit baris pembayaran (kategori/periode/nominal/tanggal) meninggalkan transaksi Kas basi — delta negatif disupres. Bukti: demo Arblok dibuat "uang pendaftaran Rp3jt lunas" lalu diedit jadi "infaq hasanah Rp1jt partial" tetapi Kas tetap 3jt.
+- **Fix** `spp.service.ts` `syncSPPIncomeToKas`: jika baris sudah punya transaksi terkait tapi tidak koheren (selisih/desk/tanggal beda) → **reversal semua** (`Koreksi: …`, `source_type=reversal`) lalu **bikin ulang** sesuai kondisi terkini; edit benign (metode/kwitansi) tetap no-op. Data demo diperbaiki manual → NET Rp1.000.000 = `paid_amount`.
+- **UX**: seluruh baris tabel Pembayaran di `/spp` bisa diklik ke Kartu Keuangan Siswa (+hint di header; aksi Kuitansi/Edit/Hapus `stopPropagation`).
+- **Fitur**: **Tambah Entri** di dalam kartu — form ringkas: kategori (dropdown global income / `+ kategori baru` inline → `categories` per sekolah), periode opsional (default tanpa), tagihan/dibayar, status lunas/angsuran/belum, tanggal. Pake `createSPPPayment` → sync Kas otomatis. File: `StudentFinanceCard.tsx` (schoolId/userId props), `spp/page.tsx`.
+- Validasi: `typecheck`, `lint`, `vitest 7/7`.
+
 ## 2026-10-04 — Angsuran Masuk Kas (Delta) + Kartu Keuangan Siswa
 
 - **Bug**: pembayaran `partial`/angsuran tidak pernah membuat transaksi pemasukan (sync hanya jalan saat `paid`) — uang angsuran tak terlihat owner, celah penyimpangan admin. Infaq Rp1jt AD sahara hilang dari Kas.
