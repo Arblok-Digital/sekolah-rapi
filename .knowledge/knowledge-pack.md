@@ -951,6 +951,15 @@ Detail dan acceptance criteria: `.ai/ORGANIC-GROWTH-ROADMAP.md`.
 
 Tuliskan entri terbaru di atas. Maksimal ringkas: hasil, file, validasi, blocker, next step.
 
+## 2026-10-04 — Mobile: Chat Gak Nutup Tombol Simpan + Scroll Kartu
+
+- Laporan (Arblok, via HP): floating chat "Tanya Arblok" (`z-[90]`) lebih tinggi dari SEMUA modal (`z-50`) → pill/panel-nya nutupin area bawah modal transaksi, tombol Simpan gak bisa diklik; juga nimpa aksi kartu siswa.
+- `TanyaArblok`: konteks **dashboard → `z-[45]`** (di bawah semua modal/drawer `z-50`, ReceiptModal `z-70`, toast `z-100`, bottom-nav `z-50`) — pas modal kebuka, chat ketutup backdrop & gak bisa ngeblokir. Landing/general tetap `z-[90]`.
+- FAB mobile = **bubble ikon saja** (teks "Tanya Arblok" `hidden sm:inline`, px-3) — jejak lebih kecil. Landing mobile: FAB diangkat `bottom-[6.5rem] sm:bottom-5` biar gak numpuk sama tombol WA FAB (`z-50`).
+- `PaymentForm` modal: outer `fixed inset-0` → `items-start + overflow-y-auto + sm:items-center` + modal `my-auto` (pola modal Kas) — form panjang/keyboard HP bisa di-scroll sampai tombol Simpan; backdrop jadi `fixed` biar tetap nutup waktu scroll.
+- `StudentFinanceCard` drawer: `overscroll-contain` di aside (gak chain ke body) + body `pb-[max(1.5rem,env(safe-area-inset-bottom))]` (aman dari home indicator iPhone).
+- Validasi: `typecheck`, `lint`, `vitest 7/7`.
+
 ## 2026-10-04 — Satu Jalur Pembayaran: Kartu Siswa
 
 - Keputusan owner: pembayaran cukup lewat **kartu keuangan siswa** — hilangkan dua-format (form edit = total vs + Cicilan = tambahan) yang membingungkan admin.

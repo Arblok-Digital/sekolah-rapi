@@ -26,6 +26,8 @@ export default function TanyaArblok({ context = 'general' }: { context?: 'landin
 
   const headerTitle = useMemo(() => 'Tanya Arblok', []);
   const showFab = true;
+  // Dashboard: chat harus DI BAWAH modal/drawer (z-50) supaya gak nutupin tombol Simpan di HP.
+  const zClass = context === 'dashboard' ? 'z-[45]' : 'z-[90]';
 
   useEffect(() => {
     if (bottomRef.current) {
@@ -88,15 +90,20 @@ export default function TanyaArblok({ context = 'general' }: { context?: 'landin
   };
 
   if (!open) {
-    const bottomOffset = context === 'dashboard' ? 'bottom-[6.5rem]' : 'bottom-5';
+    const bottomOffset =
+      context === 'dashboard'
+        ? 'bottom-[6.5rem]'
+        : context === 'landing'
+          ? 'bottom-[6.5rem] sm:bottom-5'
+          : 'bottom-5';
     return (
       <button
         onClick={() => setOpen(true)}
         aria-label="Tanya Arblok"
-        className={`fixed right-4 z-[90] ${bottomOffset} inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-emerald-600 to-emerald-500 px-4 py-3 text-sm font-semibold text-white shadow-lg transition-all hover:scale-105 hover:from-emerald-500 hover:to-emerald-400 sm:px-5`}
+        className={`fixed right-4 ${zClass} ${bottomOffset} inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-emerald-600 to-emerald-500 px-3 py-3 text-sm font-semibold text-white shadow-lg transition-all hover:scale-105 hover:from-emerald-500 hover:to-emerald-400 sm:px-5`}
       >
         <MessageCircle className="h-5 w-5" />
-        <span>Tanya Arblok</span>
+        <span className="hidden sm:inline">Tanya Arblok</span>
       </button>
     );
   }
@@ -105,7 +112,7 @@ export default function TanyaArblok({ context = 'general' }: { context?: 'landin
   const maxH = minimized ? 'h-14' : 'h-[min(28rem,80dvh)]';
 
   return (
-    <div className={`fixed right-3 z-[90] w-[calc(100vw-1.5rem)] sm:right-4 sm:w-96 ${panelBottom}`}>
+    <div className={`fixed right-3 ${zClass} w-[calc(100vw-1.5rem)] sm:right-4 sm:w-96 ${panelBottom}`}>
       <div className={`flex ${maxH} flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#0f1f1a]/95 shadow-2xl backdrop-blur-lg transition-all`}>
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">

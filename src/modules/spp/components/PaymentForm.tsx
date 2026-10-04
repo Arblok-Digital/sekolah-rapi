@@ -161,12 +161,12 @@ export function PaymentForm({
   const years = Array.from({ length: 6 }, (_, i) => currentYear - 2 + i);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:items-center">
       {/* overlay */}
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
 
       {/* modal */}
-      <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-xl border border-gray-200">
+      <div className="relative my-auto w-full max-w-lg bg-white rounded-2xl shadow-xl border border-gray-200">
         {/* header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <h3 className="text-lg font-semibold text-gray-900">

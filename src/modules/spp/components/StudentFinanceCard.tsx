@@ -244,7 +244,7 @@ export function StudentFinanceCard({
     <div className="fixed inset-0 z-50 flex">
       <div className="flex-1 bg-black/30 backdrop-blur-sm" onClick={onClose} aria-hidden />
 
-      <aside className="relative w-full max-w-md bg-white shadow-xl border-l border-gray-200 h-full overflow-y-auto">
+      <aside className="relative w-full max-w-md bg-white shadow-xl border-l border-gray-200 h-full overflow-y-auto overscroll-contain">
         {/* Header */}
         <div className="sticky top-0 z-10 bg-white border-b border-gray-100 px-5 py-4">
           <div className="flex items-start justify-between gap-3">
@@ -286,7 +286,7 @@ export function StudentFinanceCard({
         </div>
 
         {/* Body */}
-        <div className="px-5 py-4 space-y-5">
+        <div className="px-5 py-4 space-y-5 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
           {/* Aksi: tambah entri manual */}
           <div className="flex items-center justify-between gap-2">
             <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-400">
