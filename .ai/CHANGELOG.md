@@ -2,6 +2,14 @@
 
 Tuliskan entri terbaru di atas. Maksimal ringkas: hasil, file, validasi, blocker, next step.
 
+## 2026-10-04 — Angsuran Masuk Kas (Delta) + Kartu Keuangan Siswa
+
+- **Bug**: pembayaran `partial`/angsuran tidak pernah membuat transaksi pemasukan (sync hanya jalan saat `paid`) — uang angsuran tak terlihat owner, celah penyimpangan admin. Infaq Rp1jt AD sahara hilang dari Kas.
+- **Fix** `src/modules/spp/services/spp.service.ts`: helper `syncSPPIncomeToKas` — delta = total dibayar − yang sudah tercatat (per `source_id`, anti dobel); dipakai create, update, lunasi massal, backfill "Sinkronkan ke Kas" (kini cek `paid` + `partial`). Delete: reversal per baris pemasukan (mendukung multi-cicilan). Delta negatif tidak dibuat — koreksi turun manual via Kas (audit trail).
+- **Backfill data**: transaksi income `INFAQ AWAL SANAH` Rp1.000.000 (2026-10-04, source payment `4d21fbd2`) diinsert — pemasukan AD sahara kini utuh.
+- **Fitur**: Kartu Keuangan Siswa — klik nama siswa di tabel Pembayaran/Tunggakan → drawer ringkasan kewajiban per kategori (status lunas/angsuran/belum + total kewajiban/dibayar/sisa). File baru `StudentFinanceCard.tsx`, hook `useStudentFinance`, wiring `PaymentTable`/`TunggakanTable`/`/spp`.
+- Validasi: `typecheck`, `lint`, `vitest 7/7`.
+
 ## 2026-10-04 — Harga Dikunci Owner: Tahun 1 Rp4jt, Perpanjangan Rp1,5jt/th
 
 - Keputusan owner (final): **Tahun Pertama Rp 4.000.000** (setup + input data + pelatihan + support 12 bln; anchor coret Rp 5.500.000), **Perpanjangan Rp 1.500.000/tahun** (server, backup, support, update — harga tetap), **fitur custom mulai Rp 500.000** (di luar paket, disepakati di awal). Klien perdana Selasa tetap Rp 3.000.000 sebagai "harga perdana".

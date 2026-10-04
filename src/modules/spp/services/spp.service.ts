@@ -101,17 +101,18 @@ export async function createSPPPayment(
     throw new Error(error.message);
   }
 
-  // Auto-create transaction when the payment is paid
-  if (input.status === 'paid' && input.paid_amount && input.paid_amount > 0) {
-    await createSPPIncomeTransaction(supabase, {
+  // Catat ke Kas untuk SEMUA uang yang diterima — lunas MAUPUN angsuran.
+  // Baris baru belum punya catatan sebelumnya, jadi delta = paid_amount.
+  if (input.paid_amount && input.paid_amount > 0) {
+    await syncSPPIncomeToKas(supabase, {
       schoolId,
       userId,
-      sourceId: data.id,
+      paymentId: data.id,
       month: input.month,
       year: input.year,
-      amount: input.paid_amount,
-      referenceDate: input.payment_date,
       categoryId: input.category_id,
+      targetPaid: input.paid_amount,
+      referenceDate: input.payment_date || new Date().toISOString().split('T')[0],
     });
   }
 
@@ -372,19 +373,6 @@ export async function updateSPPPayment(
 ): Promise<SPPPayment> {
   const supabase = createSupabaseClient();
 
-  // Ambil status sebelumnya — transaksi Kas hanya dibuat saat TRANSISI ke lunas,
-  // bukan setiap kali record yang sudah lunas diedit.
-  const { data: previous, error: prevError } = await supabase
-    .from(TABLE)
-    .select('status')
-    .eq('id', id)
-    .single();
-  if (prevError) {
-    console.error('[SPP Service] updateSPPPayment prev-status error:', prevError);
-    throw new Error(prevError.message);
-  }
-  const wasPaid = previous?.status === 'paid';
-
   const { data, error } = await supabase
     .from(TABLE)
     .update(updates)
@@ -398,73 +386,129 @@ export async function updateSPPPayment(
   }
 
   const payment = data as SPPPayment;
-  const status = updates.status ?? payment.status;
-  const paidAmount = updates.paid_amount ?? payment.paid_amount;
 
-  // Auto-create transaction saat pembayaran BERUBAH menjadi lunas.
-  if (status === 'paid' && !wasPaid) {
-    const amount = paidAmount > 0 ? paidAmount : payment.amount;
-    if (amount > 0) {
-      const referenceDate =
-        updates.payment_date || payment.payment_date || new Date().toISOString().split('T')[0];
-      const description = await paymentDescription(
-        supabase,
-        payment.school_id,
-        payment.category_id,
-        payment.month,
-        payment.year
-      );
-
-      if (!(await hasSPPIncomeTransaction(supabase, payment.school_id, id, description, amount, referenceDate))) {
-        const userId = await getCurrentUserId(supabase);
-        await createSPPIncomeTransaction(supabase, {
-          schoolId: payment.school_id,
-          userId,
-          sourceId: id,
-          month: payment.month,
-          year: payment.year,
-          amount,
-          referenceDate,
-          categoryId: payment.category_id,
-        });
-      }
-    }
-  }
+  // Sinkron Kas berbasis SELISIH: total dibayar − yang sudah pernah tercatat.
+  // Angsuran berikutnya / pelunasan hanya menambah kurangannya — tidak pernah
+  // double, dan uang yang diterima tidak bisa disembunyikan dari Kas owner.
+  const status = payment.status;
+  const targetPaid =
+    (payment.paid_amount ?? 0) > 0 ? payment.paid_amount : status === 'paid' ? payment.amount : 0;
+  const referenceDate = payment.payment_date || new Date().toISOString().split('T')[0];
+  await syncSPPIncomeToKas(supabase, {
+    schoolId: payment.school_id,
+    paymentId: id,
+    month: payment.month,
+    year: payment.year,
+    categoryId: payment.category_id,
+    targetPaid,
+    referenceDate,
+  });
 
   return data as SPPPayment;
 }
 
 /**
- * Cek apakah pembayaran SPP sudah tercatat sebagai pemasukan di Kas.
- * Kunci utama: source_id (= spp_payments.id). Fallback: baris legacy/manual
- * tanpa source_id yang deskripsi+nominal+tanggalnya sama. Baris yang sudah
- * ter-link ke pembayaran LAIN tidak dihitung (siswa berbeda, bulan sama).
+ * Total pemasukan yang SUDAH tercatat di Kas untuk satu pembayaran.
+ * Utama: jumlah semua transaksi income dengan source_id = pembayaran ini
+ * (bisa lebih dari 1 baris — fitur angsuran nyicil). Fallback legacy: baris
+ * manual tanpa source_id dengan deskripsi + nominal + tanggal sama (era
+ * sebelum fitur sinkron-kas).
  */
-async function hasSPPIncomeTransaction(
+async function getRecordedSPPIncomeAmount(
   supabase: SupabaseClient,
   schoolId: string,
   paymentId: string,
   description: string,
-  amount: number,
-  referenceDate: string
-): Promise<boolean> {
-  const { data: bySource } = await supabase
+  referenceDate: string,
+  targetPaid: number
+): Promise<number> {
+  const { data: linked } = await supabase
     .from('transactions')
-    .select('id')
+    .select('id, amount, source_id')
+    .eq('school_id', schoolId)
+    .eq('type', 'income')
     .eq('source_type', 'spp')
-    .eq('source_id', paymentId)
-    .limit(1);
-  if (bySource && bySource.length > 0) return true;
+    .eq('source_id', paymentId);
+  const linkedSum = (linked ?? []).reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+  if (linkedSum > 0) return linkedSum;
 
-  const { data: sameDesc } = await supabase
+  const { data: legacy } = await supabase
     .from('transactions')
-    .select('id, source_id')
+    .select('id, amount, source_id')
     .eq('school_id', schoolId)
     .eq('type', 'income')
     .eq('description', description)
-    .eq('amount', amount)
-    .eq('reference_date', referenceDate);
-  return (sameDesc ?? []).some((t) => !t.source_id || t.source_id === paymentId);
+    .eq('amount', targetPaid)
+    .eq('reference_date', referenceDate)
+    .limit(1);
+  const match = (legacy ?? []).find((t) => !t.source_id || t.source_id === paymentId);
+  return match ? Number(match.amount) || 0 : 0;
+}
+
+/**
+ * Sinkronkan Kas = SELISIH antara total dibayar dan yang sudah tercatat.
+ * Dipakai create, update, lunasi massal, dan backfill — angsuran berikutnya /
+ * pelunasan hanya menambah kurangannya (anti dobel, anti sembunyi uang).
+ * Delta negatif tidak dibuat: uang yang pernah masuk tetap tercatat; koreksi
+ * turun dilakukan manual lewat Kas dengan jejak audit.
+ * @returns nominal transaksi yang dibuat (0 = tidak ada selisih)
+ */
+async function syncSPPIncomeToKas(
+  supabase: SupabaseClient,
+  params: {
+    schoolId: string;
+    userId?: string;
+    paymentId: string;
+    month?: number | null;
+    year?: number | null;
+    categoryId?: string | null;
+    categoryName?: string | null;
+    targetPaid: number;
+    referenceDate: string;
+  }
+): Promise<number> {
+  if (!(params.targetPaid > 0)) return 0;
+
+  let categoryId = params.categoryId ?? null;
+  let categoryName = params.categoryName ?? null;
+  if (!categoryId) {
+    const spp = await ensureSPPCategory(supabase, params.schoolId);
+    categoryId = spp.id;
+    categoryName = spp.name;
+  } else if (!categoryName) {
+    const { data } = await supabase
+      .from('categories')
+      .select('name')
+      .eq('id', categoryId)
+      .maybeSingle();
+    categoryName = data?.name || 'SPP';
+  }
+
+  const description = buildPaymentDescription(categoryName || 'SPP', params.month, params.year);
+  const recorded = await getRecordedSPPIncomeAmount(
+    supabase,
+    params.schoolId,
+    params.paymentId,
+    description,
+    params.referenceDate,
+    params.targetPaid
+  );
+  const delta = params.targetPaid - recorded;
+  if (delta <= 0) return 0;
+
+  const userId = params.userId ?? (await getCurrentUserId(supabase));
+  await createSPPIncomeTransaction(supabase, {
+    schoolId: params.schoolId,
+    userId,
+    sourceId: params.paymentId,
+    month: params.month,
+    year: params.year,
+    amount: delta,
+    referenceDate: params.referenceDate,
+    categoryId,
+    categoryName,
+  });
+  return delta;
 }
 
 /**
@@ -504,33 +548,28 @@ export async function bulkMarkPaidSPP(
       .update({ status: 'paid', paid_amount: amount, payment_date: today } as never)
       .eq('id', r.id);
     if (updError) throw new Error(updError.message);
-    const description = buildPaymentDescription(
-      categoryNames[r.category_id] ?? sppCategory.name,
-      r.month,
-      r.year
-    );
-    if (!(await hasSPPIncomeTransaction(supabase, schoolId, r.id, description, amount, today))) {
-      await createSPPIncomeTransaction(supabase, {
-        schoolId,
-        userId,
-        sourceId: r.id,
-        month: r.month,
-        year: r.year,
-        amount,
-        referenceDate: today,
-        categoryId: r.category_id,
-        categoryName: categoryNames[r.category_id] ?? sppCategory.name,
-      });
-    }
+    // Delta: unpaid = full amount; partial/anngsuran = sisa yang belum tercatat.
+    await syncSPPIncomeToKas(supabase, {
+      schoolId,
+      userId,
+      paymentId: r.id,
+      month: r.month,
+      year: r.year,
+      categoryId: r.category_id,
+      categoryName: categoryNames[r.category_id] ?? sppCategory.name,
+      targetPaid: amount,
+      referenceDate: today,
+    });
     updated++;
   }
   return { updated, total: targets.length };
 }
 
 /**
- * Perbaikan data: buatkan transaksi pemasukan untuk SEMUA pembayaran SPP
- * berstatus lunas yang belum tercatat di Kas (mis. lolos karena bug dedup
- * lama). Aman dijalankan ulang — baris yang sudah tercatat akan dilewati.
+ * Perbaikan data: catatkan ke Kas SEMUA pembayaran yang uangnya sudah
+ * diterima tapi belum tercatat — lunas maupun angsuran (termasuk sisa
+ * pelunasan dari cicilan). Aman dijalankan ulang — delta 0 berarti sudah
+ * cocok.
  */
 export async function backfillMissingSPPTransactions(
   schoolId: string,
@@ -538,58 +577,58 @@ export async function backfillMissingSPPTransactions(
 ): Promise<{ created: number; checked: number }> {
   const supabase = createSupabaseClient();
 
-  const { data: paid, error } = await supabase
+  const { data: rows, error } = await supabase
     .from(TABLE)
-    .select('id, month, year, amount, paid_amount, payment_date, category_id')
+    .select('id, month, year, amount, paid_amount, status, payment_date, category_id')
     .eq('school_id', schoolId)
-    .eq('status', 'paid');
+    .in('status', ['paid', 'partial']);
   if (error) throw new Error(error.message);
 
   const categoryNames = await loadCategoryNames(supabase, schoolId);
-  const withMoney = (paid ?? []).filter((p) => (p.paid_amount ?? 0) > 0 || (p.amount ?? 0) > 0);
   let created = 0;
+  let checked = 0;
 
-  for (const p of withMoney) {
-    const amount = (p.paid_amount ?? 0) > 0 ? p.paid_amount : p.amount;
+  for (const p of rows ?? []) {
+    const targetPaid =
+      (p.paid_amount ?? 0) > 0 ? p.paid_amount : p.status === 'paid' ? p.amount : 0;
+    if (targetPaid <= 0) continue;
+    checked++;
+
     const categoryName = categoryNames[p.category_id] ?? 'SPP';
-    const description = buildPaymentDescription(categoryName, p.month, p.year);
     const referenceDate = p.payment_date || new Date().toISOString().split('T')[0];
-
-    if (await hasSPPIncomeTransaction(supabase, schoolId, p.id, description, amount, referenceDate)) {
-      continue;
-    }
-    await createSPPIncomeTransaction(supabase, {
+    const made = await syncSPPIncomeToKas(supabase, {
       schoolId,
       userId,
-      sourceId: p.id,
+      paymentId: p.id,
       month: p.month,
       year: p.year,
-      amount,
-      referenceDate,
       categoryId: p.category_id,
       categoryName,
+      targetPaid,
+      referenceDate,
     });
-    created++;
+    if (made > 0) created++;
   }
 
-  return { created, checked: withMoney.length };
+  return { created, checked };
 }
 
 /**
  * Delete an SPP payment record.
  *
- * Jika pembayaran pernah melunasi SPP (punya transaksi income), hapus record
+ * Jika pembayaran pernah menghasilkan transaksi pemasukan (lunas atau
+ * angsuran — bisa lebih dari satu baris untuk cicilan bertahap), hapus record
  * TIDAK menghapus transaksi aslinya (audit trail tetap utuh), melainkan
- * membuat transaksi KOREKSI (reversal) sebesar nominal yang sama agar saldo
+ * membuat transaksi KOREKSI (reversal) per baris pemasukan agar saldo
  * kas kembali benar tanpa menghilangkan jejak.
  */
 export async function deleteSPPPayment(id: string): Promise<void> {
   const supabase = createSupabaseClient();
 
-  // Ambil record dulu untuk cek transaksi terkait
-  const { data: payment, error: fetchError } = await supabase
+  // Pastikan record ada
+  const { error: fetchError } = await supabase
     .from(TABLE)
-    .select('school_id, status, paid_amount, amount, month, year')
+    .select('id')
     .eq('id', id)
     .single();
 
@@ -598,38 +637,36 @@ export async function deleteSPPPayment(id: string): Promise<void> {
     throw new Error(fetchError.message);
   }
 
-  const wasPaid = payment.status === 'paid' || payment.status === 'partial';
-  const paidAmount = (payment.paid_amount ?? 0) > 0 ? payment.paid_amount : payment.amount;
+  // Koreksi untuk SEMUA pemasukan yang pernah dibuat dari record ini —
+  // cicilan bertahap bisa menghasilkan lebih dari satu baris pemasukan.
+  const { data: linked } = await supabase
+    .from('transactions')
+    .select('*')
+    .eq('source_type', 'spp')
+    .eq('source_id', id);
 
-  if (wasPaid && paidAmount > 0) {
-    // Cari transaksi income asli dari record SPP ini
-    const { data: linked } = await supabase
-      .from('transactions')
-      .select('*')
-      .eq('source_type', 'spp')
-      .eq('source_id', id)
-      .maybeSingle();
+  const incomeRows = ((linked ?? []) as unknown as Array<{
+    id: string;
+    school_id: string;
+    category_id: string;
+    amount: number;
+    description: string;
+    type: string;
+  }>).filter((t) => t.type === 'income');
 
-    const linkedTx = linked as unknown as {
-      id: string;
-      school_id: string;
-      category_id: string;
-      amount: number;
-      description: string;
-    } | null;
-
-    if (linkedTx) {
-      const userId = await getCurrentUserId(supabase);
+  if (incomeRows.length > 0) {
+    const userId = await getCurrentUserId(supabase);
+    for (const tx of incomeRows) {
       const { error: revError } = await supabase.from('transactions').insert({
-        school_id: linkedTx.school_id,
+        school_id: tx.school_id,
         type: 'expense',
-        category_id: linkedTx.category_id,
-        amount: linkedTx.amount,
-        description: `Koreksi: ${linkedTx.description}`,
+        category_id: tx.category_id,
+        amount: tx.amount,
+        description: `Koreksi: ${tx.description}`,
         reference_date: new Date().toISOString().split('T')[0],
         recorded_by: userId,
         source_type: 'reversal',
-        source_id: linkedTx.id,
+        source_id: tx.id,
       });
       if (revError) {
         console.error('[SPP Service] deleteSPPPayment reversal error:', revError);
@@ -722,30 +759,10 @@ function buildPaymentDescription(
   return categoryName;
 }
 
-/** Deskripsi untuk satu tagihan (kategori null = tagihan lama, dianggap SPP). */
-async function paymentDescription(
-  supabase: SupabaseClient,
-  schoolId: string,
-  categoryId: string | null | undefined,
-  month?: number | null,
-  year?: number | null
-): Promise<string> {
-  if (!categoryId) {
-    const spp = await ensureSPPCategory(supabase, schoolId);
-    return buildPaymentDescription(spp.name, month, year);
-  }
-  const { data } = await supabase
-    .from('categories')
-    .select('name')
-    .eq('id', categoryId)
-    .maybeSingle();
-  return buildPaymentDescription(data?.name || 'SPP', month, year);
-}
-
 /**
- * Auto-create the income transaction for a PAID student payment.
- * Resolves the Kas category (explicit categoryId, or the school's 'SPP'
- * category as fallback) then inserts the ledger entry.
+ * Insert satu baris pemasukan Kas dari pembayaran siswa (nominal = delta
+ * yang disinkronkan). Resolves the Kas category (explicit categoryId, or the
+ * school's 'SPP' category as fallback) then inserts the ledger entry.
  */
 async function createSPPIncomeTransaction(
   supabase: SupabaseClient,

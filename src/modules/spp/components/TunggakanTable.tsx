@@ -9,6 +9,7 @@ import { ChevronDown, Users, Wallet } from 'lucide-react';
 interface TunggakanTableProps {
   payments: SPPPayment[];
   loading?: boolean;
+  onStudentClick?: (payment: SPPPayment) => void;
 }
 
 type TunggakanRow = {
@@ -31,7 +32,7 @@ const statusBadge: Record<string, { class: string; label: string }> = {
   unpaid: { class: 'bg-red-100 text-red-700 border-red-200', label: 'Belum Bayar' },
 };
 
-export function TunggakanTable({ payments, loading }: TunggakanTableProps) {
+export function TunggakanTable({ payments, loading, onStudentClick }: TunggakanTableProps) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   if (loading) {
@@ -140,7 +141,21 @@ export function TunggakanTable({ payments, loading }: TunggakanTableProps) {
                       </td>
                       <td className="px-4 py-3">
                         <div>
-                          <span className="font-medium text-gray-900">{row.name}</span>
+                          {onStudentClick && row.bills[0] ? (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onStudentClick(row.bills[0]);
+                              }}
+                              className="font-medium text-gray-900 hover:text-indigo-600 hover:underline underline-offset-2 transition-colors"
+                              title="Lihat kartu keuangan siswa"
+                            >
+                              {row.name}
+                            </button>
+                          ) : (
+                            <span className="font-medium text-gray-900">{row.name}</span>
+                          )}
                           {row.nis && (
                             <span className="text-xs text-gray-400 ml-1.5">NIS: {row.nis}</span>
                           )}

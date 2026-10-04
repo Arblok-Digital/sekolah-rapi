@@ -10,6 +10,7 @@ interface PaymentTableProps {
   onEdit?: (payment: SPPPayment) => void;
   onDelete?: (id: string) => void;
   onReceipt?: (payment: SPPPayment) => void;
+  onStudentClick?: (payment: SPPPayment) => void;
 }
 
 const statusBadge: Record<string, { class: string; label: string }> = {
@@ -18,7 +19,7 @@ const statusBadge: Record<string, { class: string; label: string }> = {
   unpaid: { class: 'bg-red-100 text-red-700 border-red-200', label: 'Belum Bayar' },
 };
 
-export function PaymentTable({ payments, loading, onEdit, onDelete, onReceipt }: PaymentTableProps) {
+export function PaymentTable({ payments, loading, onEdit, onDelete, onReceipt, onStudentClick }: PaymentTableProps) {
   if (loading) {
     return (
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -64,7 +65,18 @@ export function PaymentTable({ payments, loading, onEdit, onDelete, onReceipt }:
                 <tr key={payment.id} className="hover:bg-gray-50/50 transition-colors">
                   <td className="px-4 py-3">
                     <div>
-                      <span className="font-medium text-gray-900">{payment.student_name || payment.student_id}</span>
+                      {onStudentClick ? (
+                        <button
+                          type="button"
+                          onClick={() => onStudentClick(payment)}
+                          className="font-medium text-gray-900 hover:text-indigo-600 hover:underline underline-offset-2 transition-colors"
+                          title="Lihat kartu keuangan siswa"
+                        >
+                          {payment.student_name || payment.student_id}
+                        </button>
+                      ) : (
+                        <span className="font-medium text-gray-900">{payment.student_name || payment.student_id}</span>
+                      )}
                       {payment.student_nis && (
                         <span className="text-xs text-gray-400 ml-1.5">NIS: {payment.student_nis}</span>
                       )}

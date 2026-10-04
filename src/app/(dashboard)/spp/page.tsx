@@ -8,6 +8,7 @@ import { Plus, RefreshCw, Search, X, ChevronDown } from 'lucide-react';
 import { PaymentTable } from '@/modules/spp/components/PaymentTable';
 import { PaymentForm } from '@/modules/spp/components/PaymentForm';
 import { TunggakanTable } from '@/modules/spp/components/TunggakanTable';
+import { StudentFinanceCard } from '@/modules/spp/components/StudentFinanceCard';
 import type { SPPFormInput, SPPFilter, SPPPayment, SPPStatus } from '@/modules/spp/types/spp.types';
 import { getMonthName } from '@/modules/spp/types/spp.types';
 import { useCategories } from '@/modules/transactions/hooks/useCategories';
@@ -21,6 +22,7 @@ import {
   useBulkCreateSPPPayments,
   useBulkMarkPaidSPP,
   useBackfillSPPTransactions,
+  useStudentFinance,
 } from '@/modules/spp/hooks/useSPP';
 import { cn } from '@/shared/utils/cn';
 import { toUserMessage } from '@/shared/lib/safe-error';
@@ -50,6 +52,7 @@ export default function SPPPage() {
   const [syncMessage, setSyncMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const [studentCard, setStudentCard] = useState<{ id: string; name?: string; nis?: string; class?: string } | null>(null);
   const { schoolId, session, canUse, school, profile } = useAuth();
 
   const filter: SPPFilter = {
@@ -74,6 +77,7 @@ export default function SPPPage() {
     category: filterCategory || undefined,
   });
   const createMutation = useCreateSPPPayment(schoolId || '', session?.user?.id || '');
+  const { data: cardPayments, isLoading: cardLoading } = useStudentFinance(schoolId || '', studentCard?.id ?? null);
   const bulkCreateMutation = useBulkCreateSPPPayments();
   const bulkPaidMutation = useBulkMarkPaidSPP();
   const backfillMutation = useBackfillSPPTransactions();
@@ -172,6 +176,15 @@ export default function SPPPage() {
     setActionMessage(null);
     setEditingPayment(payment);
     setFormOpen(true);
+  };
+
+  const openStudentCard = (payment: SPPPayment) => {
+    setStudentCard({
+      id: payment.student_id,
+      name: payment.student_name,
+      nis: payment.student_nis,
+      class: payment.student_class,
+    });
   };
 
   const handleDelete = (id: string) => {
@@ -595,10 +608,15 @@ export default function SPPPage() {
             onEdit={handleEdit}
             onDelete={handleDelete}
             onReceipt={openReceipt}
+            onStudentClick={openStudentCard}
           />
         )
       ) : (
-        <TunggakanTable payments={tunggakanSearchFiltered} loading={!unpaid} />
+        <TunggakanTable
+          payments={tunggakanSearchFiltered}
+          loading={!unpaid}
+          onStudentClick={openStudentCard}
+        />
       )}
 
       {/* Create/Edit Form Modal */}
@@ -609,6 +627,18 @@ export default function SPPPage() {
         students={studentList}
         categories={incomeCategories}
         initialData={editingPayment}
+      />
+
+      {/* Kartu Keuangan Siswa — klik nama siswa di tabel */}
+      <StudentFinanceCard
+        student={studentCard}
+        payments={cardPayments}
+        loading={cardLoading}
+        onClose={() => setStudentCard(null)}
+        onEdit={(p) => {
+          setStudentCard(null);
+          handleEdit(p);
+        }}
       />
 
       {/* Receipt Preview Modal */}

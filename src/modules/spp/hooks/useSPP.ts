@@ -5,6 +5,7 @@ import {
   getSPPPayments,
   createSPPPayment,
   getOutstanding,
+  getStudentSPPPayments,
   getUnpaidPayments,
   getSPPSummary,
   updateSPPPayment,
@@ -44,6 +45,18 @@ export function useOutstandingSPP(schoolId: string, month?: number, year?: numbe
     queryKey: SPP_KEYS.outstanding(schoolId, month, year),
     queryFn: () => getOutstanding(schoolId, month, year),
     enabled: !!schoolId,
+  });
+}
+
+/**
+ * Hook: semua tagihan/pembayaran milik 1 siswa lintas kategori —
+ * bahan Kartu Keuangan Siswa (apa yang sudah/belum dibayar).
+ */
+export function useStudentFinance(schoolId: string, studentId: string | null) {
+  return useQuery({
+    queryKey: ['spp', 'student', schoolId, studentId],
+    queryFn: () => getStudentSPPPayments(schoolId, studentId as string),
+    enabled: !!schoolId && !!studentId,
   });
 }
 
