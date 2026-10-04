@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
     const messages = Array.isArray(body.messages) ? body.messages : [];
     const context = body.context === 'landing' || body.context === 'dashboard' ? body.context : 'general';
-    const model = body.model || 'gemini-3.8-flash';
+    const model = body.model || 'gemini-3.5-flash-lite';
 
     const knowledge = await getKnowledgePack();
     const systemPrompt = buildSystemPrompt(context, knowledge);
@@ -73,15 +73,31 @@ export async function POST(req: NextRequest) {
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          const response = await ai.models.generateContentStream({
-            model,
-            config: {
-              systemInstruction: systemPrompt,
-              temperature: 0.2,
-              maxOutputTokens: 4096,
-            },
-            contents,
-          });
+          const requestConfig = {
+            systemInstruction: systemPrompt,
+            temperature: 0.2,
+            maxOutputTokens: 4096,
+          };
+          const backupModel = 'gemini-3.5-flash';
+          let response;
+          try {
+            response = await ai.models.generateContentStream({
+              model,
+              config: requestConfig,
+              contents,
+            });
+          } catch (e: any) {
+            const msg = `${e?.message || ''} ${e?.status || ''}`;
+            if (model !== backupModel && /404|not[_ ]found|no longer available/i.test(msg)) {
+              response = await ai.models.generateContentStream({
+                model: backupModel,
+                config: requestConfig,
+                contents,
+              });
+            } else {
+              throw e;
+            }
+          }
 
           for await (const chunk of response) {
             const text = chunk.text || '';
