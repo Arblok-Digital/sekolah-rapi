@@ -319,7 +319,9 @@ export function PaymentForm({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Dibayar (Rp)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {isEditing ? 'Total Dibayar (semua cicilan) (Rp)' : 'Dibayar (Rp)'}
+              </label>
               <input
                 type="number"
                 value={paidAmount}
@@ -329,6 +331,12 @@ export function PaymentForm({
                 min={0}
                 disabled={status === 'paid'}
               />
+              {isEditing && (
+                <p className="mt-1 text-xs text-gray-400">
+                  Isi total seluruh cicilan yang sudah diterima. Untuk menerima uang baru,
+                  pakai tombol &quot;+ Cicilan&quot; di kartu keuangan siswa.
+                </p>
+              )}
             </div>
           </div>
 

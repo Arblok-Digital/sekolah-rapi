@@ -951,6 +951,14 @@ Detail dan acceptance criteria: `.ai/ORGANIC-GROWTH-ROADMAP.md`.
 
 Tuliskan entri terbaru di atas. Maksimal ringkas: hasil, file, validasi, blocker, next step.
 
+## 2026-10-04 — Satu Jalur Pembayaran: Kartu Siswa
+
+- Keputusan owner: pembayaran cukup lewat **kartu keuangan siswa** — hilangkan dua-format (form edit = total vs + Cicilan = tambahan) yang membingungkan admin.
+- `PaymentTable`: tombol **Edit dihapus** dari tabel `/spp` — rute edit = klik baris → kartu → pensil. Kuitansi & Hapus tetap. Prop `onEdit` dihapus.
+- `PaymentForm` mode edit: label "Dibayar" → **"Total Dibayar (semua cicilan)"** + helper "untuk menerima uang baru pakai + Cicilan di kartu". Mode create tetap "Dibayar (Rp)" (pembayaran pertama — tanpa ambiguitas).
+- Tombol "Catat Pembayaran" (baris baru) tetap ada — gak ada ambiguitas total/tambahan di baris baru.
+- Validasi: `typecheck`, `lint`, `vitest 7/7`.
+
 ## 2026-10-04 — Tombol "+ Cicilan" + Riwayat Cicilan di Kartu Siswa
 
 - Konteks: admin salah paham — ubah "Dibayar" 200rb→500rb (edit total) padahal mau NAMBAH cicilan 500rb (seharusnya total 700rb). Fitur baru menghilangkan kebutuhan hitung manual.

@@ -7,7 +7,6 @@ import { getMonthName, formatRupiah } from '../types/spp.types';
 interface PaymentTableProps {
   payments: SPPPayment[];
   loading?: boolean;
-  onEdit?: (payment: SPPPayment) => void;
   onDelete?: (id: string) => void;
   onReceipt?: (payment: SPPPayment) => void;
   onStudentClick?: (payment: SPPPayment) => void;
@@ -19,7 +18,7 @@ const statusBadge: Record<string, { class: string; label: string }> = {
   unpaid: { class: 'bg-red-100 text-red-700 border-red-200', label: 'Belum Bayar' },
 };
 
-export function PaymentTable({ payments, loading, onEdit, onDelete, onReceipt, onStudentClick }: PaymentTableProps) {
+export function PaymentTable({ payments, loading, onDelete, onReceipt, onStudentClick }: PaymentTableProps) {
   if (loading) {
     return (
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -53,7 +52,7 @@ export function PaymentTable({ payments, loading, onEdit, onDelete, onReceipt, o
               <th className="text-right font-medium text-gray-500 px-4 py-3 whitespace-nowrap">Dibayar</th>
               <th className="text-center font-medium text-gray-500 px-4 py-3 whitespace-nowrap">Status</th>
               <th className="text-left font-medium text-gray-500 px-4 py-3 whitespace-nowrap">Tanggal</th>
-              {(onEdit || onDelete) && (
+              {(onDelete || onReceipt) && (
                 <th className="text-center font-medium text-gray-500 px-4 py-3 whitespace-nowrap">Aksi</th>
               )}
             </tr>
@@ -122,7 +121,7 @@ export function PaymentTable({ payments, loading, onEdit, onDelete, onReceipt, o
                   <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
                     {payment.payment_date || '-'}
                   </td>
-                  {(onEdit || onDelete) && (
+                  {(onDelete || onReceipt) && (
                     <td className="px-4 py-3 text-center">
                       <div className="flex items-center justify-center gap-1">
                         {onReceipt && (payment.status === 'paid' || payment.status === 'partial') && (
@@ -135,20 +134,6 @@ export function PaymentTable({ payments, loading, onEdit, onDelete, onReceipt, o
                             title="Lihat / bagikan kuitansi"
                           >
                             Kuitansi
-                          </button>
-                        )}
-                        {onEdit && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onEdit(payment);
-                            }}
-                            className="p-1.5 text-gray-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors"
-                            title="Edit"
-                          >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
                           </button>
                         )}
                         {onDelete && (

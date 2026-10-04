@@ -605,7 +605,6 @@ export default function SPPPage() {
         ) : (
           <PaymentTable
             payments={filteredPayments}
-            onEdit={handleEdit}
             onDelete={handleDelete}
             onReceipt={openReceipt}
             onStudentClick={openStudentCard}
