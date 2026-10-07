@@ -127,9 +127,17 @@ export const ReceiptDoc = forwardRef<HTMLDivElement, ReceiptDocProps>(function R
           </div>
         </div>
 
-        <p className="text-center text-[11px] text-gray-400 mt-8">
-          Dokumen digital {school.name} • Dicetak {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-        </p>
+        {/* Footer + identitas developer — iklan berjalan di tiap kuitansi */}
+        <div className="mt-8 pt-3 border-t border-gray-200 text-center">
+          <p className="text-[11px] text-gray-400">
+            Dokumen digital {school.name} • Dicetak {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+          </p>
+          <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1.5">
+            <span className="text-[10px] text-indigo-400">Powered by</span>
+            <span className="text-[11px] font-bold text-indigo-700">Arblok Digital</span>
+            <span className="text-[10px] text-indigo-500">• arblok-digital.vercel.app</span>
+          </div>
+        </div>
       </div>
     </div>
   );
