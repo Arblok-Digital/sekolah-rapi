@@ -17,10 +17,12 @@ export interface School {
   email?: string;
   owner_id: string;
   plan: 'free' | 'basic' | 'pro' | 'lifetime';
+  status?: 'pending' | 'active' | 'suspended' | 'archived' | string;
   settings?: Record<string, any>;
   sync_enabled?: boolean;
   last_sync_at?: string;
   created_at?: string;
+  updated_at?: string;
 }
 
 export interface Student {
@@ -36,6 +38,8 @@ export interface Student {
   status: 'active' | 'graduated' | 'transferred';
   created_at?: string;
   updated_at?: string;
+  /** Perangkat yang menulis baris terakhir (diagnosis konflik sync). */
+  device_id?: string | null;
 }
 
 export interface SPPPayment {
@@ -56,6 +60,7 @@ export interface SPPPayment {
   recorded_by: string;
   created_at?: string;
   updated_at?: string;
+  device_id?: string | null;
 }
 
 export interface Transaction {
@@ -73,6 +78,7 @@ export interface Transaction {
   source_id?: string | null;
   created_at?: string;
   updated_at?: string;
+  device_id?: string | null;
 }
 
 export interface Category {
@@ -83,6 +89,8 @@ export interface Category {
   description?: string;
   is_default: boolean;
   created_at?: string;
+  updated_at?: string;
+  device_id?: string | null;
 }
 
 export interface FinancialSummary {
@@ -101,7 +109,7 @@ export interface SyncQueueItem {
   id?: number;
   school_id: string;
   user_id: string;
-  entity: 'spp_payment' | 'transaction' | 'student';
+  entity: 'spp_payment' | 'transaction' | 'student' | 'category';
   entity_id: string;
   action: 'INSERT' | 'UPDATE' | 'DELETE';
   payload: any;

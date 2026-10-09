@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
+import { useSyncedRefresh } from '@/modules/offline/hooks/useSyncedRefresh';
 import { useAuth } from '@/shared/providers/AuthProvider';
 import { createSupabaseClient } from '@/shared/services/supabase/client';
 import {
@@ -18,7 +19,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/shared/utils/cn';
 import { TransactionHistory } from '@/modules/transactions/components/TransactionHistory';
-import { collectReversedSourceIds, excludeReversalPairs } from '@/modules/transactions/utils/reversal';
+import { fetchDashboardData, type DashboardData } from '@/modules/dashboard/services/dashboard.service';
 
 function formatRp(n: number) {
   return new Intl.NumberFormat('id-ID', {
@@ -29,21 +30,6 @@ function formatRp(n: number) {
   }).format(n);
 }
 
-interface DashboardData {
-  saldo: number;
-  incomeBulanIni: number;
-  expenseBulanIni: number;
-  totalSiswa: number;
-  outstandingSiswa: number;
-  collectionRate: number;
-  alerts: Array<{
-    id: string;
-    severity: 'warning' | 'info' | 'success';
-    title: string;
-    detail: string;
-  }>;
-}
-
 export default function OverviewPage() {
   const { schoolId, canUse, isDev } = useAuth();
   const [hideSaldo, setHideSaldo] = useState(false);
@@ -51,98 +37,34 @@ export default function OverviewPage() {
   const [loading, setLoading] = useState(true);
   const [liveCount, setLiveCount] = useState(0);
 
+  const fetchDashboard = useCallback(async () => {
+    if (!schoolId) return;
+    setLoading(true);
+    try {
+      // Service sudah punya fallback mirror lokal saat offline.
+      setData(await fetchDashboardData(schoolId));
+    } catch (err) {
+      console.error('[overview] gagal memuat dashboard:', err);
+      setData({
+        saldo: 0,
+        incomeBulanIni: 0,
+        expenseBulanIni: 0,
+        totalSiswa: 0,
+        outstandingSiswa: 0,
+        collectionRate: 0,
+        alerts: [],
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [schoolId]);
+
+  // Sinkronisasi dua arah selesai → tarik ulang ringkasan dashboard.
+  useSyncedRefresh(fetchDashboard);
+
   useEffect(() => {
     if (!schoolId) return;
     const supabase = createSupabaseClient();
-
-    async function fetchDashboard() {
-      setLoading(true);
-
-      // 1. Fetch transactions for current month
-      const now = new Date();
-      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-      const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
-
-      const { data: txData } = await supabase
-        .from('transactions')
-        .select('id, description, amount, type, reference_date, source_type, source_id')
-        .eq('school_id', schoolId!)
-        .gte('reference_date', monthStart)
-        .lte('reference_date', monthEnd)
-        .order('reference_date', { ascending: false });
-
-      // 2. Fetch all transactions for balance
-      const { data: allTx } = await supabase
-        .from('transactions')
-        .select('id, amount, type, source_type, source_id')
-        .eq('school_id', schoolId!);
-
-      // 3. Fetch student count + SPP outstanding
-      const { data: students } = await supabase
-        .from('students')
-        .select('id, status')
-        .eq('school_id', schoolId!);
-
-      // Kesehatan SPP dihitung HANYA dari tagihan kategori 'SPP' — tagihan
-      // kategori lain (seragam, donasi, dst) tidak boleh mengubah rate ini.
-      const { data: sppCategory } = await supabase
-        .from('categories')
-        .select('id')
-        .eq('school_id', schoolId!)
-        .eq('name', 'SPP')
-        .limit(1);
-      const sppCategoryId = sppCategory?.[0]?.id ?? null;
-
-      const { data: sppThisMonthRaw } = await supabase
-        .from('spp_payments')
-        .select('student_id, status, category_id')
-        .eq('school_id', schoolId!)
-        .eq('year', now.getFullYear())
-        .eq('month', now.getMonth() + 1);
-      const sppThisMonth = (sppThisMonthRaw ?? []).filter(
-        (s) => !sppCategoryId || s.category_id === sppCategoryId
-      );
-
-      // Calculate — pasangan koreksi (reversal + transaksi aslinya) dikeluarkan
-      // dari semua angka ringkasan: keduanya saling menghapus, dan angka Overview
-      // harus mencerminkan uang yang benar-benar bergerak.
-      const reversedIds = collectReversedSourceIds(allTx ?? []);
-      const realAllTx = excludeReversalPairs(allTx ?? [], reversedIds);
-      const realTx = excludeReversalPairs(txData ?? [], reversedIds);
-
-      const totalIncome = realAllTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0) || 0;
-      const totalExpense = realAllTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0) || 0;
-      const saldo = totalIncome - totalExpense;
-
-      const incomeBulanIni = realTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0) || 0;
-      const expenseBulanIni = realTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0) || 0;
-
-      const totalSiswa = students?.filter(s => s.status === 'active').length || 0;
-      const paidCount = sppThisMonth?.filter(s => s.status === 'paid' || s.status === 'partial').length || 0;
-      const outstandingSiswa = totalSiswa - paidCount;
-      const collectionRate = totalSiswa > 0 ? Math.round((paidCount / totalSiswa) * 100) : 0;
-
-      // Recent transactions (last 7) — now handled by TransactionHistory component
-
-      // Alerts
-      const alerts: DashboardData['alerts'] = [];
-      if (outstandingSiswa > 0) {
-        alerts.push({ id: '1', severity: 'warning', title: `${outstandingSiswa} siswa menunggak SPP`, detail: `Bulan ${now.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}` });
-      }
-      if (collectionRate >= 90) {
-        alerts.push({ id: '2', severity: 'success', title: 'Koleksi SPP Excellent', detail: `${collectionRate}% tepat waktu` });
-      } else if (collectionRate >= 70) {
-        alerts.push({ id: '2', severity: 'info', title: 'Koleksi SPP cukup', detail: `${collectionRate}% tepat waktu` });
-      } else if (totalSiswa > 0) {
-        alerts.push({ id: '2', severity: 'warning', title: 'Koleksi SPP rendah', detail: `Hanya ${collectionRate}% tepat waktu` });
-      }
-      if (totalSiswa === 0) {
-        alerts.push({ id: '3', severity: 'info', title: 'Belum ada siswa', detail: 'Gunakan Dev Panel untuk seed data test' });
-      }
-
-      setData({ saldo, incomeBulanIni, expenseBulanIni, totalSiswa, outstandingSiswa, collectionRate, alerts });
-      setLoading(false);
-    }
 
     fetchDashboard();
 
@@ -170,7 +92,7 @@ export default function OverviewPage() {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [schoolId, canUse, isDev]);
+  }, [schoolId, canUse, isDev, fetchDashboard]);
 
   if (loading || !data) {
     return (

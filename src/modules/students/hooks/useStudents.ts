@@ -10,6 +10,7 @@ import {
   updateStudent,
   deleteStudent,
 } from '../services/student.service';
+import { useSyncedRefresh } from '@/modules/offline/hooks/useSyncedRefresh';
 
 const supabase = createSupabaseClient();
 
@@ -50,6 +51,9 @@ export function useStudents({
   useEffect(() => {
     fetchStudents();
   }, [fetchStudents]);
+
+  // Sinkronisasi dua arah selesai → tarik ulang agar tabel tidak basi.
+  useSyncedRefresh(fetchStudents);
 
   const addStudent = async (formData: StudentFormData) => {
     const created = await createStudent({

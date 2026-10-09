@@ -2,11 +2,12 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { createSupabaseClient } from '@/shared/services/supabase/client';
 import { TrendingUp, TrendingDown, ArrowRight, Loader2, History } from 'lucide-react';
 import { cn } from '@/shared/utils/cn';
 import { toUserMessage } from '@/shared/lib/safe-error';
 import type { Transaction } from '@/shared/types';
+import { getTransactions } from '../services/transaction.service';
+import { getCategories } from '../services/category.service';
 import {
   Timeframe,
   TIMEFRAME_LABELS,
@@ -49,24 +50,15 @@ export function TransactionHistory({ schoolId, limit = 10, showAllHref = '/audit
 
   useEffect(() => {
     let cancelled = false;
-    const supabase = createSupabaseClient();
 
     async function load() {
       try {
-        const { data, error: txError } = await supabase
-          .from('transactions')
-          .select('id, description, amount, type, reference_date, source_type, source_id, category_id')
-          .eq('school_id', schoolId)
-          .order('reference_date', { ascending: false });
-        if (txError) throw txError;
-
-        const { data: catData } = await supabase
-          .from('categories')
-          .select('id, name')
-          .eq('school_id', schoolId);
+        // Service sudah punya fallback mirror lokal saat offline.
+        const rows = await getTransactions(schoolId);
+        const catData = await getCategories(schoolId);
 
         if (!cancelled) {
-          setAllTx((data as Transaction[]) || []);
+          setAllTx(rows);
           const map: Record<string, string> = {};
           (catData || []).forEach((c) => { map[c.id] = c.name; });
           setCatMap(map);

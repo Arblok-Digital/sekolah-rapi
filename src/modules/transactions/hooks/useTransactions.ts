@@ -12,6 +12,7 @@ import {
   deleteTransaction,
 } from '../services/transaction.service';
 import { getCategories } from '../services/category.service';
+import { useSyncedRefresh } from '@/modules/offline/hooks/useSyncedRefresh';
 
 const supabase = createSupabaseClient();
 
@@ -52,6 +53,9 @@ export function useTransactions({ schoolId, typeFilter }: UseTransactionsOptions
     fetchTransactions();
     fetchCategories();
   }, [fetchTransactions, fetchCategories]);
+
+  // Sinkronisasi dua arah selesai → tarik ulang agar daftar tidak basi.
+  useSyncedRefresh(fetchTransactions);
 
   const addTransaction = async (formData: TransactionFormData) => {
     const { session } = await getSession();

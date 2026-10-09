@@ -2,9 +2,9 @@
 
 import TanyaArblok from '@/shared/components/Chat/TanyaArblok';
 import { Sidebar } from '@/shared/components/Layout/Sidebar';
+import { SyncStatus } from '@/modules/offline/components/SyncStatus';
 import { useAuth } from '@/shared/providers/AuthProvider';
-import { Wifi, WifiOff, LogOut } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { LogOut } from 'lucide-react';
 
 interface DashboardShellProps {
   children: React.ReactNode;
@@ -14,20 +14,7 @@ interface DashboardShellProps {
 }
 
 export function DashboardShell({ children, schoolName, userName, userRole }: DashboardShellProps) {
-  const [isOnline, setIsOnline] = useState(true);
   const { signOut } = useAuth();
-
-  useEffect(() => {
-    setIsOnline(navigator.onLine);
-    const goOnline = () => setIsOnline(true);
-    const goOffline = () => setIsOnline(false);
-    window.addEventListener('online', goOnline);
-    window.addEventListener('offline', goOffline);
-    return () => {
-      window.removeEventListener('online', goOnline);
-      window.removeEventListener('offline', goOffline);
-    };
-  }, []);
 
   return (
     <div className="dashboard-shell flex min-h-screen bg-[#101c18]">
@@ -50,16 +37,7 @@ export function DashboardShell({ children, schoolName, userName, userRole }: Das
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/10 px-2.5 py-1.5">
-              {isOnline ? (
-                <Wifi className="w-3.5 h-3.5 text-emerald-400" />
-              ) : (
-                <WifiOff className="w-3.5 h-3.5 text-amber-400" />
-              )}
-              <span className="hidden text-xs font-bold text-white/70 sm:inline">
-                {isOnline ? 'Online' : 'Offline'}
-              </span>
-            </div>
+            <SyncStatus />
 
             <button
               onClick={signOut}

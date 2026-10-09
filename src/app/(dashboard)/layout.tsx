@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation';
 import { DashboardShell } from '@/shared/components/Layout/DashboardShell';
 import { EntitlementGate } from '@/shared/components/EntitlementGate';
 import { getRouteFeature } from '@/shared/entitlements';
-import { SyncStatus } from '@/modules/offline/components/SyncStatus';
 
 export default function DashboardLayout({
   children,
@@ -42,7 +41,6 @@ export default function DashboardLayout({
       >
         {feature ? <EntitlementGate feature={feature}>{children}</EntitlementGate> : children}
       </DashboardShell>
-      <SyncStatus />
     </>
   );
 }

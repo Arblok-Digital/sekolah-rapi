@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/shared/providers/AuthProvider';
 import { CLASS_OPTIONS } from '@/shared/constants';
-import { createSupabaseClient } from '@/shared/services/supabase/client';
 import { Plus, RefreshCw, Search, X, ChevronDown } from 'lucide-react';
+import { getStudents } from '@/modules/students/services/student.service';
 import { PaymentTable } from '@/modules/spp/components/PaymentTable';
 import { PaymentForm } from '@/modules/spp/components/PaymentForm';
 import { TunggakanTable } from '@/modules/spp/components/TunggakanTable';
@@ -86,13 +86,15 @@ export default function SPPPage() {
 
   useSchoolRealtime(schoolId, { tables: ['spp_payments', 'students'], enabled: canUse('realtime_dashboard') });
 
-  // Fetch students for the dropdown
+  // Fetch students for the dropdown — lewat service (fallback mirror saat offline)
   const [studentList, setStudentList] = useState<Array<{ id: string; name: string; nis: string; class: string }>>([]);
   useEffect(() => {
     if (!schoolId || !formOpen) return;
-    const supabase = createSupabaseClient();
-    supabase.from('students').select('id, name, nis, class').eq('school_id', schoolId).eq('status', 'active').order('name')
-      .then(({ data }) => { if (data) setStudentList(data); });
+    let cancelled = false;
+    getStudents(schoolId, { status: 'active' })
+      .then((rows) => { if (!cancelled) setStudentList(rows); })
+      .catch((err) => console.error('[spp] gagal memuat daftar siswa:', err));
+    return () => { cancelled = true; };
   }, [schoolId, formOpen]);
 
   const handleCreate = async (input: SPPFormInput) => {

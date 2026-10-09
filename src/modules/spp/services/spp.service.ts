@@ -1,11 +1,19 @@
 import { createSupabaseClient } from '@/shared/services/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { SPPPayment, SPPFilter, SPPFormInput, SPSSummary } from '../types/spp.types';
+import { db } from '@/modules/offline/db';
+import { isOfflineError } from '@/modules/offline/services/network';
+import { withOfflineFallback } from '@/modules/offline/services/read';
+import { mirrorFull, mirrorPatch } from '@/modules/offline/services/mirror';
+import { getDeviceId } from '@/modules/offline/services/device';
 
 const TABLE = 'spp_payments';
 
 /**
  * Fetch SPP payments with optional filters and student join.
+ *
+ * Online: query server + tulis mirror lokal (baris utuh, join dilepas).
+ * Offline: rekonstruksi dari mirror (join siswa/kategori dari Dexie).
  */
 export async function getSPPPayments(
   schoolId: string,
@@ -13,48 +21,55 @@ export async function getSPPPayments(
 ): Promise<SPPPayment[]> {
   const supabase = createSupabaseClient();
 
-  let query = supabase
-    .from(TABLE)
-    .select(
+  return withOfflineFallback(
+    async () => {
+      let query = supabase
+        .from(TABLE)
+        .select(
+          `
+        *,
+        students!inner(name, nis, class),
+        category:categories(name)
       `
-      *,
-      students!inner(name, nis, class),
-      category:categories(name)
-    `
-    )
-    .eq('school_id', schoolId)
-    .order('year', { ascending: false, nullsFirst: false })
-    .order('month', { ascending: false, nullsFirst: false });
+        )
+        .eq('school_id', schoolId)
+        .order('year', { ascending: false, nullsFirst: false })
+        .order('month', { ascending: false, nullsFirst: false });
 
-  if (filter?.month) {
-    query = query.eq('month', filter.month);
-  }
-  if (filter?.year) {
-    // Pembayaran tanpa periode (year NULL — seragam, pendaftaran, dst) tetap
-    // ikut tampil agar tidak hilang dari daftar.
-    query = query.or(`year.eq.${filter.year},year.is.null`);
-  }
-  if (filter?.status) {
-    query = query.eq('status', filter.status);
-  }
-  if (filter?.student_id) {
-    query = query.eq('student_id', filter.student_id);
-  }
-  if (filter?.class) {
-    query = query.eq('students.class', filter.class);
-  }
-  if (filter?.category) {
-    query = query.eq('category_id', filter.category);
-  }
+      if (filter?.month) {
+        query = query.eq('month', filter.month);
+      }
+      if (filter?.year) {
+        // Pembayaran tanpa periode (year NULL — seragam, pendaftaran, dst) tetap
+        // ikut tampil agar tidak hilang dari daftar.
+        query = query.or(`year.eq.${filter.year},year.is.null`);
+      }
+      if (filter?.status) {
+        query = query.eq('status', filter.status);
+      }
+      if (filter?.student_id) {
+        query = query.eq('student_id', filter.student_id);
+      }
+      if (filter?.class) {
+        query = query.eq('students.class', filter.class);
+      }
+      if (filter?.category) {
+        query = query.eq('category_id', filter.category);
+      }
 
-  const { data, error } = await query;
+      const { data, error } = await query;
 
-  if (error) {
-    console.error('[SPP Service] getSPPPayments error:', error);
-    throw new Error(error.message);
-  }
+      if (error) {
+        console.error('[SPP Service] getSPPPayments error:', error);
+        throw new Error(error.message);
+      }
 
-  return (data ?? []).map(mapPayment);
+      const rows = data ?? [];
+      await mirrorFull('spp_payments', rows.map(stripJoinFields));
+      return rows.map(mapPayment);
+    },
+    () => localGetSPPPayments(schoolId, filter)
+  );
 }
 
 /**
@@ -98,7 +113,48 @@ export async function createSPPPayment(
 
   if (error) {
     console.error('[SPP Service] createSPPPayment error:', error);
-    throw new Error(error.message);
+
+    if (!isOfflineError(error)) throw new Error(error.message);
+
+    // ── OFFLINE ────────────────────────────────────────────────────────────
+    // Tulis baris ke mirror + antrikan INSERT. Kas TIDAK dibangun di sini
+    // (butuh state server) — sync.service menjalankan reconcilePaymentKas
+    // setelah baris ini tersalin ke server.
+    const localId = crypto.randomUUID();
+    const nowIso = new Date().toISOString();
+    const localRow = {
+      id: localId,
+      school_id: schoolId,
+      student_id: input.student_id,
+      category_id: input.category_id ?? null,
+      month: input.month ?? null,
+      year: input.year ?? null,
+      amount: input.amount,
+      paid_amount: input.paid_amount,
+      status: input.status,
+      payment_date: input.payment_date || nowIso.split('T')[0],
+      method: input.method || null,
+      receipt_number: input.receipt_number || null,
+      recorded_by: userId,
+      created_at: nowIso,
+      updated_at: nowIso,
+      device_id: getDeviceId(),
+    };
+    await db.spp_payments.put(localRow as never);
+    await db.sync_queue.add({
+      school_id: schoolId,
+      user_id: userId,
+      entity: 'spp_payment',
+      entity_id: localId,
+      action: 'INSERT',
+      payload: localRow,
+      attempts: 0,
+      status: 'pending',
+      created_at: new Date(),
+    });
+
+    // Tanpa nama siswa — refetch (yang offline pakai mirror) mengisinya.
+    return localRow as unknown as SPPPayment;
   }
 
   // Catat ke Kas untuk SEMUA uang yang diterima — lunas MAUPUN angsuran.
@@ -133,26 +189,48 @@ export async function getOutstanding(
   const filterMonth = month || now.getMonth() + 1;
   const filterYear = year || now.getFullYear();
 
-  const { data, error } = await supabase
-    .from(TABLE)
-    .select(
-      `
-      *,
-      students!inner(name, nis, class)
-    `
-    )
-    .eq('school_id', schoolId)
-    .eq('month', filterMonth)
-    .eq('year', filterYear)
-    .not('status', 'eq', 'paid')
-    .order('student_id');
+  return withOfflineFallback(
+    async () => {
+      const { data, error } = await supabase
+        .from(TABLE)
+        .select(
+          `
+          *,
+          students!inner(name, nis, class)
+        `
+        )
+        .eq('school_id', schoolId)
+        .eq('month', filterMonth)
+        .eq('year', filterYear)
+        .not('status', 'eq', 'paid')
+        .order('student_id');
 
-  if (error) {
-    console.error('[SPP Service] getOutstanding error:', error);
-    throw new Error(error.message);
-  }
+      if (error) {
+        console.error('[SPP Service] getOutstanding error:', error);
+        throw new Error(error.message);
+      }
 
-  return (data ?? []).map(mapPayment);
+      const rows = data ?? [];
+      await mirrorFull('spp_payments', rows.map(stripJoinFields));
+      return rows.map(mapPayment);
+    },
+    async () => {
+      const [payments, students] = await Promise.all([
+        db.spp_payments.where('school_id').equals(schoolId).toArray(),
+        db.students.where('school_id').equals(schoolId).toArray(),
+      ]);
+      const studentMap = new Map(students.map((s) => [s.id, s]));
+      return (payments as unknown as SPPPayment[])
+        .filter(
+          (r) =>
+            r.month === filterMonth &&
+            r.year === filterYear &&
+            r.status !== 'paid'
+        )
+        .sort((a, b) => a.student_id.localeCompare(b.student_id))
+        .map((r) => attachLocalNames(r, studentMap, new Map()));
+    }
+  );
 }
 
 /**
@@ -230,70 +308,96 @@ export async function getUnpaidPayments(
   const filterMonth = options?.month ?? now.getMonth() + 1;
   const filterYear = options?.year ?? now.getFullYear();
 
-  let studentQuery = supabase
-    .from('students')
-    .select('id, name, nis, class')
-    .eq('school_id', schoolId)
-    .eq('status', 'active');
-  if (options?.classFilter) {
-    studentQuery = studentQuery.eq('class', options.classFilter);
-  }
-  const { data: students, error: studentError } = await studentQuery.order('name');
-  if (studentError) throw new Error(studentError.message);
+  return withOfflineFallback(
+    async () => {
+      let studentQuery = supabase
+        .from('students')
+        .select('id, name, nis, class')
+        .eq('school_id', schoolId)
+        .eq('status', 'active');
+      if (options?.classFilter) {
+        studentQuery = studentQuery.eq('class', options.classFilter);
+      }
+      const { data: students, error: studentError } = await studentQuery.order('name');
+      if (studentError) throw new Error(studentError.message);
 
-  let billQuery = supabase
-    .from(TABLE)
-    .select(
-      `
-      *,
-      students!inner(name, nis, class),
-      category:categories(name)
-    `
-    )
-    .eq('school_id', schoolId)
-    .eq('month', filterMonth)
-    .eq('year', filterYear);
-  if (options?.classFilter) {
-    billQuery = billQuery.eq('students.class', options.classFilter);
-  }
-  if (options?.category) {
-    billQuery = billQuery.eq('category_id', options.category);
-  }
-  const { data: bills, error: billError } = await billQuery;
-  if (billError) throw new Error(billError.message);
+      let billQuery = supabase
+        .from(TABLE)
+        .select(
+          `
+          *,
+          students!inner(name, nis, class),
+          category:categories(name)
+        `
+        )
+        .eq('school_id', schoolId)
+        .eq('month', filterMonth)
+        .eq('year', filterYear);
+      if (options?.classFilter) {
+        billQuery = billQuery.eq('students.class', options.classFilter);
+      }
+      if (options?.category) {
+        billQuery = billQuery.eq('category_id', options.category);
+      }
+      const { data: bills, error: billError } = await billQuery;
+      if (billError) throw new Error(billError.message);
 
-  const result: SPPPayment[] = [];
-  (students ?? []).forEach((student) => {
-    const ownBills = (bills ?? []).filter((b) => b.student_id === student.id);
-    const openBills = ownBills.filter((b) => b.status !== 'paid');
+      const billRows = bills ?? [];
+      await mirrorFull('spp_payments', billRows.map(stripJoinFields));
 
-    if (openBills.length > 0) {
-      openBills.forEach((bill) => result.push(mapPayment(bill)));
-      return;
+      const result: SPPPayment[] = [];
+      (students ?? []).forEach((student) => {
+        const ownBills = billRows.filter((b) => b.student_id === student.id);
+        const openBills = ownBills.filter((b) => b.status !== 'paid');
+
+        if (openBills.length > 0) {
+          openBills.forEach((bill) => result.push(mapPayment(bill)));
+          return;
+        }
+        if (ownBills.length > 0) return; // semua tagihannya lunas
+
+        // Siswa belum punya tagihan periode ini — tetap tampil sebagai belum bayar.
+        result.push(buildNoBillRow(schoolId, filterMonth, filterYear, options?.category, student));
+      });
+
+      return result;
+    },
+    async () => {
+      const [students, payments, categories] = await Promise.all([
+        db.students.where('school_id').equals(schoolId).toArray(),
+        db.spp_payments.where('school_id').equals(schoolId).toArray(),
+        db.categories.where('school_id').equals(schoolId).toArray(),
+      ]);
+      const categoryMap = new Map(categories.map((c) => [c.id, c.name]));
+
+      let activeStudents = students.filter((s) => s.status === 'active');
+      if (options?.classFilter) {
+        activeStudents = activeStudents.filter((s) => s.class === options.classFilter);
+      }
+      activeStudents.sort((a, b) => a.name.localeCompare(b.name));
+
+      let bills = (payments as unknown as SPPPayment[]).filter(
+        (b) => b.month === filterMonth && b.year === filterYear
+      );
+      if (options?.category) bills = bills.filter((b) => b.category_id === options.category);
+
+      const studentMap = new Map(students.map((s) => [s.id, s]));
+      const result: SPPPayment[] = [];
+      activeStudents.forEach((student) => {
+        const ownBills = bills.filter((b) => b.student_id === student.id);
+        const openBills = ownBills.filter((b) => b.status !== 'paid');
+
+        if (openBills.length > 0) {
+          openBills.forEach((bill) => result.push(attachLocalNames(bill, studentMap, categoryMap)));
+          return;
+        }
+        if (ownBills.length > 0) return;
+        result.push(buildNoBillRow(schoolId, filterMonth, filterYear, options?.category, student));
+      });
+
+      return result;
     }
-    if (ownBills.length > 0) return; // semua tagihannya lunas
-
-    // Siswa belum punya tagihan periode ini — tetap tampil sebagai belum bayar.
-    result.push({
-      id: `nobill-${student.id}`,
-      school_id: schoolId,
-      student_id: student.id,
-      month: filterMonth,
-      year: filterYear,
-      category_id: options?.category ?? null,
-      category_name: undefined,
-      amount: 0,
-      paid_amount: 0,
-      status: 'unpaid',
-      recorded_by: '',
-      no_bill: true,
-      student_name: student.name,
-      student_nis: student.nis,
-      student_class: student.class,
-    });
-  });
-
-  return result;
+  );
 }
 
 /**
@@ -312,56 +416,53 @@ export async function getSPPSummary(
   const filterMonth = month || now.getMonth() + 1;
   const filterYear = year || now.getFullYear();
 
-  // Total active students
-  const { count: totalSiswa, error: countError } = await supabase
-    .from('students')
-    .select('id', { count: 'exact', head: true })
-    .eq('school_id', schoolId)
-    .eq('status', 'active');
+  return withOfflineFallback(
+    async () => {
+      // Total active students
+      const { count: totalSiswa, error: countError } = await supabase
+        .from('students')
+        .select('id', { count: 'exact', head: true })
+        .eq('school_id', schoolId)
+        .eq('status', 'active');
 
-  if (countError) {
-    throw new Error(countError.message);
-  }
+      if (countError) {
+        throw new Error(countError.message);
+      }
 
-  // Pembayaran periode ini (semua kategori, atau satu kategori bila difilter)
-  let paymentQuery = supabase
-    .from(TABLE)
-    .select('status, paid_amount, amount, student_id')
-    .eq('school_id', schoolId)
-    .eq('month', filterMonth)
-    .eq('year', filterYear);
-  if (category) {
-    paymentQuery = paymentQuery.eq('category_id', category);
-  }
-  const { data: payments, error: sppError } = await paymentQuery;
+      // Pembayaran periode ini (semua kategori, atau satu kategori bila difilter)
+      // `id` ikut di-select supaya hasilnya bisa di-merge ke mirror lokal.
+      let paymentQuery = supabase
+        .from(TABLE)
+        .select('id, status, paid_amount, amount, student_id')
+        .eq('school_id', schoolId)
+        .eq('month', filterMonth)
+        .eq('year', filterYear);
+      if (category) {
+        paymentQuery = paymentQuery.eq('category_id', category);
+      }
+      const { data: payments, error: sppError } = await paymentQuery;
 
-  if (sppError) {
-    throw new Error(sppError.message);
-  }
+      if (sppError) {
+        throw new Error(sppError.message);
+      }
 
-  const totalBulanIni = payments?.length ?? 0;
-  const terkumpul = payments?.reduce((sum, p) => sum + (p.paid_amount || 0), 0) ?? 0;
-  const totalSiswaActive = totalSiswa ?? 0;
+      await mirrorPatch('spp_payments', payments ?? []);
 
-  // Konsisten dengan dashboard Overview: outstanding = total siswa aktif −
-  // siswa UNIK yang sudah bayar/angsuran (1 siswa boleh punya >1 tagihan/kategori).
-  const paidStudents = new Set(
-    (payments ?? [])
-      .filter((p) => p.status === 'paid' || p.status === 'partial')
-      .map((p) => p.student_id)
+      return computeSummary(totalSiswa ?? 0, payments ?? []);
+    },
+    async () => {
+      const [students, payments] = await Promise.all([
+        db.students.where('school_id').equals(schoolId).toArray(),
+        db.spp_payments.where('school_id').equals(schoolId).toArray(),
+      ]);
+      const totalSiswa = students.filter((s) => s.status === 'active').length;
+      let rows = (payments as unknown as SPPPayment[]).filter(
+        (p) => p.month === filterMonth && p.year === filterYear
+      );
+      if (category) rows = rows.filter((p) => p.category_id === category);
+      return computeSummary(totalSiswa, rows);
+    }
   );
-  const outstanding = Math.max(0, totalSiswaActive - paidStudents.size);
-  const collectionRate = totalSiswaActive > 0
-    ? Math.round((paidStudents.size / totalSiswaActive) * 100)
-    : 0;
-
-  return {
-    total_siswa: totalSiswaActive,
-    total_bulan_ini: totalBulanIni,
-    terkumpul,
-    outstanding,
-    collection_rate: collectionRate,
-  };
 }
 
 /**
@@ -382,7 +483,42 @@ export async function updateSPPPayment(
 
   if (error) {
     console.error('[SPP Service] updateSPPPayment error:', error);
-    throw new Error(error.message);
+
+    if (!isOfflineError(error)) throw new Error(error.message);
+
+    // ── OFFLINE ────────────────────────────────────────────────────────────
+    // Merge lokal + antrikan UPDATE. Kas terekonsiliasi oleh runSync setelah
+    // baris tersalin ke server (reconcilePaymentKas butuh state server).
+    const existing = await db.spp_payments.get(id);
+    if (!existing) throw new Error(error.message);
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id ?? existing.recorded_by ?? '';
+
+    const cleanUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([, v]) => v !== undefined)
+    ) as Partial<SPPFormInput>;
+    const nowIso = new Date().toISOString();
+    const merged = {
+      ...existing,
+      ...cleanUpdates,
+      updated_at: nowIso,
+      device_id: getDeviceId(),
+    };
+    await db.spp_payments.put(merged as never);
+    await db.sync_queue.add({
+      school_id: existing.school_id,
+      user_id: userId,
+      entity: 'spp_payment',
+      entity_id: id,
+      action: 'UPDATE',
+      payload: { ...cleanUpdates, id, school_id: existing.school_id, device_id: getDeviceId() },
+      attempts: 0,
+      status: 'pending',
+      created_at: new Date(),
+    });
+
+    return merged as unknown as SPPPayment;
   }
 
   const payment = data as SPPPayment;
@@ -723,6 +859,13 @@ export async function deleteSPPPayment(id: string): Promise<void> {
 
   if (fetchError) {
     console.error('[SPP Service] deleteSPPPayment fetch error:', fetchError);
+    // Offline by design: koreksi Kas reversal dibuat oleh server, tidak bisa
+    // dihitung dari klien — tolak dengan pesan yang jelas, jangan "Failed to fetch".
+    if (isOfflineError(fetchError)) {
+      throw new Error(
+        'Penghapusan tagihan SPP butuh koneksi internet (koreksi Kas dibuat otomatis oleh server).'
+      );
+    }
     throw new Error(fetchError.message);
   }
 
@@ -770,6 +913,10 @@ export async function deleteSPPPayment(id: string): Promise<void> {
     console.error('[SPP Service] deleteSPPPayment error:', error);
     throw new Error(error.message);
   }
+
+  // Bersihkan mirror lokal seketika (tombstone dari trigger hanya membersihkan
+  // device LAIN pada pull berikutnya).
+  await db.spp_payments.delete(id);
 }
 
 // ── Internal helpers ──
@@ -915,4 +1062,142 @@ function mapPayment(item: any): SPPPayment {
     students: undefined,
     category: undefined,
   };
+}
+
+// ── Offline mirror helpers ──
+
+/** Rekonstruksi daftar pembayaran dari mirror lokal (tanpa jaringan). */
+async function localGetSPPPayments(schoolId: string, filter?: SPPFilter): Promise<SPPPayment[]> {
+  const [payments, students, categories] = await Promise.all([
+    db.spp_payments.where('school_id').equals(schoolId).toArray(),
+    db.students.where('school_id').equals(schoolId).toArray(),
+    db.categories.where('school_id').equals(schoolId).toArray(),
+  ]);
+  const studentMap = new Map(students.map((s) => [s.id, s]));
+  const categoryMap = new Map(categories.map((c) => [c.id, c.name]));
+
+  let rows = payments as unknown as SPPPayment[];
+  if (filter?.month) rows = rows.filter((r) => r.month === filter.month);
+  if (filter?.year) rows = rows.filter((r) => r.year === filter.year || r.year === null);
+  if (filter?.status) rows = rows.filter((r) => r.status === filter.status);
+  if (filter?.student_id) rows = rows.filter((r) => r.student_id === filter.student_id);
+  if (filter?.class) rows = rows.filter((r) => studentMap.get(r.student_id)?.class === filter.class);
+  if (filter?.category) rows = rows.filter((r) => r.category_id === filter.category);
+
+  // Samakan urutan query online: year desc (null last), lalu month desc (null last).
+  rows.sort((a, b) => (b.year ?? -1) - (a.year ?? -1) || (b.month ?? -1) - (a.month ?? -1));
+
+  return rows.map((r) => attachLocalNames(r, studentMap, categoryMap));
+}
+
+/** Buang field join dari baris hasil query — mirror lokal hanya menyimpan kolom tabel. */
+function stripJoinFields(row: any): any {
+  const rest = { ...row };
+  delete rest.students;
+  delete rest.category;
+  return rest;
+}
+
+/** Pasang nama siswa/kategori dari mirror lokal (pengganti join server). */
+function attachLocalNames(
+  payment: SPPPayment,
+  studentMap: Map<string, { name?: string; nis?: string; class?: string }>,
+  categoryMap: Map<string, string>
+): SPPPayment {
+  const st = studentMap.get(payment.student_id);
+  return {
+    ...payment,
+    student_name: st?.name,
+    student_nis: st?.nis,
+    student_class: st?.class,
+    category_name: payment.category_id ? categoryMap.get(payment.category_id) : undefined,
+  };
+}
+
+/** Baris "belum bayar" untuk siswa yang belum punya tagihan periode ini. */
+function buildNoBillRow(
+  schoolId: string,
+  month: number,
+  year: number,
+  categoryId: string | null | undefined,
+  student: { id: string; name: string; nis?: string; class?: string }
+): SPPPayment {
+  return {
+    id: `nobill-${student.id}`,
+    school_id: schoolId,
+    student_id: student.id,
+    month,
+    year,
+    category_id: categoryId ?? null,
+    amount: 0,
+    paid_amount: 0,
+    status: 'unpaid',
+    recorded_by: '',
+    no_bill: true,
+    student_name: student.name,
+    student_nis: student.nis,
+    student_class: student.class,
+  };
+}
+
+/** Kalkulasi ringkasan SPP — satu sumber untuk jalur online & offline. */
+export function computeSummary(
+  totalSiswa: number,
+  payments: Array<{ status?: string; paid_amount?: number | null; student_id: string }>
+): SPSSummary {
+  const totalBulanIni = payments.length;
+  const terkumpul = payments.reduce((sum, p) => sum + (p.paid_amount || 0), 0);
+
+  // Siswa UNIK yang sudah bayar/angsuran — konsisten dengan Overview.
+  const paidStudents = new Set(
+    payments
+      .filter((p) => p.status === 'paid' || p.status === 'partial')
+      .map((p) => p.student_id)
+  );
+  const outstanding = Math.max(0, totalSiswa - paidStudents.size);
+  const collectionRate = totalSiswa > 0 ? Math.round((paidStudents.size / totalSiswa) * 100) : 0;
+
+  return {
+    total_siswa: totalSiswa,
+    total_bulan_ini: totalBulanIni,
+    terkumpul,
+    outstanding,
+    collection_rate: collectionRate,
+  };
+}
+
+/**
+ * Rekonsiliasi Kas untuk SATU pembayaran setelah barisnya tersalin ke server
+ * (dipanggil runSync untuk antrian spp_payment offline). Idempoten: bekerja
+ * berdasarkan SELISIH terhadap yang sudah tercatat — aman dijalankan ulang.
+ */
+export async function reconcilePaymentKas(paymentId: string): Promise<void> {
+  const supabase = createSupabaseClient();
+
+  const { data: payment, error } = await supabase
+    .from(TABLE)
+    .select('*')
+    .eq('id', paymentId)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  if (!payment) return; // sudah dihapus di server — tidak ada yang direkonsiliasi
+
+  const targetPaid =
+    (payment.paid_amount ?? 0) > 0
+      ? payment.paid_amount
+      : payment.status === 'paid'
+        ? payment.amount
+        : 0;
+  const referenceDate = payment.payment_date || new Date().toISOString().split('T')[0];
+
+  await syncSPPIncomeToKas(supabase, {
+    schoolId: payment.school_id,
+    paymentId: payment.id,
+    month: payment.month,
+    year: payment.year,
+    categoryId: payment.category_id,
+    targetPaid,
+    referenceDate,
+  });
 }

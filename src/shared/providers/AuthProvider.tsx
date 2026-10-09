@@ -6,6 +6,7 @@ import { createSupabaseClient } from '@/shared/services/supabase/client';
 import type { Session } from '@supabase/supabase-js';
 import { hasFeature, normalizePlan, type Feature, type Plan } from '@/shared/entitlements';
 import { isPublicPath } from '@/shared/constants/public-paths';
+import { db } from '@/modules/offline/db';
 
 interface Profile {
   id: string;
@@ -78,7 +79,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .maybeSingle();
 
     if (error || !profileData) {
-      return { profile: null, school: null };
+      // OFFLINE / gagal: pakai cache lokal. Tanpa fallback ini, profile null
+      // dianggap "belum onboarding" dan user dilempar ke /onboarding walau
+      // sebenarnya sudah punya sekolah.
+      try {
+        const cachedProfile = await db.profiles.get(userId);
+        if (!cachedProfile) return { profile: null, school: null };
+        let cachedSchool = null;
+        if (cachedProfile.school_id) {
+          cachedSchool = (await db.schools.get(cachedProfile.school_id)) ?? null;
+        }
+        return {
+          profile: cachedProfile as Profile,
+          school: cachedSchool as School | null,
+        };
+      } catch {
+        return { profile: null, school: null };
+      }
     }
 
     // Fetch school if school_id exists
@@ -90,6 +107,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .eq('id', profileData.school_id)
         .maybeSingle();
       schoolData = s as School | null;
+    }
+
+    // Write-through cache: sesi berikutnya tetap bisa walau offline.
+    try {
+      await db.profiles.put(profileData as never);
+      if (schoolData) await db.schools.update(schoolData.id, schoolData as never);
+    } catch (err) {
+      console.warn('[auth] gagal menulis cache lokal:', err);
     }
 
     return { profile: profileData as Profile, school: schoolData };

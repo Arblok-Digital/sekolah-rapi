@@ -2,6 +2,9 @@ import { createSupabaseClient } from '@/shared/services/supabase/client';
 import { db } from '@/modules/offline/db';
 import type { Transaction, TransactionFormData } from '../types/transaction.types';
 import { isOfflineError } from '@/modules/offline/services/network';
+import { withOfflineFallback } from '@/modules/offline/services/read';
+import { mirrorFull } from '@/modules/offline/services/mirror';
+import { getDeviceId } from '@/modules/offline/services/device';
 
 const supabase = createSupabaseClient();
 
@@ -14,28 +17,43 @@ export async function getTransactions(
     categoryId?: string;
   }
 ): Promise<Transaction[]> {
-  let query = supabase
-    .from('transactions')
-    .select('*')
-    .eq('school_id', schoolId)
-    .order('reference_date', { ascending: false });
+  return withOfflineFallback(
+    async () => {
+      let query = supabase
+        .from('transactions')
+        .select('*')
+        .eq('school_id', schoolId)
+        .order('reference_date', { ascending: false });
 
-  if (options?.type) {
-    query = query.eq('type', options.type);
-  }
-  if (options?.categoryId) {
-    query = query.eq('category_id', options.categoryId);
-  }
-  if (options?.startDate) {
-    query = query.gte('reference_date', options.startDate);
-  }
-  if (options?.endDate) {
-    query = query.lte('reference_date', options.endDate);
-  }
+      if (options?.type) {
+        query = query.eq('type', options.type);
+      }
+      if (options?.categoryId) {
+        query = query.eq('category_id', options.categoryId);
+      }
+      if (options?.startDate) {
+        query = query.gte('reference_date', options.startDate);
+      }
+      if (options?.endDate) {
+        query = query.lte('reference_date', options.endDate);
+      }
 
-  const { data, error } = await query;
-  if (error) throw error;
-  return data ?? [];
+      const { data, error } = await query;
+      if (error) throw error;
+      const rows = data ?? [];
+      await mirrorFull('transactions', rows);
+      return rows;
+    },
+    async () => {
+      let rows = await db.transactions.where('school_id').equals(schoolId).toArray();
+      if (options?.type) rows = rows.filter((r) => r.type === options.type);
+      if (options?.categoryId) rows = rows.filter((r) => r.category_id === options.categoryId);
+      if (options?.startDate) rows = rows.filter((r) => r.reference_date >= options.startDate!);
+      if (options?.endDate) rows = rows.filter((r) => r.reference_date <= options.endDate!);
+      rows.sort((a, b) => b.reference_date.localeCompare(a.reference_date));
+      return rows;
+    }
+  );
 }
 
 export async function createTransaction(
@@ -52,6 +70,7 @@ export async function createTransaction(
       description: transaction.description || null,
       reference_date: transaction.reference_date,
       recorded_by: transaction.recorded_by,
+      device_id: getDeviceId(),
     })
     .select()
     .single();
@@ -62,6 +81,7 @@ export async function createTransaction(
     if (!isOfflineError(error)) throw error;
 
     const localId = crypto.randomUUID();
+    const nowIso = new Date().toISOString();
     const localTransaction: Transaction = {
       id: localId,
       school_id: transaction.school_id,
@@ -71,9 +91,11 @@ export async function createTransaction(
       description: transaction.description,
       reference_date: transaction.reference_date,
       recorded_by: transaction.recorded_by,
-      created_at: new Date().toISOString(),
+      created_at: nowIso,
+      updated_at: nowIso,
+      device_id: getDeviceId(),
     };
-    await db.transactions.add(localTransaction);
+    await db.transactions.put(localTransaction);
 
     const {
       data: { session },
@@ -96,6 +118,7 @@ export async function createTransaction(
         description: transaction.description || null,
         reference_date: transaction.reference_date,
         recorded_by: transaction.recorded_by,
+        device_id: getDeviceId(),
       },
       attempts: 0,
       status: 'pending',
@@ -105,6 +128,8 @@ export async function createTransaction(
     return localTransaction;
   }
 
+  // Mirror write-through: baris server langsung tersedia untuk baca offline.
+  await db.transactions.put(data);
   return data;
 }
 
@@ -119,6 +144,7 @@ export async function updateTransaction(
     amount: updates.amount,
     description: updates.description || null,
     reference_date: updates.reference_date,
+    device_id: getDeviceId(),
   };
 
   const { data, error } = await supabase
@@ -140,6 +166,7 @@ export async function updateTransaction(
       ...existing,
       ...payload,
       description: updates.description,
+      updated_at: new Date().toISOString(),
     };
     await db.transactions.put(localTransaction);
 
@@ -169,6 +196,7 @@ export async function updateTransaction(
     return localTransaction;
   }
 
+  await db.transactions.put(data);
   return data;
 }
 
@@ -203,23 +231,41 @@ export async function deleteTransaction(id: string): Promise<void> {
       status: 'pending',
       created_at: new Date(),
     });
+    return;
   }
+
+  // Hapus dari mirror lokal supaya tidak jadi zombie sampai pull berikutnya.
+  await db.transactions.delete(id);
 }
 
 export async function getCategories(
   schoolId: string,
   type?: 'income' | 'expense'
 ): Promise<{ id: string; name: string; type: string }[]> {
-  let query = supabase
-    .from('categories')
-    .select('id, name, type')
-    .eq('school_id', schoolId);
+  return withOfflineFallback(
+    async () => {
+      let query = supabase
+        .from('categories')
+        .select('id, name, type')
+        .eq('school_id', schoolId);
 
-  if (type) {
-    query = query.eq('type', type);
-  }
+      if (type) {
+        query = query.eq('type', type);
+      }
 
-  const { data, error } = await query;
-  if (error) throw error;
-  return data ?? [];
+      const { data, error } = await query;
+      if (error) throw error;
+      const rows = data ?? [];
+      // Select parsial → merge, jangan membuat baris utuh dari potongan kolom.
+      const { mirrorPatch } = await import('@/modules/offline/services/mirror');
+      await mirrorPatch('categories', rows);
+      return rows;
+    },
+    async () => {
+      let rows = await db.categories.where('school_id').equals(schoolId).toArray();
+      if (type) rows = rows.filter((r) => r.type === type);
+      rows.sort((a, b) => a.name.localeCompare(b.name));
+      return rows.map((r) => ({ id: r.id, name: r.name, type: r.type }));
+    }
+  );
 }

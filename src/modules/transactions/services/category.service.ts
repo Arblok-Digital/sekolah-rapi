@@ -1,5 +1,11 @@
 import { createSupabaseClient } from '@/shared/services/supabase/client';
+import { db } from '@/modules/offline/db';
 import type { Category } from '../types/transaction.types';
+import { isOfflineError } from '@/modules/offline/services/network';
+import { withOfflineFallback } from '@/modules/offline/services/read';
+import { mirrorFull } from '@/modules/offline/services/mirror';
+import { getDeviceId } from '@/modules/offline/services/device';
+import { queueWrite, queueLocalDelete, getQueueUserId } from '@/modules/offline/services/queue';
 
 const supabase = createSupabaseClient();
 
@@ -21,19 +27,31 @@ export async function getCategories(
   schoolId: string,
   type?: CategoryType
 ): Promise<Category[]> {
-  let query = supabase
-    .from('categories')
-    .select('*')
-    .eq('school_id', schoolId)
-    .order('name');
+  return withOfflineFallback(
+    async () => {
+      let query = supabase
+        .from('categories')
+        .select('*')
+        .eq('school_id', schoolId)
+        .order('name');
 
-  if (type) {
-    query = query.eq('type', type);
-  }
+      if (type) {
+        query = query.eq('type', type);
+      }
 
-  const { data, error } = await query;
-  if (error) throw error;
-  return data ?? [];
+      const { data, error } = await query;
+      if (error) throw error;
+      const rows = data ?? [];
+      await mirrorFull('categories', rows);
+      return rows;
+    },
+    async () => {
+      let rows = await db.categories.where('school_id').equals(schoolId).toArray();
+      if (type) rows = rows.filter((r) => r.type === type);
+      rows.sort((a, b) => a.name.localeCompare(b.name));
+      return rows as unknown as Category[];
+    }
+  );
 }
 
 export async function createCategory(
@@ -48,6 +66,7 @@ export async function createCategory(
       name: input.name,
       description: input.description || null,
       is_default: false,
+      device_id: getDeviceId(),
     })
     .select()
     .single();
@@ -56,8 +75,36 @@ export async function createCategory(
     if (error.code === '23505') {
       throw new Error('Kategori dengan nama yang sama sudah ada.');
     }
-    throw error;
+    if (!isOfflineError(error)) throw error;
+
+    // ── OFFLINE: tulis lokal + antrikan. Duplikat nama baru terdeteksi saat
+    // push (server tetap menolak 23505 → item gagal, terlihat di badge sync).
+    const localId = crypto.randomUUID();
+    const nowIso = new Date().toISOString();
+    const localRow = {
+      id: localId,
+      school_id: schoolId,
+      type: input.type,
+      name: input.name,
+      description: input.description || null,
+      is_default: false,
+      created_at: nowIso,
+      updated_at: nowIso,
+      device_id: getDeviceId(),
+    };
+    await db.categories.put(localRow as never);
+    await queueWrite({
+      school_id: schoolId,
+      user_id: await getQueueUserId(),
+      entity: 'category',
+      entity_id: localId,
+      action: 'INSERT',
+      payload: localRow,
+    });
+    return localRow as unknown as Category;
   }
+
+  await db.categories.put(data);
   return data;
 }
 
@@ -75,12 +122,20 @@ export async function updateCategory(
   id: string,
   updates: CategoryUpdates
 ): Promise<Category> {
-  const { data: existing, error: fetchError } = await supabase
+  let offline = false;
+  let { data: existing, error: fetchError } = await supabase
     .from('categories')
     .select('*')
     .eq('id', id)
     .single();
-  if (fetchError) throw fetchError;
+  if (fetchError) {
+    if (!isOfflineError(fetchError)) throw fetchError;
+    // OFFLINE: pakai mirror lokal sebagai basis validasi.
+    const local = await db.categories.get(id);
+    if (!local) throw fetchError;
+    existing = local as unknown as Category;
+    offline = true;
+  }
 
   const payload: Record<string, unknown> = {};
   if (updates.name !== undefined) {
@@ -92,6 +147,9 @@ export async function updateCategory(
     payload.name = updates.name;
   }
   if (updates.type !== undefined && updates.type !== existing.type) {
+    // Cek "sudah dipakai transaksi" butuh query server — offline tidak bisa
+    // memverifikasi, jadi tipe hanya boleh diubah saat online.
+    if (offline) throw new Error('Ubah tipe kategori butuh koneksi internet.');
     if (await categoryInUse(id)) {
       throw new Error('Tipe kategori tidak dapat diubah karena sudah dipakai transaksi.');
     }
@@ -105,7 +163,7 @@ export async function updateCategory(
 
   const { data, error } = await supabase
     .from('categories')
-    .update(payload)
+    .update({ ...payload, device_id: getDeviceId() })
     .eq('id', id)
     .select()
     .single();
@@ -114,18 +172,53 @@ export async function updateCategory(
     if (error.code === '23505') {
       throw new Error('Kategori dengan nama yang sama sudah ada.');
     }
-    throw error;
+    if (!isOfflineError(error)) throw error;
+
+    // ── OFFLINE: merge lokal + antrikan UPDATE ──
+    const local = await db.categories.get(id);
+    if (!local) throw error;
+    const merged = {
+      ...local,
+      ...payload,
+      updated_at: new Date().toISOString(),
+      device_id: getDeviceId(),
+    };
+    await db.categories.put(merged as never);
+    await queueWrite({
+      school_id: local.school_id,
+      user_id: await getQueueUserId(),
+      entity: 'category',
+      entity_id: id,
+      action: 'UPDATE',
+      payload: { ...payload, id, school_id: local.school_id, device_id: getDeviceId() },
+    });
+    return merged as unknown as Category;
   }
+
+  await db.categories.put(data);
   return data;
 }
 
 export async function deleteCategory(id: string): Promise<void> {
-  const { data: category, error: fetchError } = await supabase
+  let { data: category, error: fetchError } = await supabase
     .from('categories')
-    .select('name, is_default')
+    .select('name, is_default, school_id')
     .eq('id', id)
     .single();
-  if (fetchError) throw fetchError;
+
+  if (fetchError) {
+    if (!isOfflineError(fetchError)) throw fetchError;
+    const local = await db.categories.get(id);
+    if (!local) throw fetchError;
+    if (local.is_default) {
+      throw new Error(`Kategori bawaan "${local.name}" tidak dapat dihapus.`);
+    }
+    // Pengecekan "masih dipakai transaksi" tidak bisa diverifikasi offline —
+    // server tetap menolak via FK saat push (item muncul sebagai gagal).
+    await queueLocalDelete('category', id, local.school_id);
+    return;
+  }
+  if (!category) throw new Error('Kategori tidak ditemukan.');
 
   if (category.is_default) {
     throw new Error(`Kategori bawaan "${category.name}" tidak dapat dihapus.`);
@@ -138,5 +231,10 @@ export async function deleteCategory(id: string): Promise<void> {
   }
 
   const { error } = await supabase.from('categories').delete().eq('id', id);
-  if (error) throw error;
+  if (error) {
+    if (!isOfflineError(error)) throw error;
+    await queueLocalDelete('category', id, category.school_id);
+    return;
+  }
+  await db.categories.delete(id);
 }

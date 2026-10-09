@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useSyncedRefresh } from '@/modules/offline/hooks/useSyncedRefresh';
 import { useAuth } from '@/shared/providers/AuthProvider';
 import { assertSchoolFeature } from '@/shared/services/plan-guard';
-import { createSupabaseClient } from '@/shared/services/supabase/client';
 import { toUserMessage } from '@/shared/lib/safe-error';
+import { getTransactions } from '@/modules/transactions/services/transaction.service';
+import { getCategories } from '@/modules/transactions/services/category.service';
 import { Download, Loader2, TrendingUp, TrendingDown, Scale, History, Receipt, ScrollText } from 'lucide-react';
 import type { Transaction } from '@/shared/types';
 import {
@@ -44,6 +46,10 @@ export default function AuditPage() {
   const { schoolId } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshNonce, setRefreshNonce] = useState(0);
+
+  // Sinkronisasi dua arah selesai → muat ulang riwayat.
+  useSyncedRefresh(() => setRefreshNonce((n) => n + 1));
 
   const [allTx, setAllTx] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Record<string, string>>({});
@@ -70,7 +76,6 @@ export default function AuditPage() {
   useEffect(() => {
     if (!schoolId) return;
     const activeSchoolId = schoolId;
-    const supabase = createSupabaseClient();
     setLoading(true);
 
     async function fetchData() {
@@ -81,24 +86,15 @@ export default function AuditPage() {
         return;
       }
 
-      // Semua transaksi (asc) agar saldo berjalan akurat dari awal
-      const { data: txData, error: txError } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('school_id', activeSchoolId)
-        .order('reference_date', { ascending: true });
-
-      if (txError) throw txError;
-
-      const { data: catData } = await supabase
-        .from('categories')
-        .select('id, name')
-        .eq('school_id', activeSchoolId);
+      // Semua transaksi (asc) agar saldo berjalan akurat dari awal.
+      // Service sudah punya fallback mirror lokal saat offline.
+      const txRows = await getTransactions(activeSchoolId);
+      const catData = await getCategories(activeSchoolId);
 
       const catMap: Record<string, string> = {};
-      (catData || []).forEach((c: any) => { catMap[c.id] = c.name; });
+      (catData || []).forEach((c) => { catMap[c.id] = c.name; });
 
-      setAllTx((txData as Transaction[]) || []);
+      setAllTx([...txRows].reverse());
       setCategories(catMap);
       setError(null);
       setLoading(false);
@@ -109,7 +105,7 @@ export default function AuditPage() {
       setError(toUserMessage(err, 'Gagal memuat riwayat transaksi'));
       setLoading(false);
     });
-  }, [schoolId]);
+  }, [schoolId, refreshNonce]);
 
   // Saldo berjalan (dari awal data) + filter tampilan
   const { displayRows, reversedIds, summary } = useMemo(() => {

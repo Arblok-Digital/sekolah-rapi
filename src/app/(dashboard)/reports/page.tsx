@@ -1,9 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSyncedRefresh } from '@/modules/offline/hooks/useSyncedRefresh';
 import { useAuth } from '@/shared/providers/AuthProvider';
 import { assertSchoolFeature } from '@/shared/services/plan-guard';
-import { createSupabaseClient } from '@/shared/services/supabase/client';
+import { getTransactions } from '@/modules/transactions/services/transaction.service';
+import { getCategories } from '@/modules/transactions/services/category.service';
+import { getSPPPayments } from '@/modules/spp/services/spp.service';
+import { getStudents } from '@/modules/students/services/student.service';
 import { MONTHS } from '@/modules/payroll/types/payroll.types';
 import { BarChart3, FileSpreadsheet, Download, Loader2, TrendingUp, TrendingDown, Receipt, Users } from 'lucide-react';
 import { useSchoolRealtime } from '@/shared/hooks/useSchoolRealtime';
@@ -43,6 +47,9 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
   const [refreshNonce, setRefreshNonce] = useState(0);
 
+  // Sinkronisasi dua arah selesai → muat ulang laporan.
+  useSyncedRefresh(() => setRefreshNonce((n) => n + 1));
+
   const [financialData, setFinancialData] = useState<MonthlyReport[]>([]);
   const [sppData, setSppData] = useState<SppRecap[]>([]);
   const [incomeByCategory, setIncomeByCategory] = useState<CategoryRecap[]>([]);
@@ -51,7 +58,6 @@ export default function ReportsPage() {
   useEffect(() => {
     if (!schoolId) return;
     const activeSchoolId = schoolId;
-    const supabase = createSupabaseClient();
     setLoading(true);
 
     async function fetchData() {
@@ -61,42 +67,36 @@ export default function ReportsPage() {
         setLoading(false);
         return;
       }
-      // Fetch all transactions for the year
-      const yearStart = `${year}-01-01`;
-      const yearEnd = `${year}-12-31`;
 
-      const { data: txData } = await supabase
-        .from('transactions')
-        .select('id, amount, type, reference_date, category_id, source_type, source_id')
-        .eq('school_id', activeSchoolId)
-        .gte('reference_date', yearStart)
-        .lte('reference_date', yearEnd);
+      try {
+        // Fetch all transactions for the year — service punya fallback mirror
+        // lokal, jadi laporan tetap terbaca saat offline.
+        const yearStart = `${year}-01-01`;
+        const yearEnd = `${year}-12-31`;
 
-      // Pasangan koreksi dikeluarkan dari SEMUA angka laporan — laporan adalah
-      // ringkasan bisnis, jejak koreksi tetap bisa dilihat di halaman Audit.
-      const reversedIds = collectReversedSourceIds(txData ?? []);
-      const realTx = excludeReversalPairs(txData ?? [], reversedIds);
+        const txData = await getTransactions(activeSchoolId, {
+          startDate: yearStart,
+          endDate: yearEnd,
+        });
 
-      const { data: catData } = await supabase
-        .from('categories')
-        .select('id, name')
-        .eq('school_id', activeSchoolId);
-      const catNames: Record<string, string> = {};
-      (catData || []).forEach((c) => { catNames[c.id] = c.name; });
+        // Pasangan koreksi dikeluarkan dari SEMUA angka laporan — laporan adalah
+        // ringkasan bisnis, jejak koreksi tetap bisa dilihat di halaman Audit.
+        const reversedIds = collectReversedSourceIds(txData ?? []);
+        const realTx = excludeReversalPairs(txData ?? [], reversedIds);
 
-      const { data: sppData } = await supabase
-        .from('spp_payments')
-        .select('student_id, month, year, amount, paid_amount, status')
-        .eq('school_id', activeSchoolId)
-        .eq('year', year);
+        const catData = await getCategories(activeSchoolId);
+        const catNames: Record<string, string> = {};
+        (catData || []).forEach((c) => { catNames[c.id] = c.name; });
 
-      const { data: students } = await supabase
-        .from('students')
-        .select('id, status')
-        .eq('school_id', activeSchoolId)
-        .eq('status', 'active');
+        // Eksplisit filter tahun: inklusi `year IS NULL` di service tidak
+        // boleh bocor ke rekapan tahunan.
+        const sppRows = (await getSPPPayments(activeSchoolId, { year })).filter(
+          (s) => s.year === year
+        );
 
-      const activeStudents = students?.length || 0;
+        const students = await getStudents(activeSchoolId, { status: 'active' });
+
+        const activeStudents = students?.length || 0;
 
       // Financial by month
       const monthlyFin: MonthlyReport[] = MONTHS.map((m, i) => {
@@ -111,7 +111,7 @@ export default function ReportsPage() {
 
       // SPP by month
       const monthlySpp: SppRecap[] = MONTHS.map((m, i) => {
-        const monthSpp = (sppData || []).filter(s => s.month === i + 1);
+        const monthSpp = sppRows.filter(s => s.month === i + 1);
         const paidCount = monthSpp.filter(s => s.status === 'paid' || s.status === 'partial').length;
         const totalExpected = monthSpp.reduce((sum, r) => sum + r.amount, 0);
         const totalCollected = monthSpp.reduce((s, r) => s + r.paid_amount, 0);
@@ -145,6 +145,9 @@ export default function ReportsPage() {
         totalExpense: monthlyFin.reduce((s, m) => s + m.expense, 0),
         totalNet: monthlyFin.reduce((s, m) => s + m.net, 0),
       });
+      } catch (err) {
+        console.error('[reports] gagal memuat laporan:', err);
+      }
       setLoading(false);
     }
 
