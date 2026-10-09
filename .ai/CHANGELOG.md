@@ -2,6 +2,13 @@
 
 Tuliskan entri terbaru di atas. Maksimal ringkas: hasil, file, validasi, blocker, next step.
 
+## 2026-10-09 — Fix PWA: Service Worker Gak Pernah Ke-Register
+
+- **Akar masalah offline HP**: next-pwa v5.6.0 nyuntik `register.js` ke entry `main.js` **Pages Router** saja; app murni App Router → `sw.js` ke-generate tapi gak pernah daftar → tanpa SW = tanpa cache offline (Chrome sekarang tetap izinkan "install" tanpa SW, makanya ikon ada tapi gagal buka).
+- **Fix**: `src/shared/components/RegisterSW.tsx` (registrasi manual `navigator.serviceWorker.register('/sw.js')`, prod only) dipasang di root `layout.tsx`; `public/sw-extras.js` via top-level `importScripts: ['/sw-extras.js']` di `next.config.mjs` (opsi v5 top-level, bukan `workbox:{}`) → cache `/` di-warm ke cache `start-url` saat install, icon-launch offline langsung ada isi.
+- Validasi: `tsc` + `lint` bersih, build prod sukses, `public/sw.js` mengandung `importScripts('sw-extras.js')`, `RegisterSW` ke-compile di chunk `main-*.js`.
+- Next: push → auto-deploy; test HP: buka app 1x online → mati internet → buka dari ikon.
+
 ## 2026-10-09 — Tanya Arblok di Landing + Hardening Chat
 
 - **Landing**: section spotlight baru "Sebelum demo, tanya dulu ke Tanya Arblok" (setelah pilar solusi) dgn mockup percakapan + tombol "Tanya sekarang" yang membuka chat beneran (event `sekolah-rapi:tanya-open`, listener di `TanyaArblok`); FAQ pertama soal asisten; sub hero + meta description (143 char, keyword-first). Copy **bebas kata "AI"** sesuai MANDATORY_FORMAT (pakai "asisten cerdas"/"Tanya Arblok") — hasil review council-seo; `public/llms.txt` ikut ditambah bullet asisten.

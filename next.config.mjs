@@ -5,6 +5,10 @@ const pwaConfig = withPWA({
   register: true,
   skipWaiting: true,
   disable: process.env.NODE_ENV === 'development',
+  // Pemanasan cache start_url (next-pwa v5 hanya menyuntik register.js ke
+  // bundle Pages Router, sedangkan app ini App Router — registrasi SW manual
+  // di src/shared/components/RegisterSW.tsx).
+  importScripts: ['/sw-extras.js'],
 });
 
 const nextConfig = {

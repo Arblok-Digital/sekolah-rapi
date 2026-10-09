@@ -5,6 +5,7 @@ import { AuthProvider } from '@/shared/providers/AuthProvider';
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary';
 import { Toaster } from '@/shared/components/ui/toaster';
 import { ToastProvider } from '@/shared/components/ui/toast';
+import { RegisterSW } from '@/shared/components/RegisterSW';
 import { APP_NAME, APP_URL } from '@/shared/constants';
 import './globals.css';
 
@@ -67,6 +68,7 @@ export default function RootLayout({
           </QueryProvider>
           <Toaster />
         </ToastProvider>
+        <RegisterSW />
       </body>
     </html>
   );
