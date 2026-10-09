@@ -3,7 +3,7 @@ import LandingPage from "./landing-page";
 import { APP_NAME, APP_URL } from "@/shared/constants";
 
 const description =
-  "Hubungkan pendaftaran siswa, SPP, kas, dan pekerjaan admin dalam satu web app agar tim tidak terus menyalin data dan owner tidak menunggu rekap.";
+  "Aplikasi administrasi sekolah: pendaftaran, SPP, dan kas dalam satu web app, plus Tanya Arblok yang menjawab pertanyaan fitur dan harga 24 jam.";
 
 export const metadata: Metadata = {
   title: 'Aplikasi Administrasi Sekolah',

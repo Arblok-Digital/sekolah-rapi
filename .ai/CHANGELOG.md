@@ -2,6 +2,13 @@
 
 Tuliskan entri terbaru di atas. Maksimal ringkas: hasil, file, validasi, blocker, next step.
 
+## 2026-10-09 — Tanya Arblok di Landing + Hardening Chat
+
+- **Landing**: section spotlight baru "Sebelum demo, tanya dulu ke Tanya Arblok" (setelah pilar solusi) dgn mockup percakapan + tombol "Tanya sekarang" yang membuka chat beneran (event `sekolah-rapi:tanya-open`, listener di `TanyaArblok`); FAQ pertama soal asisten; sub hero + meta description (143 char, keyword-first). Copy **bebas kata "AI"** sesuai MANDATORY_FORMAT (pakai "asisten cerdas"/"Tanya Arblok") — hasil review council-seo; `public/llms.txt` ikut ditambah bullet asisten.
+- **Chat hardening** (`api/chat/route.ts`): rantai provider **Gemini (2 model) → OpenRouter** (slot `OPENROUTER_API_KEY`/`OPENROUTER_MODEL` — belum diisi, aktif otomatis saat key tempel; model boleh dipisah koma utk routing fallback OpenRouter); 503/overload otomatis geser model; **semua jalur error keluar pesan ramah** (stream, 429, 500, error jaringan client) — JSON error gak pernah nyasar ke UI; detail tetap di log server, nama env gak bocor ke pengunjung. Fix URL salah di system prompt (`sekolahrapi.vercel.app` → `sekolah-rapi.vercel.app`).
+- Validasi: `tsc` + `lint` bersih; tes `/api/chat`: stream normal tanpa ⚠️, request ke-11 → 429 body ramah (client unwrap ✓), jendela reset → normal lagi.
+- Next: tempel `OPENROUTER_API_KEY` (`.env.local` + Vercel) kalau mau fallback OpenRouter aktif.
+
 ## 2026-10-09 — SyncStatus Pindah ke Header + Smoke 12/12 Ulang
 
 - Ref UI: kartu sync melayang di pojok kanan bawah nutupin form transaksi (parah di HP) → diganti **pill Online/Offline di header** (`DashboardShell`) sbg trigger: titik status (kuning=ada antrean, merah=gagal, hijau=ok, spinner=sedang sinkron) + panel dropdown (status detail, "x lalu", peringatan basi, tombol Tarik/retry). Panel nutup saat klik di luar / Escape / pindah halaman. `SyncStatus.tsx` ditulis ulang, `DashboardShell` buang state `isOnline` lokal (pinjam dari `useOfflineSync`), `(dashboard)/layout.tsx` buang render overlay.

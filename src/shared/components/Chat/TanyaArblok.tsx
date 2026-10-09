@@ -35,6 +35,16 @@ export default function TanyaArblok({ context = 'general' }: { context?: 'landin
     }
   }, [messages, loading, open]);
 
+  // Section marketing bisa meminta chat dibuka (tombol "Tanya sekarang").
+  useEffect(() => {
+    const forceOpen = () => {
+      setMinimized(false);
+      setOpen(true);
+    };
+    window.addEventListener('sekolah-rapi:tanya-open', forceOpen);
+    return () => window.removeEventListener('sekolah-rapi:tanya-open', forceOpen);
+  }, []);
+
   const send = async () => {
     if (!input.trim() || loading) return;
     const q = input.trim();
@@ -54,8 +64,19 @@ export default function TanyaArblok({ context = 'general' }: { context?: 'landin
       });
 
       if (!res.ok || !res.body) {
-        const text = await res.text();
-        throw new Error(text || 'Gagal terhubung');
+        let msg = 'Maaf, asisten sedang tidak tersedia. Coba kirim ulang beberapa detik lagi ya.';
+        try {
+          const text = await res.text();
+          try {
+            const parsed = JSON.parse(text);
+            if (typeof parsed?.error === 'string' && parsed.error.trim()) msg = parsed.error;
+          } catch {
+            /* body bukan JSON — pakai pesan ramah default */
+          }
+        } catch {
+          /* baca body gagal — tetap pakai pesan ramah default */
+        }
+        throw new Error(msg);
       }
 
       const reader = res.body.getReader();
@@ -72,10 +93,14 @@ export default function TanyaArblok({ context = 'general' }: { context?: 'landin
         );
       }
     } catch (e: any) {
-      const err = e?.message || 'Terjadi kesalahan';
+      const raw = String(e?.message || '');
+      const friendly = /Maaf|coba lagi|Coba kirim ulang|terlalu banyak|Terlalu banyak/i.test(raw);
+      const msg = friendly
+        ? raw
+        : 'Maaf, koneksi bermasalah. Coba kirim ulang beberapa detik lagi ya.';
       setMessages((m) => [
         ...m,
-        { id: crypto.randomUUID(), role: 'assistant', content: `⚠️ ${err}` },
+        { id: crypto.randomUUID(), role: 'assistant', content: `⚠️ ${msg}` },
       ]);
     } finally {
       setLoading(false);

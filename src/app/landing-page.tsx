@@ -16,6 +16,7 @@ import {
   WalletCards,
 } from "lucide-react";
 import { MarketingLayout } from "@/shared/components/marketing/MarketingLayout";
+import { AiAssistantSection } from "@/shared/components/marketing/AiAssistantSection";
 
 const whatsappUrl =
   "https://wa.me/6289508053795?text=Halo%20SekolahRapi%2C%20saya%20ingin%20jadwalkan%20demo%2020%20menit.";
@@ -118,6 +119,11 @@ const useCases = [
 
 const faqs = [
   {
+    question: "Apakah ada yang bisa menjelaskan fitur sebelum saya mendaftar?",
+    answer:
+      "Ada. Tanya Arblok, asisten kami, menjawab pertanyaan seputar fitur, harga, dan cara pakai langsung di halaman ini — 24 jam dan tanpa perlu mendaftar.",
+  },
+  {
     question: "Apakah semua data harus langsung dipindahkan?",
     answer:
       "Tidak. Sekolah dapat mulai dari data dan alur yang paling penting, kemudian menambah bagian lain secara bertahap.",
@@ -159,9 +165,10 @@ export default function LandingPage() {
               <span className="block text-[#26735d]">Kas langsung terpantau.</span>
             </h1>
             <p className="mt-7 max-w-2xl text-lg leading-8 text-[#435048] sm:text-xl">
-              SekolahRapi menghubungkan penerimaan siswa, SPP, kas, dan pekerjaan
-              admin dalam satu web app—agar tim tidak terus menyalin data dan
-              owner tidak terus menunggu rekap.
+              SekolahRapi menghubungkan pendaftaran siswa, SPP, kas, dan
+              pekerjaan admin dalam satu web app—plus Tanya Arblok, asisten
+              yang menjawab pertanyaan fitur dan harga kapan saja. Tim tidak
+              terus menyalin data, owner tidak terus menunggu rekap.
             </p>
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
               <a
@@ -335,6 +342,8 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      <AiAssistantSection whatsappUrl={whatsappUrl} />
 
       <section className="border-b border-black/10">
         <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-24 lg:px-10">

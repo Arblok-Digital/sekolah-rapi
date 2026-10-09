@@ -18,6 +18,7 @@
 - **Penggajian**: data karyawan dan slip gaji bulanan
 - **Laporan**: rekap keuangan bulanan dan rekap SPP
 - **Dashboard**: ringkasan keuangan; pembaruan real-time tersedia di paket Pro
+- **Tanya Arblok**: asisten yang menjawab pertanyaan fitur, harga, dan cara pakai langsung dari beranda, 24 jam
 - **Offline-ready**: pencatatan tetap bisa dilakukan untuk alur tertentu saat koneksi terputus (cakupan terbatas)
 
 ## Keamanan dan privasi data
