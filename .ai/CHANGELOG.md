@@ -2,6 +2,33 @@
 
 Tuliskan entri terbaru di atas. Maksimal ringkas: hasil, file, validasi, blocker, next step.
 
+## 2026-10-09 — SyncStatus Pindah ke Header + Smoke 12/12 Ulang
+
+- Ref UI: kartu sync melayang di pojok kanan bawah nutupin form transaksi (parah di HP) → diganti **pill Online/Offline di header** (`DashboardShell`) sbg trigger: titik status (kuning=ada antrean, merah=gagal, hijau=ok, spinner=sedang sinkron) + panel dropdown (status detail, "x lalu", peringatan basi, tombol Tarik/retry). Panel nutup saat klik di luar / Escape / pindah halaman. `SyncStatus.tsx` ditulis ulang, `DashboardShell` buang state `isOnline` lokal (pinjam dari `useOfflineSync`), `(dashboard)/layout.tsx` buang render overlay.
+- Smoke test **12/12 PASS ulang** terhadap UI baru (2 assert baru: panel header "Offline — data lokal" & "Tersinkronisasi"; Tarik = buka panel dulu). Seed di-upgrade jadi **mode repair idempotent**: cocok via NIS (910001/920001), reset nama kalau kotor, re-create siswa hapus dgn id baru (aman dari tombstone), skip aktivasi/role bila sekolah sudah active — guard DB menolak patch role `owner→dev` via REST (by design). Harness: `Temp\opencode\smoke\{seed-final,smoke}.mjs`.
+- Validasi: `tsc` bersih, `lint` bersih.
+- Next: review manual di localhost, lalu commit bila sudah oke.
+
+## 2026-10-09 — Migrasi Diterapkan + Fix Refresh Setelah Sync + Smoke Test 2 Perangkat 12/12
+
+- **Migration TERAPLIKASI ke remote** via `supabase db push` ke project ref **`ertxywjnqqliqghtjycg`** (project aktif di `.env.local` + link CLI — semua referensi project di dokumen repo sudah diseragamkan ke ref ini). Terverifikasi: kolom `device_id` di 4 tabel, `categories.updated_at`, tabel `deleted_rows`, trigger `trg_students_tombstone` aktif (tombstone tercatat nyata).
+- **Fix gap**: tidak ada refresh UI setelah pull → data basi sampai pindah halaman. Baru: `src/modules/offline/sync-events.ts` (`sekolah-rapi:synced`) + `hooks/useSyncedRefresh.ts`; `useOfflineSync` emit setelah `runSync` sukses; `QueryProvider` invalidate semua query React Query; di-wire ke `useStudents`, `useTransactions`, halaman Overview (fetch di-`useCallback`-kan), Reports, Audit. Validasi: `tsc` bersih, `lint` bersih, `vitest 27/27`.
+- **Smoke test 2 perangkat (Chrome headless, 2 context terpisah) = 12/12 PASS**: A offline edit+hapus siswa (diantrikan Dexie) -> reconnect -> push otomatis ("Tersinkronisasi") -> server ter-update + `device_id` ikut terbawa -> tombstone di `deleted_rows` -> B klik "Tarik" -> nama baru muncul & baris terhapus hilang.
+- Data test dibiarkan utk test manual 2 HP: akun `smoke-offline-final@example.com` / `SmokeOffline!2026`, sekolah "Sekolah Smoke Offline (SMOKE)" (aktif/free), 2 siswa smoke. `.env.local` di-strip BOM-nya (dulu bikin CLI Supabase gagal parse).
+- Next: test manual di 2 HP bila mau, bersihkan data smoke (`dev_nuclear_delete`/admin). (Referensi project ref di dokumen lama → SUDAH diseragamkan, lihat entri paling atas.)
+
+## 2026-10-09 — Fase 1 Offline: Read/Write Offline + Sinkronisasi Dua Arah
+
+- Konteks: keputusan owner — tetap Supabase free tier, PWA bisa offline read+input, owner pantau dari HP; tanpa ganti vendor/APK. Keputusan & alasannya di `.ai/DECISIONS.md` (3 entri baru).
+- **Migration (WAJIB jalan sebelum deploy kode)**: `20261009001_offline_sync_foundation.sql` (categories.updated_at+trigger, `device_id` di 4 tabel, tabel `deleted_rows`+RLS+UNIQUE, index `(school_id,updated_at)`) dan `20261009002_delete_tombstone_trigger.sql` (trigger `log_deleted_row` — delete online apa pun meninggalkan tombstone atomic; guard saat cascade hapus sekolah).
+- **Sync engine**: `sync.service` = push (idempoten: upsert/onConflict, UPDATE tanpa select, DELETE via trigger) -> `reconcilePaymentKas` (localStorage queue, delta-based, retry) -> `pull.service` (cursor per tabel+school, overlap 10s, halaman 1000, tombstone stream `deleted_rows`, `schools` tanpa cursor). Helper: `sync-core` (murni), `read.ts` (`withOfflineFallback`), `mirror.ts` (full/patch), `device.ts`, `queue.ts`.
+- **Service read fallback + write offline**: `getStudents`, `getTransactions`, `getCategories` (x2), `getSPPPayments/Summary/Unpaid/Outstanding`; offline create/update siswa, transaksi, kategori, SPP; delete siswa/transaksi/kategori offline = lokal + antrian (tombstone saat push); delete SPP tetap online-only (reversal kas butuh server) dengan pesan eksplisit.
+- **AuthProvider offline**: cache `profiles`+`schools` ke Dexie (write-through saat sukses, fallback saat error) — offline tidak lagi dilempar `/onboarding`. `plan-guard` baca plan dari mirror saat gagal.
+- **Halaman**: Overview pindah ke `dashboard.service` (`computeDashboard` murni + fallback lokal); Laporan/Audit/Riwayat/Dropdown SPP pakai service fallback; `computeSummary` SPP satu sumber online/offline.
+- **UI sync**: `useOfflineSync(schoolId)` — sync penuh saat buka/online/manual + interval 10s (pending) / 5 menit (idle), `failed` count + `retryFailed`; `SyncStatus` restyle gelap, label Indonesia, badge offline, staleness >10 mnt, tombol "Tarik".
+- Validasi: `typecheck` bersih, `lint` bersih, `vitest 27/27` (baru: `sync-core`, `offline-fallback`, `dashboard`).
+- Next: jalankan 2 migration ke project `ertxywjnqqliqghtjycg`, smoke test offline di 2 perangkat (edit siswa A -> tarik di B), pertimbangkan bulk SPP/import CSV sebagai online-only resmi, Fase 3 (Capacitor/SQLite) menyusul.
+
 ## 2026-10-04 — Mobile: Chat Gak Nutup Tombol Simpan + Scroll Kartu
 
 - Laporan (Arblok, via HP): floating chat "Tanya Arblok" (`z-[90]`) lebih tinggi dari SEMUA modal (`z-50`) → pill/panel-nya nutupin area bawah modal transaksi, tombol Simpan gak bisa diklik; juga nimpa aksi kartu siswa.
@@ -112,7 +139,7 @@ Tuliskan entri terbaru di atas. Maksimal ringkas: hasil, file, validasi, blocker
 - Public enrollment: insert langsung digantikan RPC `submit_enrollment`; hanya sekolah active Pro/Lifetime yang diterima dan status dipaksa `pending`.
 - File: `src/shared/entitlements/index.ts`, `src/app/pricing/page.tsx`, `src/modules/enrollment/services/enrollment.service.ts`, `src/app/(dashboard)/reports/page.tsx`, `src/app/api/admin/schools/[schoolId]/route.ts`, dua migration `2026080100*.sql`, dan `tests/unit/entitlements.test.ts`.
 - Validasi lokal: `npm run test:entitlements` lulus 3/3, `npx tsc --noEmit` lulus, dan `npm run build` lulus; warning existing `src/modules/offline/hooks/useOfflineSync.ts:49` tetap ada.
-- Status remote: kedua migration sudah diterapkan ke project terkonfirmasi `bbymrmysmerazdkubptc`; migration history lokal/remote sinkron. Smoke test read-only membuktikan matrix Free dan RLS anon enrollment; tidak ada row produksi yang dibuat/diubah.
+- Status remote: kedua migration sudah diterapkan ke project terkonfirmasi `ertxywjnqqliqghtjycg`; migration history lokal/remote sinkron. Smoke test read-only membuktikan matrix Free dan RLS anon enrollment; tidak ada row produksi yang dibuat/diubah.
 - Advisors: security 43 findings dan performance 154 findings; exception SECURITY DEFINER RPC entitlement dinilai intentional dengan validasi internal. Debt existing dan remediation URL dicatat di `.ai/PRICING-ENTITLEMENT-PIPELINE.md`.
 
 ## 2026-08-01 - Pro Positioning and Architecture README

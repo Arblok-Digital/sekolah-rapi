@@ -46,7 +46,7 @@ Gunakan format: tanggal, keputusan, alasan, dampak. Jangan menghapus keputusan l
 - Kebijakan downgrade: data lama pada feature berbayar tetap dapat dibaca oleh user tenant yang sah, tetapi create/update/delete ditolak setelah plan turun.
 - Pendaftaran publik: hanya sekolah `active` dengan plan Pro/Lifetime yang dapat menerima submission; submission memakai RPC dengan status selalu `pending` dan tidak mengembalikan policy SELECT anon.
 - Alasan: hidden sidebar/client guard dapat dilewati; tenant boundary dan entitlement harus tetap berlaku pada direct request/Supabase call.
-- Dampak: migration `20260801001_plan_entitlements.sql` dan hardening lifecycle `20260801002_lock_school_entitlement_lifecycle.sql` sudah diterapkan ke project terkonfirmasi `bbymrmysmerazdkubptc`. Aktivasi plan/status tetap manual melalui jalur server `service_role` setelah caller diverifikasi sebagai dev; browser hanya dapat membuat sekolah `free/pending` dan tidak dapat mengubah lifecycle state.
+- Dampak: migration `20260801001_plan_entitlements.sql` dan hardening lifecycle `20260801002_lock_school_entitlement_lifecycle.sql` sudah diterapkan ke project terkonfirmasi `ertxywjnqqliqghtjycg`. Aktivasi plan/status tetap manual melalui jalur server `service_role` setelah caller diverifikasi sebagai dev; browser hanya dapat membuat sekolah `free/pending` dan tidak dapat mengubah lifecycle state.
 
 ## 2026-08-03 - Organic-first dan Roadmap Terpisah
 
@@ -61,3 +61,23 @@ Gunakan format: tanggal, keputusan, alasan, dampak. Jangan menghapus keputusan l
 - Alasan: penjualan saat ini masih high-consideration dan founder-led; checkout di landing page menambah kompleksitas sebelum offer, legal entity, dan volume tervalidasi.
 - Boundary: pembayaran langganan SekolahRapi dan pembayaran SPP siswa adalah dua bounded context yang tidak boleh berbagi tabel/service/status ambigu.
 - Dampak: aktivasi saat ini tetap manual melalui server terverifikasi. Otomasi berikutnya wajib memakai server-side checkout, webhook signed dan idempotent, audit trail, serta aktivasi entitlement berdasarkan event terpercaya—bukan redirect browser.
+
+## 2026-10-09 - Fase 1 Offline: PWA + IndexedDB (Dexie), Tanpa SQLite/Capacitor
+
+- Keputusan: jalur offline dibangun di atas PWA + Dexie (IndexedDB) yang sudah ada; SQLite-wasm dan Capacitor/APK ditunda (kandidat Fase 3).
+- Alasan: semua read sudah JS-aggregation (mudah diberi fallback lokal), SQLite-wasm butuh header COOP/COEP yang bentrok dengan CSP yang ada, dan menambah platform native menggandakan ruang lingkup sebelum model peran (admin/bendahara input, owner pantau dari HP) tervalidasi.
+- Dampak: `supabase/migrations/20261009001_offline_sync_foundation.sql` + `20261009002_delete_tombstone_trigger.sql` wajib dijalankan SEBELUM deploy kode (client mengirim kolom `device_id`); tanpa migration 002, delete online meninggalkan zombie di mirror device lain.
+
+## 2026-10-09 - Strategi Sync: Network-First + Mirror Write-Through, Push -> Reconcile -> Pull
+
+- Keputusan: read = network-first dengan fallback mirror (`withOfflineFallback`); write = langsung coba server, gagal karena jaringan baru antrikan; orkestrator satu putaran = push antrian -> rekonsiliasi kas SPP -> pull perubahan.
+- Alasan: data segar menang saat online; urutan push-dulu membuat baris offline sudah ada di server sehingga tarikan tidak menimpa op tertunda, dan kas dibangun dari state server yang lengkap. Pull -> push ditinggalkan karena sekali jalan tidak konvergen.
+- Idempotensi: INSERT via `upsert(onConflict:'id')`; UPDATE tanpa `.select()` (0 baris = kematian menang/LWW, bukan error); DELETE memakai trigger server `log_deleted_row` (atomic dengan hard delete) sehingga client tidak perlu insert tombstone manual.
+- Pull: cursor per tabel+school, overlap 10 detik (`PULL_OVERLAP_MS`), halaman 1000, maks 20 halaman; `schools` tanpa cursor; `profiles` TIDAK di-pull (di-cache oleh AuthProvider).
+- Dampak: layanan inti (students, transactions, categories, SPP) membaca lewat `withOfflineFallback`; halaman Overview/Laporan/Audit/Riwayat memakai service yang sama.
+
+## 2026-10-09 - Batas Offline SPP: Create+Edit Bisa, Hapus Butuh Online
+
+- Keputusan: pembuatan & edit tagihan/pembayaran SPP bisa offline (diantrikan; kas terekonsiliasi oleh `reconcilePaymentKas` setelah push); penghapusan tagihan SPP hanya saat online.
+- Alasan: penghapusan memicu reversal kas yang harus dihitung dari state server — tidak bisa dipercaya dari klien. Kas selalu dibangun berdasarkan SELISIH terhadap yang sudah tercatat sehingga aman dijalankan ulang (retries disimpan di localStorage `sekolah_rapi_kas_reconcile`).
+- Dampak: pesan error offline untuk hapus SPP dibuat eksplisit agar admin paham, bukan "Failed to fetch".

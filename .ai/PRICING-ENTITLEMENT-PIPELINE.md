@@ -60,7 +60,7 @@ In short: negotiation/payment verification → dev dropdown → trusted API → 
 
 ## Deployment and verification
 
-- Both migrations were applied on 2026-08-01 to confirmed project `bbymrmysmerazdkubptc`; local and remote migration histories match through `20260801002`.
+- Both migrations were applied on 2026-08-01 to confirmed project `ertxywjnqqliqghtjycg`; local and remote migration histories match through `20260801002`.
 - Remote smoke checks confirmed the active Free school resolves `reports`, `student_import`, `enrollment`, `realtime_dashboard`, `payroll`, and `inventory` as unavailable, while direct anon enrollment is rejected by RLS. No production rows were inserted or modified.
 - `schools.plan` and `schools.status` are lifecycle state. Browser inserts are restricted to `free/pending`; browser updates cannot change either value. The dev admin route changes lifecycle state only through a server-side `service_role` client after verifying the caller's `profiles.role = dev`.
 - The development bypass is intentional: `private.is_dev_user()` permits feature access for the dev role, but normal users remain subject to plan and tenant checks.

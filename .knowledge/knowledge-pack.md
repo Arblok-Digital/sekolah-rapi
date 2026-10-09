@@ -366,7 +366,7 @@ Gunakan format: tanggal, keputusan, alasan, dampak. Jangan menghapus keputusan l
 - Kebijakan downgrade: data lama pada feature berbayar tetap dapat dibaca oleh user tenant yang sah, tetapi create/update/delete ditolak setelah plan turun.
 - Pendaftaran publik: hanya sekolah `active` dengan plan Pro/Lifetime yang dapat menerima submission; submission memakai RPC dengan status selalu `pending` dan tidak mengembalikan policy SELECT anon.
 - Alasan: hidden sidebar/client guard dapat dilewati; tenant boundary dan entitlement harus tetap berlaku pada direct request/Supabase call.
-- Dampak: migration `20260801001_plan_entitlements.sql` dan hardening lifecycle `20260801002_lock_school_entitlement_lifecycle.sql` sudah diterapkan ke project terkonfirmasi `bbymrmysmerazdkubptc`. Aktivasi plan/status tetap manual melalui jalur server `service_role` setelah caller diverifikasi sebagai dev; browser hanya dapat membuat sekolah `free/pending` dan tidak dapat mengubah lifecycle state.
+- Dampak: migration `20260801001_plan_entitlements.sql` dan hardening lifecycle `20260801002_lock_school_entitlement_lifecycle.sql` sudah diterapkan ke project terkonfirmasi `ertxywjnqqliqghtjycg`. Aktivasi plan/status tetap manual melalui jalur server `service_role` setelah caller diverifikasi sebagai dev; browser hanya dapat membuat sekolah `free/pending` dan tidak dapat mengubah lifecycle state.
 
 ## 2026-08-03 - Organic-first dan Roadmap Terpisah
 
@@ -449,7 +449,7 @@ In short: negotiation/payment verification → dev dropdown → trusted API → 
 
 ## Deployment and verification
 
-- Both migrations were applied on 2026-08-01 to confirmed project `bbymrmysmerazdkubptc`; local and remote migration histories match through `20260801002`.
+- Both migrations were applied on 2026-08-01 to confirmed project `ertxywjnqqliqghtjycg`; local and remote migration histories match through `20260801002`.
 - Remote smoke checks confirmed the active Free school resolves `reports`, `student_import`, `enrollment`, `realtime_dashboard`, `payroll`, and `inventory` as unavailable, while direct anon enrollment is rejected by RLS. No production rows were inserted or modified.
 - `schools.plan` and `schools.status` are lifecycle state. Browser inserts are restricted to `free/pending`; browser updates cannot change either value. The dev admin route changes lifecycle state only through a server-side `service_role` client after verifying the caller's `profiles.role = dev`.
 - The development bypass is intentional: `private.is_dev_user()` permits feature access for the dev role, but normal users remain subject to plan and tenant checks.
@@ -1061,7 +1061,7 @@ Tuliskan entri terbaru di atas. Maksimal ringkas: hasil, file, validasi, blocker
 - Public enrollment: insert langsung digantikan RPC `submit_enrollment`; hanya sekolah active Pro/Lifetime yang diterima dan status dipaksa `pending`.
 - File: `src/shared/entitlements/index.ts`, `src/app/pricing/page.tsx`, `src/modules/enrollment/services/enrollment.service.ts`, `src/app/(dashboard)/reports/page.tsx`, `src/app/api/admin/schools/[schoolId]/route.ts`, dua migration `2026080100*.sql`, dan `tests/unit/entitlements.test.ts`.
 - Validasi lokal: `npm run test:entitlements` lulus 3/3, `npx tsc --noEmit` lulus, dan `npm run build` lulus; warning existing `src/modules/offline/hooks/useOfflineSync.ts:49` tetap ada.
-- Status remote: kedua migration sudah diterapkan ke project terkonfirmasi `bbymrmysmerazdkubptc`; migration history lokal/remote sinkron. Smoke test read-only membuktikan matrix Free dan RLS anon enrollment; tidak ada row produksi yang dibuat/diubah.
+- Status remote: kedua migration sudah diterapkan ke project terkonfirmasi `ertxywjnqqliqghtjycg`; migration history lokal/remote sinkron. Smoke test read-only membuktikan matrix Free dan RLS anon enrollment; tidak ada row produksi yang dibuat/diubah.
 - Advisors: security 43 findings dan performance 154 findings; exception SECURITY DEFINER RPC entitlement dinilai intentional dengan validasi internal. Debt existing dan remediation URL dicatat di `.ai/PRICING-ENTITLEMENT-PIPELINE.md`.
 
 ## 2026-08-01 - Pro Positioning and Architecture README
