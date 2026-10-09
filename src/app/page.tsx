@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import LandingPage from "./landing-page";
+import LandingPage, { faqs } from "./landing-page";
 import { APP_NAME, APP_URL } from "@/shared/constants";
 
 const description =
@@ -33,12 +33,29 @@ const structuredData = {
   description,
 };
 
+const faqStructuredData = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faqs.map(({ question, answer }) => ({
+    "@type": "Question",
+    name: question,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: answer,
+    },
+  })),
+};
+
 export default function Home() {
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqStructuredData) }}
       />
       <LandingPage />
     </>

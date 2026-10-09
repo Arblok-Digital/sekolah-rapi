@@ -117,7 +117,7 @@ const useCases = [
   },
 ] as const;
 
-const faqs = [
+export const faqs = [
   {
     question: "Apakah ada yang bisa menjelaskan fitur sebelum saya mendaftar?",
     answer:
